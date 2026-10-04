@@ -412,6 +412,13 @@ tr.grp td{background:var(--panel2);font-weight:600}
   .lbtns{flex-wrap:wrap}
 }
 @media (max-width:640px){ .card{overflow-x:auto} .row{flex-wrap:wrap} .row>div{flex:1 1 100%!important;min-width:0} .row>div[style*="flex:0 0 auto"]{flex:0 1 auto!important} }
+.pubbar{margin-bottom:8px}
+.pubbar:empty{display:none}
+.pubrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;border-radius:10px;border:1px solid var(--line,#ddd);background:var(--card,#fff);font-size:13px}
+.pubrow.draft{border-color:#c98a00;background:#fff8e6}
+.pubrow .pst{flex:1 1 220px}
+.pubnote{margin-top:6px;padding:8px 10px;border-radius:10px;border:1px solid var(--alert,#b3261e);background:#fdecea;font-size:13px}
+.tag.from{background:#e8f0fe;color:#1a4b9c;border-color:#9bb5e8}
 </style>
 </head>
 <body>
@@ -541,6 +548,10 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <div style="flex:0 0 auto"><button class="tiny" id="syncNowBtn">Sync now</button></div>
       <div style="flex:0 0 auto"><button class="tiny ghost" id="syncOff">Disconnect this device</button></div>
     </div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:0 0 220px"><label>This device's name</label><input id="devName" maxlength="24" placeholder="e.g. Paul phone, Office PC"></div>
+    </div>
+    <p class="hint" style="margin:2px 0 0">Shown on a published plan ("Published 21:30 · Paul phone"), so everyone knows where it came from.</p>
   </div>
 
   <div class="card">
@@ -700,6 +711,13 @@ tr.grp td{background:var(--panel2);font-weight:600}
   </div>
 
   <div class="card">
+    <h2>Replace the sheet with this device</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Only for repairs — e.g. when sync says the hidden _DATA tab is damaged.
+      Sends everything on this device to the sheet and overwrites what is there. A damaged _DATA is first kept in a hidden tab "_DATA damaged …".</p>
+    <div class="row"><div style="flex:0 0 auto"><button id="forcePush">Replace the sheet with this device</button></div></div>
+  </div>
+
+  <div class="card">
     <h2>Change admin PIN</h2>
     <p class="hint" style="margin-top:0;margin-bottom:10px">4 digits. The PIN is shared by every device connected to the sheet.</p>
     <div class="row">
@@ -736,6 +754,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
 
 <!-- 3 BUILD PLAN -->
 <section class="view" id="v-plan">
+  <div class="pubbar" data-pubbar></div>
   <div class="card" style="margin-bottom:8px">
     <div class="row">
       <div><label>Add a vehicle</label>
@@ -756,6 +775,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
 
 <!-- 4 FINAL PLAN -->
 <section class="view" id="v-out">
+  <div class="pubbar noprint" data-pubbar></div>
   <div class="card noprint">
     <div class="row">
       <div style="flex:0 0 auto"><button class="primary" id="copyTsv">Copy for Excel</button></div>
@@ -1009,7 +1029,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.6', APP_BUILD='04-10-2026';
+const APP_VERSION='1.7', APP_BUILD='04-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1057,12 +1077,14 @@ async function save(){ try{ undoRecord(); markDirty(); }catch(e){ showError('sav
    that back (and it syncs like any other change). Only the two header buttons do this - no
    keyboard shortcut. Changes pulled in from the sheet clear the history, so an undo never
    quietly reverses something done on another device. */
-const UNDO_MAX=40; let undoStack=[], redoStack=[], undoLast=null, undoMute=false, undoClearNext=false;
+const UNDO_MAX=40, UNDO_CHARS=6e6; let undoStack=[], redoStack=[], undoLast=null, undoMute=false, undoClearNext=false;
 const undoSnap=()=>JSON.stringify(S,(k,v)=>k==='open'?undefined:v);
 function undoRecord(){
   const cur=undoSnap();
   if(undoClearNext){ undoClearNext=false; undoStack=[]; redoStack=[]; undoLast=cur; paintUndo(); return; }
-  if(!undoMute&&undoLast!==null&&cur!==undoLast){ undoStack.push(undoLast); if(undoStack.length>UNDO_MAX) undoStack.shift(); redoStack=[]; }
+  if(!undoMute&&undoLast!==null&&cur!==undoLast){ undoStack.push(undoLast); if(undoStack.length>UNDO_MAX) undoStack.shift(); redoStack=[];
+    // as the data grows, keep fewer steps rather than eating the phone's memory (always at least 5)
+    let tot=undoStack.reduce((a,x)=>a+x.length,0); while(undoStack.length>5&&tot>UNDO_CHARS) tot-=undoStack.shift().length; }
   undoLast=cur; paintUndo();
 }
 function undoReset(){ undoStack=[]; redoStack=[]; undoLast=undoSnap(); paintUndo(); }
@@ -1081,17 +1103,20 @@ async function undoGo(back){
   undoMute=true; try{ await save(); } finally{ undoMute=false; }
   renderAll(); paintUndo(); flash(back?'Undone':'Redone');
 }
+let stateRev=0; // goes up on every change, so a save only counts as done if nothing changed while it ran
 function markDirty(){
-  dirty=true; saveFailed=false; updateSaveBadge();
+  stateRev++; dirty=true; saveFailed=false; updateSaveBadge();
   clearTimeout(saveTimer); saveTimer=setTimeout(flushSave,1200);
 }
 async function flushSave(){
   clearTimeout(saveTimer);
   if(!dirty||saving) return;
   saving=true; updateSaveBadge();
-  try{ await store.set('lpb:v3', S); dirty=false; saveFailed=false; }
+  const rev=stateRev;
+  try{ await store.set('lpb:v3', S); if(stateRev===rev) dirty=false; saveFailed=false; }
   catch(e){ saveFailed=true; }
   saving=false; updateSaveBadge();
+  if(dirty&&!saveFailed){ clearTimeout(saveTimer); saveTimer=setTimeout(flushSave,150); } // an edit landed mid-save: save again
   if(typeof scheduleSync==='function' && syncCfg) scheduleSync(1200);
 }
 const BADGE_ICON={
@@ -1156,6 +1181,10 @@ async function load(){
   S.plan.lanes.forEach(l=>{ if(!Array.isArray(l.routes)) l.routes=[...legacy]; });
   if(!Array.isArray(S.plan.poolFilter)) S.plan.poolFilter=[...legacy];
   delete S.plan.route; delete S.plan.routes;
+  // v1.7: the plan on screen is a private draft; the shared copy is planPub. A device coming
+  // from v1.6 had the shared plan on screen, so that counts as the published one.
+  if(!S.planPub){ S.planPub={lanes:JSON.parse(JSON.stringify(S.plan.lanes)),by:'',at:0}; S.planSeen={at:0,lanes:JSON.parse(JSON.stringify(S.plan.lanes))}; }
+  S.planPub=normPub(S.planPub);
 }
 
 /* ---------- helpers ---------- */
@@ -1277,7 +1306,7 @@ function partiesToday(){ return _order; }
 function itemsOf(p){ return _idx.get(p)||[]; }
 function weightOf(p){
   let w=_wt.get(p);
-  if(w===undefined){ w=itemsOf(p).reduce((a,o)=>a+(parseFloat(o.weight)||0),0); _wt.set(p,w); }
+  if(w===undefined){ w=itemsOf(p).reduce((a,o)=>a+(wtNum(o.weight)||0),0); _wt.set(p,w); }
   return w;
 }
 // hold, checked for one specific tab's batch of a party's orders
@@ -1351,7 +1380,7 @@ function loadOf(st,o){
 function weightFor(o,n){
   const per=parseNum(o.unit); if(!isNaN(per)) return +(n*per).toFixed(3);
   const q=parseNum(o.qty), w=parseNum(o.weight);
-  return (!isNaN(w)&&q>0)?+(w*n/q).toFixed(3):(parseFloat(o.weight)||0);
+  return (!isNaN(w)&&q>0)?+(w*n/q).toFixed(3):(wtNum(o.weight)||0);
 }
 // a stop's lines as they will actually be loaded - edited qty in place of the ordered qty
 function stopLines(st){
@@ -1374,7 +1403,7 @@ function setLoadTotal(st,ids,T){
     else if(take<qs[i]) st.loadQty[o.id]=take;
   });
 }
-function stopWeight(st){ return stopLines(st).reduce((a,o)=>a+(parseFloat(o.weight)||0),0); }
+function stopWeight(st){ return stopLines(st).reduce((a,o)=>a+(wtNum(o.weight)||0),0); }
 function laneWeight(l){ return l.stops.reduce((a,st)=>a+stopWeight(st),0); }
 // ids of a party's items that some vehicle is already carrying
 function placedIds(p){
@@ -1383,7 +1412,7 @@ function placedIds(p){
   return s;
 }
 function unplacedItems(p){ const s=placedIds(p); return itemsOf(p).filter(o=>!s.has(o.id)); }
-function unplacedWeight(p){ return unplacedItems(p).reduce((a,o)=>a+(parseFloat(o.weight)||0),0); }
+function unplacedWeight(p){ return unplacedItems(p).reduce((a,o)=>a+(wtNum(o.weight)||0),0); }
 // a new stop taking only what's still unplaced - everything already on a vehicle is excluded
 function excludeForUnplaced(p){
   const s=placedIds(p); return itemsOf(p).filter(o=>s.has(o.id)).map(o=>o.id);
@@ -1838,7 +1867,7 @@ function paintDash(){
      hard zero drops it. */
   const outOfStockKeys=new Set(stockGroups().filter(g=>g.stockReady!=null&&g.currentStock<=0).map(g=>g.key));
   const loadableItems=p=>itemsOf(p).filter(o=>!outOfStockKeys.has(stockKey(o.item))&&!lineHeld(o));
-  const loadableWeight=p=>loadableItems(p).reduce((s,o)=>s+(parseFloat(o.weight)||0),0);
+  const loadableWeight=p=>loadableItems(p).reduce((s,o)=>s+(wtNum(o.weight)||0),0);
   const comboRows=(S.combos||[]).map(c=>{
     const set=new Set(c.routes);
     const match=parties.filter(p=>(S.parties[p]?.routes||[]).some(r=>set.has(r))&&!partyExcluded(p,c.xroutes)&&loadableItems(p).length>0);
@@ -1934,7 +1963,7 @@ function paintDash(){
     }).join('')}</div>`:'';
   const soon=dueSoonBatches();
   const soonSection=soon.length?`<div class="asec"><h4 class="warn">Due today / tomorrow</h4>
-    ${soon.map(b=>arow(b.p,`<span class="g">${esc(b.date||'no date')} batch${b.tab?' · '+esc(b.tab):''} · ${num(itemsOf(b.p).filter(o=>(o.tab||'')===b.tab&&(o.date||'')===b.date).reduce((a,o)=>a+(parseFloat(o.weight)||0),0))} kg</span>
+    ${soon.map(b=>arow(b.p,`<span class="g">${esc(b.date||'no date')} batch${b.tab?' · '+esc(b.tab):''} · ${num(itemsOf(b.p).filter(o=>(o.tab||'')===b.tab&&(o.date||'')===b.date).reduce((a,o)=>a+(wtNum(o.weight)||0),0))} kg</span>
       <span class="tag ${b.when==='today'?'':'due'}" style="${b.when==='today'?'background:var(--alert)':''}">DUE ${b.when.toUpperCase()}</span>
       ${assignedSet().has(b.p)?'<span class="pill on">on a vehicle</span>':'<button class="tiny primary" data-ajump="'+esc(b.p)+'">Open in Orders</button>'}`)).join('')}</div>`:'';
   const overdueSection=overdue.length?`<div class="asec"><h4 class="bad">Past due date</h4>
@@ -2095,7 +2124,8 @@ const stockShortOpen=new Set(); // which dashboard stock-shortage rows are expan
 let ordQuery='';                // shared between the Dashboard and Add-orders copies of the list
 let ordTabs=new Set();          // empty = show every tab
 let ordFollowPaste=false;       // if on, ordTabs auto-syncs to whichever tab the paste box targets
-function parseNum(s){ if(s===null||s===undefined) return NaN; const m=String(s).match(/[\d.]+/); return m?parseFloat(m[0]):NaN; }
+function wtNum(s){ return parseFloat(String(s??'').replace(/(\d),(?=\d)/g,'$1')); } // a total weight; "1,250" = 1250
+function parseNum(s){ if(s===null||s===undefined) return NaN; const m=String(s).replace(/(\d),(?=\d)/g,'$1').match(/[\d.]+/); return m?parseFloat(m[0]):NaN; } // "1,250" and "1,25,000" read in full
 
 function paintOrders(){
   const sel=$('#pasteTab');
@@ -2158,7 +2188,7 @@ function paintOrders(){
   const html=order.map(tab=>{
     const tabMap=byTab[tab];
     const ps=[...tabMap.keys()];
-    const wt=ps.reduce((a,p)=>a+tabMap.get(p).reduce((s,o)=>s+(parseFloat(o.weight)||0),0),0);
+    const wt=ps.reduce((a,p)=>a+tabMap.get(p).reduce((s,o)=>s+(wtNum(o.weight)||0),0),0);
     // one card per party+date rather than per party: two batches placed on different days for
     // the same party stay visually separate here (so a stale-looking date doesn't hide a fresh
     // one), even though everywhere else — Build Plan, Final Plan, Stock Required — the party is
@@ -2184,7 +2214,7 @@ function paintOrders(){
           held?'<span class="tag hold">HOLD</span>':'', inLogTag(p), dueBadge(p,blockTab,d),
           hasDupLines(its)?'<span class="tag">DUPLICATE LINES</span>':''
         ].filter(Boolean).join(' ');
-        const blockWt=its.reduce((a,o)=>a+(parseFloat(o.weight)||0),0);
+        const blockWt=its.reduce((a,o)=>a+(wtNum(o.weight)||0),0);
         const weightWarn=o=>{
           const q=parseNum(o.qty),u=parseNum(o.unit),w=parseNum(o.weight);
           if(isNaN(q)||isNaN(u)||isNaN(w)) return '';
@@ -2519,7 +2549,7 @@ function paintVehPick(){
   $('#addVeh').disabled=!ts.length;
 }
 function paintPlan(){
-  paintVehPick();
+  paintVehPick(); paintPubBar();
   // #bays gets fully rebuilt on every add/remove, which wipes each lane's own
   // scroll position (and can nudge the window scroll too) - capture both here
   // and put them back after the new DOM is in place, so the person doesn't
@@ -2563,7 +2593,7 @@ function paintPlan(){
     const avail=availableForLane(l).length;
     const dupHere=l.stops.filter(s=>laneCountFor(s.party)>1).length;
     h+=`<div class="lane" data-jl="${l.id}">
-      <div class="lanehead"><div class="t"><h3>${esc(l.name)}</h3>
+      <div class="lanehead"><div class="t"><h3>${esc(l.name)}${l.from?` <span class="tag from" title="Came in from a plan published by ${esc(l.from.by||'another device')} at ${hhmm(l.from.at)} while you had unpublished changes">FROM ${esc((l.from.by||'OTHER').toUpperCase())} ${hhmm(l.from.at)}</span>`:''}</h3>
         <button class="tiny ghost" data-lrev="${l.id}" title="Flip the delivery order">⇅</button>
         <button class="tiny ghost" data-lanedel="${l.id}">×</button></div>
         <select class="lvtype" data-lvtype="${l.id}" title="Swap for a bigger or smaller vehicle — everything loaded stays">
@@ -2853,6 +2883,7 @@ function laneTitle(l){
 function laneLoadingStops(l){ return [...l.stops].reverse(); }
 
 function paintOut(){
+  paintPubBar();
   $('#tsvFormula').checked=!!(S.settings&&S.settings.tsvFormula);
   const {inR,outR}=poolParties();
   const left=inR.length+outR.length;
@@ -3898,7 +3929,7 @@ function paintReports(){
   body.innerHTML=`<div class="card"><div style="overflow-x:auto"><table class="rtable"><tr><th style="width:22px"></th>${head}</tr>${list.map(r=>{
     const open=repOpen.has(rk(r.k)), ps=new Set(r.ls.map(l=>l.party)).size;
     let cells;
-    if(mode==='party'){ const oh=itemsOf(r.k); const ohKg=oh.reduce((a,o)=>a+(parseFloat(o.weight)||0),0);
+    if(mode==='party'){ const oh=itemsOf(r.k); const ohKg=oh.reduce((a,o)=>a+(wtNum(o.weight)||0),0);
       cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${r.ls.length}</td><td class="n">${num(Math.round(r.kg))}</td><td class="mono">${esc(r.lastDate)}</td><td class="hint">${oh.length?`${oh.length} line${oh.length>1?'s':''} · ${num(Math.round(ohKg))} kg`:'—'}</td>`; }
     else if(mode==='vehicle'){ const w=r.tr.filter(t=>t.cap); const avg=w.length?Math.round(w.reduce((a,t)=>a+t.kg/t.cap,0)/w.length*100):null;
       cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="n">${avg==null?'—':avg+'%'}</td><td class="mono">${esc(r.lastDate)}</td>`; }
@@ -4105,7 +4136,7 @@ function paintUploads(){
   if(!list.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">No upload matches.</p></div>'; return; }
   $('#upBody').innerHTML=list.map(u=>{
     const parties=[...new Set(u.lines.map(l=>l.party))];
-    const wt=u.lines.reduce((a,l)=>a+(parseFloat(l.weight)||0),0);
+    const wt=u.lines.reduce((a,l)=>a+(wtNum(l.weight)||0),0);
     const stillHere=u.lines.filter(l=>S.orders.some(o=>o.id===l.id));
     const open=upOpen.has(u.id)||!!q;
     const lines=q?u.lines.filter(hit):u.lines;
@@ -4714,6 +4745,7 @@ function doAddLog(lanes){
                 stops:l.stops.map(st=>({party:st.party,urgent:!!st.urgent,loadQty:loadMapOf(st)}))}
     });
   });
+  if(planDirty()) publishPlan(); // logging is the moment the plan is final - everyone gets it
   return save().then(()=>{
     renderLog();renderGuard();
     flash(`Logged ${lanes.length} loading sheet${lanes.length>1?'s':''}`);
@@ -4731,6 +4763,85 @@ $('#addLog').onclick=()=>{
   doAddLog(lanes);
 };
 
+/* ======================= Publish plan (v1.7) =======================
+   Build Plan is a private draft on this device: moving cards, changing qty, adding vehicles
+   are saved here but not synced. "Publish plan" sends it to the sheet with a time and this
+   device's name (S.planPub). S.planSeen is the published plan this device last took in.
+   When a new published plan arrives:
+   - a device that hasn't changed its own plan, and didn't make it, just follows it;
+   - otherwise nothing of yours is replaced: the vehicles the other device changed or added are
+     put next to yours, marked FROM <device>, and parties now on two vehicles are flagged by the
+     usual "party also on another vehicle" warning. */
+const clone=v=>JSON.parse(JSON.stringify(v));
+function normPub(p){ if(!p||!Array.isArray(p.lanes)) return {lanes:[],by:'',at:0}; return {lanes:p.lanes,by:p.by||'',at:+p.at||0}; }
+function deviceName(){ try{ const n=localStorage.getItem('ld:device'); if(n) return n; }catch(e){} return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'Phone':'PC'; }
+const laneKey=l=>{ const c={...l}; delete c.from; return stable(c); };
+const lanesKey=ls=>(ls||[]).map(laneKey).join('\n');
+function planDirty(){ return lanesKey(S.plan.lanes)!==lanesKey((S.planSeen||{}).lanes); }
+let planNoticeFlash='';
+function publishPlan(){
+  S.plan.lanes.forEach(l=>delete l.from);
+  const at=Date.now(), lanes=clone(S.plan.lanes);
+  S.planPub={lanes,by:deviceName(),at};
+  S.planSeen={at,lanes:clone(lanes)}; S.planMine=at; S.planNotice=null;
+}
+function takePublishedPlan(raw){
+  if(raw===undefined) return;
+  const pub=normPub(raw); S.planPub=pub;
+  const seen=S.planSeen;
+  if(!seen){ // first time on this device (new device, or "use the sheet's data")
+    if(!S.plan.lanes.length) S.plan.lanes=clone(pub.lanes);
+    S.planSeen={at:pub.at,lanes:clone(pub.lanes)}; return;
+  }
+  if(seen.at===pub.at && lanesKey(seen.lanes)===lanesKey(pub.lanes)) return; // nothing new published
+  const untouched=lanesKey(S.plan.lanes)===lanesKey(seen.lanes);
+  if(untouched && seen.at!==S.planMine){             // a watching device: just follow it
+    S.plan.lanes=clone(pub.lanes); S.planSeen={at:pub.at,lanes:clone(pub.lanes)};
+    if(pub.lanes.length) planNoticeFlash=`Plan published by ${pub.by||'another device'} at ${hhmm(pub.at)} is now on screen`;
+    return;
+  }
+  // you are planning (or made the plan on screen): keep yours, add what they changed
+  const before=new Map((seen.lanes||[]).map(l=>[l.id,laneKey(l)]));
+  const mine=new Map(S.plan.lanes.map(l=>[l.id,laneKey(l)]));
+  let n=0;
+  pub.lanes.forEach(l=>{
+    const k=laneKey(l);
+    if(before.get(l.id)===k || mine.get(l.id)===k) return;   // not changed by them, or you already have it
+    const c=clone(l); delete c.from;
+    if(mine.has(c.id)||S.plan.lanes.some(x=>x.id===c.id)){ c.id=uid('L'); }
+    if(S.plan.lanes.some(x=>x.name===c.name)) c.name=freeLaneName(c.name,null);
+    c.from={by:pub.by||'',at:pub.at}; S.plan.lanes.push(c); n++;
+  });
+  S.planSeen={at:pub.at,lanes:clone(pub.lanes)};
+  if(n){ S.planNotice={by:pub.by||'',at:pub.at,n};
+    planNoticeFlash=`${pub.by||'Another device'} published a plan — ${n} vehicle${n>1?'s':''} added next to yours (Build Plan)`; }
+}
+function whenTxt(at){ if(!at) return ''; const d=new Date(at), t=hhmm(at);
+  const dd=String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();
+  return dd===today10()?t:t+' on '+dd; }
+function paintPubBar(){
+  const pub=S.planPub||normPub(null), dirtyP=planDirty(), nt=S.planNotice;
+  const status=dirtyP
+    ? `<div class="pubrow draft"><span class="pst">● <b>Plan not published</b> — only this device sees these changes.${pub.at?` Last published ${whenTxt(pub.at)}${pub.by?' · '+esc(pub.by):''}.`:''}</span>
+        <button class="tiny primary" data-pub="go">Publish plan</button>
+        ${pub.at||pub.lanes.length?'<button class="tiny ghost" data-pub="drop" title="Throw away the changes on this device and show the plan everyone has">Use the published plan</button>':''}</div>`
+    : `<div class="pubrow"><span class="pst">${pub.at?`✓ Published ${whenTxt(pub.at)}${pub.by?' · <b>'+esc(pub.by)+'</b>':''} — every device has this plan.`:(S.plan.lanes.length?'✓ Same as the shared plan.':'No plan yet.')}</span></div>`;
+  const note=nt?`<div class="pubnote">⚠ <b>${esc(nt.by||'Another device')}</b> published a plan at ${whenTxt(nt.at)}. Its ${nt.n} changed vehicle${nt.n>1?'s were':' was'} added next to yours, marked <b>FROM ${esc((nt.by||'OTHER').toUpperCase())}</b>; a party now on two vehicles shows "also on another vehicle". Remove what you don't need with ×, then publish.
+      <button class="tiny" data-pub="ok" style="margin-left:6px">OK</button></div>`:'';
+  $$('[data-pubbar]').forEach(el=>{ el.innerHTML=status+note;
+    el.querySelectorAll('[data-pub]').forEach(b=>b.onclick=async()=>{
+      if(b.dataset.pub==='ok'){ S.planNotice=null; await save(); renderPlan(); return; }
+      if(b.dataset.pub==='drop'){ armConfirm(b,'Yes, drop my changes',async()=>{
+          S.plan.lanes=clone(pub.lanes); S.planSeen={at:pub.at,lanes:clone(pub.lanes)}; S.planNotice=null;
+          await save(); renderPlan(); flash('Showing the published plan'); }); return; }
+      publishPlan(); await save(); renderPlan(); flash('Plan published to every device'); syncNow('manual');
+    }); });
+}
+function showPlanNotice(){ if(planNoticeFlash){ flash(planNoticeFlash); planNoticeFlash=''; } }
+$('#devName').value=(()=>{ try{ return localStorage.getItem('ld:device')||''; }catch(e){ return ''; } })();
+$('#devName').placeholder='e.g. Paul phone ('+deviceName()+')';
+$('#devName').onchange=()=>{ const v=$('#devName').value.trim().slice(0,24); try{ v?localStorage.setItem('ld:device',v):localStorage.removeItem('ld:device'); }catch(e){} flash('Device name saved'); };
+
 /* ======================= Google Sheet sync (v1.1) =======================
    The sheet (through its Apps Script web app) is the shared store. This device keeps working
    on its own copy and syncs a couple of seconds after each change, when it's opened, when you
@@ -4746,7 +4857,7 @@ const SYNC_CFG_KEY='lpb:synccfg', SYNC_BASE_KEY='lpb:syncbase';
 // Your sheet's web app URL, pre-filled so each device only needs the key. The key is never stored in this file.
 const DEFAULT_SYNC_URL='https://script.google.com/macros/s/AKfycbyvwF9v2Y3ZOIU5HvYB5ha8Cwc-GQKC_nYxBmXRQO0Oa2Y69t1eId20-dnuzkFRJJG_LQ/exec';
 let syncCfg=null, syncBase=null, syncFirst=null;
-let syncBusy=false, syncAgain=false, syncTimer=null, lastKeyAt=0;
+let syncBusy=false, syncAgain=false, syncTimer=null, lastKeyAt=0, syncStarted=0, syncAbort=null;
 let syncState={s:'off',at:0,msg:''};
 document.addEventListener('keydown',()=>{ lastKeyAt=Date.now(); },true);
 
@@ -4787,7 +4898,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:S.log,plan:S.plan,uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',
+  const data={log:S.log,plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -4796,6 +4907,12 @@ function bare(m){ if(!m) return m; const c=JSON.parse(JSON.stringify(m)); (c.ord
 
 /* 3-way merge helpers: b = base, l = this device, r = sheet */
 function m3(b,l,r){ if(same(l,b)) return r; if(same(r,b)) return l; return l; }
+const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
+// a record changed on both sides merges field by field (place here, route there - both kept)
+function m3rec(b,l,r){ if(isObj(l)&&isObj(r)&&!same(l,b)&&!same(r,b)) return m3map(isObj(b)?b:{},l,r); return m3(b,l,r); }
+function m3recs(b,l,r){ b=b||{}; l=l||{}; r=r||{}; const out={};
+  new Set([...Object.keys(r),...Object.keys(l),...Object.keys(b)]).forEach(k=>{ const v=m3rec(b[k],l[k],r[k]); if(v!==undefined) out[k]=v; });
+  return out; }
 function m3map(b,l,r){ b=b||{}; l=l||{}; r=r||{}; const out={};
   new Set([...Object.keys(r),...Object.keys(l),...Object.keys(b)]).forEach(k=>{ const v=m3(b[k],l[k],r[k]); if(v!==undefined) out[k]=v; });
   return out; }
@@ -4825,13 +4942,15 @@ function mergeModels(b,l,r){
   const data={};
   new Set([...Object.keys(ld),...Object.keys(rd)]).forEach(k=>{
     if(k==='log'||k==='uploads') data[k]=m3ids(bd[k],ld[k],rd[k]);
-    else if(k==='plan'){ const bp=bd.plan||{},lp=ld.plan||{},rp=rd.plan||{};
-      data.plan={...m3map(bp,lp,rp), lanes:m3ids(bp.lanes,lp.lanes,rp.lanes)}; }
-    else if(k==='partyExtra'||k==='orderMeta'||k==='dupOk'||k==='finalNotes'||k==='stock'||k==='stockOut'||k==='stockMeta') data[k]=m3map(bd[k],ld[k],rd[k]);
+    else if(k==='plan'){ // the published plan moves as one piece; if both published, the newer one wins
+      const bp=bd.plan, lp=ld.plan, rp=rd.plan;
+      data.plan=same(lp,bp)?rp:same(rp,bp)?lp:(((rp&&rp.at)||0)>((lp&&lp.at)||0)?rp:lp); }
+    else if(k==='partyExtra') data[k]=m3recs(bd[k],ld[k],rd[k]);
+    else if(k==='orderMeta'||k==='dupOk'||k==='finalNotes'||k==='stock'||k==='stockOut'||k==='stockMeta') data[k]=m3map(bd[k],ld[k],rd[k]);
     else if(k==='seq'||k==='upSeq') data[k]=Math.max(+ld[k]||0,+rd[k]||0);
     else { const v=m3(bd[k],ld[k],rd[k]); if(v!==undefined) data[k]=v; }
   });
-  return {model:{orders,parties:m3map(b.parties,l.parties,r.parties),masters,data},fromSheet};
+  return {model:{orders,parties:m3recs(b.parties,l.parties,r.parties),masters,data},fromSheet};
 }
 
 // put a (merged or sheet) model into this device's data
@@ -4853,7 +4972,8 @@ function applyModel(m,fromSheet){
   S.combos=(ms.combos||[]).map(c=>{ const was=oldC.find(o=>(o.name||'')===(c.name||'')&&same(o.routes,c.routes));
     return {id:was?was.id:uid('c'),name:c.name||'',routes:[...c.routes],xroutes:[...(c.xroutes||[])]}; });
   S.settings={...(ms.settings||{})}; normMasters(true);
-  ['log','plan','uploads','stock','stockOut','stockMeta','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+  ['log','uploads','stock','stockOut','stockMeta','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+  takePublishedPlan(d.plan); // Build Plan is this device's own draft - see publishPlan()
   S.summaryPhone=d.summaryPhone||'';
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
@@ -4871,10 +4991,14 @@ function applyModel(m,fromSheet){
 }
 
 async function syncCall(action,payload){
-  let res;
-  try{ res=await fetch(syncCfg.url,{method:'POST',redirect:'follow',body:JSON.stringify({key:syncCfg.key,action,...(payload||{})})}); }
-  catch(e){ throw new Error('Can\'t reach the sheet — offline? Will retry.'); }
-  const txt=await res.text(); let j;
+  // a request that never answers (phone went to sleep, weak signal) must not keep the app "syncing" forever
+  const ac=new AbortController(); syncAbort=ac; let timedOut=false;
+  const tm=setTimeout(()=>{ timedOut=true; ac.abort(); },action==='push'?60000:30000);
+  let res, txt;
+  try{ res=await fetch(syncCfg.url,{method:'POST',redirect:'follow',signal:ac.signal,body:JSON.stringify({key:syncCfg.key,action,...(payload||{})})}); txt=await res.text(); }
+  catch(e){ throw new Error(timedOut||ac.signal.aborted?'The sheet is slow to answer — will retry shortly.':'Can\'t reach the sheet — offline? Will retry.'); }
+  finally{ clearTimeout(tm); if(syncAbort===ac) syncAbort=null; }
+  let j;
   try{ j=JSON.parse(txt); }catch(e){ throw new Error('That URL did not answer like the Logistics Desk script. Check it ends in /exec and is deployed for "Anyone".'); }
   if(!j.ok&&!j.conflict) throw new Error(j.error||'Sync failed');
   return j;
@@ -4892,18 +5016,25 @@ function paintSyncBadge(el){
   setBadge(el,'clean','cloud',t?'Sheet synced · '+t:'Sheet',t||'Sheet',(t?'Last synced with the Google Sheet at '+t:'Google Sheet')+' — tap to sync now');
   if(was.indexOf('busy')>=0 && st.at) pulseBadge(el); // a little flash each time a sync lands
 }
-function scheduleSync(ms){ clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow('timer'),ms); }
+function scheduleSync(ms,why){ clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(why||'timer'),ms); }
 // don't pull new data in while someone is typing - it would redraw the screen under them
 function isEditingNow(){ return Date.now()-lastKeyAt<4000 || !!document.querySelector('.qin'); }
 
 async function syncNow(why){
   if(!syncCfg||syncFirst) return;
-  if(syncBusy){ syncAgain=true; return; }
-  if(why!=='manual'&&isEditingNow()){ scheduleSync(3000); return; }
+  if(syncBusy){
+    if(Date.now()-syncStarted>90000){ if(syncAbort) syncAbort.abort(); syncBusy=false; } // stuck: let go and start over
+    else{ syncAgain=true; return; }
+  }
+  if(why!=='manual'&&isEditingNow()){ scheduleSync(3000,why); return; }
   if(dirty&&!saving) await flushSave();
-  syncBusy=true; setSyncState('busy');
+  syncBusy=true; syncStarted=Date.now();
   try{
     let local=toModel();
+    // a save that changed nothing the sheet keeps (moving cards in Build Plan, etc.) needs no call at all
+    if(why==='timer'&&syncBase&&!syncFirst&&same(local,syncBase.model)){ if(syncState.s==='busy') setSyncState('ok'); return; }
+    // the 30-second background check stays silent unless something changes (no spinning badge all day)
+    if(!(why==='poll'&&syncBase&&same(local,syncBase.model))) setSyncState('busy');
     if(!syncBase) await firstSync(local);
     else if(!same(local,syncBase.model)) await pushMerging(local);
     else{
@@ -4911,8 +5042,8 @@ async function syncNow(why){
       if(!r.same) await adopt(r.version,r.model,local);
     }
     setSyncState('ok');
-  }catch(e){ setSyncState('err',e.message); scheduleSync(30000); }
-  finally{ syncBusy=false; if(syncAgain){ syncAgain=false; scheduleSync(400); } }
+  }catch(e){ setSyncState('err',e.message); scheduleSync(15000,'retry'); }
+  finally{ syncBusy=false; if(syncAgain){ syncAgain=false; scheduleSync(400,'again'); } }
 }
 async function pushMerging(local){
   for(let i=0;i<3;i++){
@@ -4930,7 +5061,7 @@ async function adopt(version,remote,local){
   syncBase={version,model:bare(remote)};
   await kvSet(SYNC_BASE_KEY,syncBase);
   undoMute=true; try{ await save(); } finally{ undoMute=false; }
-  flushSave(); renderAll();
+  flushSave(); renderAll(); showPlanNotice();
 }
 function localHasData(){ return S.orders.length||Object.keys(S.parties).length||S.log.length||S.routes.length||(S.vehTypes||[]).length; }
 async function firstSync(local){
@@ -4995,13 +5126,29 @@ $('#syncConnect').onclick=async()=>{
   }catch(e){ syncCfg=prev; $('#syncStatus').innerHTML=`<span style="color:var(--alert);font-weight:700">${esc(e.message)}</span>`; }
 };
 $('#syncNowBtn').onclick=()=>syncNow('manual');
+$('#forcePush').onclick=()=>{
+  if(!syncCfg){ flash('This device is not connected to a sheet'); return; }
+  armConfirm($('#forcePush'),'Yes, overwrite the sheet',async()=>{
+    if(syncBusy){ flash('A sync is running — try again in a moment'); return; }
+    syncBusy=true; syncStarted=Date.now(); setSyncState('busy');
+    try{ if(dirty) await flushSave(); const local=toModel();
+      const p=await syncCall('push',{baseVersion:'',model:local,force:true});
+      syncBase={version:p.version,model:local}; syncFirst=null; await kvSet(SYNC_BASE_KEY,syncBase);
+      setSyncState('ok'); flash('The sheet now holds this device\'s data'); }
+    catch(e){ setSyncState('err',e.message); }
+    finally{ syncBusy=false; }
+  });
+};
 $('#syncOff').onclick=()=>armConfirm($('#syncOff'),'Yes, disconnect',async()=>{
   syncCfg=null; syncBase=null; syncFirst=null; await kvSet(SYNC_CFG_KEY,null); await kvSet(SYNC_BASE_KEY,null);
   setSyncState('off'); updateSyncBadge(); flash('Disconnected — the data stays on this device and in the sheet');
 });
 $('#syncBadge').onclick=()=>{ if(syncCfg){ if(syncFirst) gotoView('routes'); else syncNow('manual'); } };
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&syncCfg) syncNow('focus'); });
-window.addEventListener('online',()=>{ if(syncCfg) syncNow('online'); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&syncCfg){
+  // coming back to the app: a request that was running while the phone slept is dead - drop it and sync afresh
+  if(syncBusy&&syncAbort&&Date.now()-syncStarted>12000) syncAbort.abort();
+  syncNow('focus'); } });
+window.addEventListener('online',()=>{ if(syncCfg){ if(syncBusy&&syncAbort) syncAbort.abort(); syncNow('online'); } });
 setInterval(()=>{ if(syncCfg&&document.visibilityState==='visible'&&!syncBusy) syncNow('poll'); },30000); // a check that finds nothing new is quick (the sheet answers from memory)
 async function initSync(){
   syncCfg=await kvGet(SYNC_CFG_KEY); syncBase=await kvGet(SYNC_BASE_KEY);
