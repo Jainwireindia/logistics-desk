@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b7a45">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Logistics Desk">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Logistics Desk — Jain Wire Netting Corporation</title>
 <style>
 :root{
@@ -321,6 +329,8 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .pill.suggest{background:#fff3da;border-color:var(--amber);color:#a5670a;font-weight:600}
 .pill.click{cursor:pointer}
 .tag{font-size:10px;padding:1px 6px;border-radius:2px;background:var(--alert);color:#fff;font-weight:700}
+.remedit{padding:0 0 4px!important;border-bottom:none!important}
+.remedit input{font-size:11.5px;padding:2px 6px;background:#fffaf0;border-color:#f0d58f;color:#7a4d00;max-width:420px}
 .holdform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:#fff6e6;border-top:1px solid #f0d58f}
 .holdform .hchips .pill{font-size:10.5px}
 .holdnote{padding:4px 10px;font-size:12px;color:#7a4d00;background:#fff8ea;border-top:1px solid #f3e1b5}
@@ -749,6 +759,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
   <div class="card noprint">
     <div class="row">
       <div style="flex:0 0 auto"><button class="primary" id="copyTsv">Copy for Excel</button></div>
+      <div style="flex:0 0 auto"><button id="dlXlsx">Download Excel</button></div>
       <div style="flex:0 0 auto"><button id="dlCsv">Download CSV</button></div>
       <div style="flex:0 0 auto;padding-bottom:6px"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--ink);margin:0"
         title="Total weight is pasted as qty × unit wt, so editing the qty in Excel updates the weight"><input type="checkbox" id="tsvFormula" style="width:auto"> Weight as formula</label></div>
@@ -770,6 +781,12 @@ tr.grp td{background:var(--panel2);font-weight:600}
       stayed on the truck — a whole party, or just the odd item's balance — then apply to update Orders in one go.
       Nothing changes until you press Apply and confirm, and a resolved entry can be reopened to undo it.
     </p>
+    <div class="row sumrow" style="margin-bottom:10px;align-items:flex-end">
+      <div style="flex:0 0 150px"><label>Day summary for</label><input id="sumDate" placeholder="dd-mm-yyyy"></div>
+      <div style="flex:0 0 190px"><label>Send to (you / office)</label><input id="sumPhone" placeholder="WhatsApp number" inputmode="tel"></div>
+      <div style="flex:0 0 auto"><button class="tiny wabtn" id="sumSend" style="padding:6px 12px">WhatsApp day summary</button></div>
+      <div style="flex:0 0 auto"><button class="tiny ghost" id="sumCopy" style="padding:6px 12px">Copy</button></div>
+    </div>
     <div class="row">
       <div><label>Find by vehicle, date, or title</label><input id="logSearch" placeholder="Type to filter"></div>
       <div style="flex:0 0 auto"><label>Show</label>
@@ -992,7 +1009,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.5', APP_BUILD='04-10-2026';
+const APP_VERSION='1.6', APP_BUILD='04-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1498,6 +1515,28 @@ function driverPhone(name){
   return d;
 }
 let waDriverPick='';
+/* End-of-day summary: every vehicle logged on that date (confirmed or not), with its parties
+   and kg, totals on top. Built from the same lines as the reports. */
+function waNumber(raw){ let d=String(raw||'').replace(/\D/g,''); if(d.length===10) d='91'+d; if(d.length===11&&d[0]==='0') d='91'+d.slice(1); return d; }
+function daySummaryText(day){
+  const lines=reportLines().filter(l=>l.date===day);
+  const trips=tripsOf(lines);
+  const L=['*JAIN WIRE NETTING CORPORATION — EKM*','*Dispatch summary '+day+'*'];
+  if(!trips.length){ L.push('No vehicles logged for this day.'); return L.join('\n'); }
+  const kg=lines.reduce((a,l)=>a+l.weight,0), ps=new Set(lines.map(l=>l.party)).size;
+  L.push(`${trips.length} vehicle${trips.length>1?'s':''} · ${ps} part${ps>1?'ies':'y'} · ${num(Math.round(kg))} kg`);
+  trips.forEach((t,i)=>{
+    const g=t.g, pct=t.cap?Math.round(t.kg/t.cap*100):null;
+    L.push('');
+    L.push(`${i+1}. *${g.vehicleNo||g.vehicle||'Vehicle'}*${g.vehicleNo&&g.vehicle?' ('+g.vehicle+')':''}${g.driver?' · '+g.driver:''}`);
+    L.push(`   ${t.parties.size} part${t.parties.size>1?'ies':'y'} · ${num(Math.round(t.kg))} kg${pct!=null?' ('+pct+'%)':''}${t.conf?'':' · not confirmed yet'}`);
+    L.push('   '+[...t.parties].join(', '));
+  });
+  const open=trips.filter(t=>!t.conf).length;
+  if(open){ L.push(''); L.push(`${open} vehicle${open>1?'s':''} not confirmed in the Plan log yet.`); }
+  return L.join('\n');
+}
+function sumDay(){ const v=$('#sumDate').value.trim(); const iso=parseDMY(v); return iso?isoToDMY(iso):today10(); }
 // one party's location, for Parties & map → WhatsApp
 function partyLocText(p){
   const r=S.parties[p]||{}, where=[r.place,r.pincode].filter(Boolean).join(' ');
@@ -1607,6 +1646,18 @@ function overdueBatches(){
     if(iso&&isPast(iso)) out.push({p:o.party,tab:o.tab||'',date:o.date||'',due:iso});
   });
   return out;
+}
+// batches due today or tomorrow (not yet past) - shown on the Dashboard a day ahead
+function dueSoonBatches(){
+  const out=[], seen=new Set(), t=new Date(); t.setHours(0,0,0,0);
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const today=iso(t), tm=new Date(t); tm.setDate(tm.getDate()+1); const tomorrow=iso(tm);
+  S.orders.forEach(o=>{
+    const k=o.party+'\u0000'+batchKey(o.tab,o.date); if(seen.has(k)) return; seen.add(k);
+    const due=dueOf(o.party,o.tab,o.date);
+    if(due===today||due===tomorrow) out.push({p:o.party,tab:o.tab||'',date:o.date||'',due,when:due===today?'today':'tomorrow'});
+  });
+  return out.sort((a,b)=>a.due.localeCompare(b.due)||a.p.localeCompare(b.p));
 }
 function today10(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
 /* Native <input type="date"> has a well-known quirk in embedded/iframe contexts: typing the
@@ -1881,6 +1932,11 @@ function paintDash(){
              <button class="tiny primary" data-alog="${esc(p)}">Open Plan log</button>`
            :`<button class="tiny ghost" data-ajump="${esc(p)}">Open in Orders</button>`}`);
     }).join('')}</div>`:'';
+  const soon=dueSoonBatches();
+  const soonSection=soon.length?`<div class="asec"><h4 class="warn">Due today / tomorrow</h4>
+    ${soon.map(b=>arow(b.p,`<span class="g">${esc(b.date||'no date')} batch${b.tab?' · '+esc(b.tab):''} · ${num(itemsOf(b.p).filter(o=>(o.tab||'')===b.tab&&(o.date||'')===b.date).reduce((a,o)=>a+(parseFloat(o.weight)||0),0))} kg</span>
+      <span class="tag ${b.when==='today'?'':'due'}" style="${b.when==='today'?'background:var(--alert)':''}">DUE ${b.when.toUpperCase()}</span>
+      ${assignedSet().has(b.p)?'<span class="pill on">on a vehicle</span>':'<button class="tiny primary" data-ajump="'+esc(b.p)+'">Open in Orders</button>'}`)).join('')}</div>`:'';
   const overdueSection=overdue.length?`<div class="asec"><h4 class="bad">Past due date</h4>
     ${overdue.map((b,i)=>arow(b.p,`<span class="g">${esc(b.date||'no date')} batch${b.tab?' · '+esc(b.tab):''}</span>
       <input data-adue="${i}" value="${esc(isoToDMY(b.due))}" placeholder="dd-mm-yyyy" style="width:100px">
@@ -1953,10 +2009,10 @@ function paintDash(){
 
   ${shortageSection}
 
-  ${(dupPs.length||noRoute.length||noPlace.length||overdue.length||aging5.length||lapsed.length)?`<div class="card">
+  ${(dupPs.length||noRoute.length||noPlace.length||overdue.length||aging5.length||lapsed.length||soon.length)?`<div class="card">
     <h2>Needs your attention</h2>
     <p class="hint" style="margin-top:0">Fixed right here — no need to go find the party elsewhere.</p>
-    ${lapsedSection}${dupSection}${agingSection}${overdueSection}${routeSection}${placeSection}
+    ${overdueSection}${soonSection}${lapsedSection}${dupSection}${agingSection}${routeSection}${placeSection}
   </div>`:''}
 
   <div class="card">
@@ -2146,7 +2202,8 @@ function paintOrders(){
               <div class="n"><input data-eid="${o.id}" data-efield="qty" value="${esc(o.qty)}" style="text-align:right"></div>
               <div class="n"><input data-eid="${o.id}" data-efield="unit" value="${esc(o.unit)}" style="text-align:right"></div>
               <div class="n"><input data-eid="${o.id}" data-efield="weight" value="${esc(o.weight)}" style="text-align:right"></div>
-              <div><button class="tiny ghost" data-edelitem="${o.id}">×</button></div>${dupWarn(o)}${weightWarn(o)}`).join('')
+              <div><button class="tiny ghost" data-edelitem="${o.id}">×</button></div>
+              <div class="full remedit"><input data-eid="${o.id}" data-efield="remark" value="${esc(o.remark||'')}" placeholder="remark (column G) — e.g. tomorrow need"></div>${dupWarn(o)}${weightWarn(o)}`).join('')
               + `<div class="full" style="text-align:center;border-bottom:none"><button class="tiny ghost" data-eadd="${esc(p)}" data-eadddate="${esc(d)}" data-eaddtab="${esc(blockTab)}">+ Add item line</button></div>`
           : its.map(o=>`
               <div>${esc(o.item)}${remHtml(o)}</div><div class="n">${esc(o.qty)}</div>
@@ -2909,6 +2966,95 @@ function weightCell(o){
   const q=parseQty(o.qty), u=String(o.unit??'').trim();
   if(q.u!==''||!(q.n>0)||!/^\d+(\.\d+)?$/.test(u)||String(o.qty).trim()!==String(q.n)) return o.weight;
   return '=INDIRECT("RC[-2]",FALSE)*INDIRECT("RC[-1]",FALSE)';
+}
+/* ---------- Excel (.xlsx) export ----------
+   Same rows as Copy for Excel, written as a real .xlsx with no library: rows 1-2 and column A
+   left empty, each plan as one block with thin borders on every cell, party rows (and the plan
+   title) in bold, one blank row between plans. Total wt is =D*E when qty and unit wt are
+   plain numbers and "Weight as formula" is on. */
+function laneRows(l){
+  const stops=laneLoadingStops(l), out=[];
+  out.push({bold:true,c:['',laneTitle(l),'','','']});
+  stops.forEach((s,i)=>{
+    out.push({bold:true,c:[i+1,s.party,'','','']});
+    mergedItems(stopLines(s)).forEach(o=>{
+      const q=parseQty(o.qty), u=String(o.unit??'').trim();
+      const f=S.settings&&S.settings.tsvFormula&&q.u===''&&q.n>0&&/^\d+(\.\d+)?$/.test(u)&&String(o.qty).trim()===String(q.n);
+      out.push({c:['',itemWithNote(o.item,o.ids),o.qty,o.unit,o.weight],f});
+    });
+    if(i<stops.length-1) out.push({c:['','','','','']});
+  });
+  return out;
+}
+const CRC_T=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(b){ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c=CRC_T[(c^b[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function zipStore(files){ // [{name, text}] -> Uint8Array (stored, no compression)
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  const d=new Date(), dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(), tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  files.forEach(f=>{
+    const name=enc.encode(f.name), data=enc.encode(f.text), crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true);
+    h.setUint16(10,tm,true); h.setUint16(12,dt,true); h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true);
+    h.setUint16(26,name.length,true); h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(10,0,true);
+    c.setUint16(12,tm,true); c.setUint16(14,dt,true); c.setUint32(16,crc,true); c.setUint32(20,data.length,true); c.setUint32(24,data.length,true);
+    c.setUint16(28,name.length,true); c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),name);
+    off+=30+name.length+data.length;
+  });
+  const cenLen=cen.reduce((a,x)=>a+x.length,0), e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cenLen,true); e.setUint32(16,off,true);
+  const all=[...parts,...cen,new Uint8Array(e.buffer)], out=new Uint8Array(all.reduce((a,x)=>a+x.length,0));
+  let p=0; all.forEach(x=>{ out.set(x,p); p+=x.length; }); return out;
+}
+function xmlEsc(v){ return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,''); }
+function buildPlanXlsx(lanes){
+  const COLS='ABCDEF', rows=[]; let r=3; // rows 1-2 empty
+  lanes.forEach((l,li)=>{ laneRows(l).forEach(x=>rows.push({...x,r:r++})); if(li<lanes.length-1) r++; });
+  const cell=(col,row,v,style,f)=>{
+    const ref=col+row, sAttr=` s="${style}"`;
+    if(f) return `<c r="${ref}"${sAttr}><f>D${row}*E${row}</f><v>${xmlEsc(v)}</v></c>`;
+    if(v===''||v==null) return `<c r="${ref}"${sAttr}/>`;
+    const t=String(v).trim();
+    if(/^-?\d+(\.\d+)?$/.test(t)) return `<c r="${ref}"${sAttr}><v>${t}</v></c>`;
+    return `<c r="${ref}"${sAttr} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+  };
+  const sheetRows=rows.map(x=>`<row r="${x.r}">${x.c.map((v,i)=>cell(COLS[i+1],x.r,v,x.bold?2:1,i===4&&x.f)).join('')}</row>`).join('');
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="1"/></sheetViews>
+<cols><col min="1" max="1" width="3" customWidth="1"/><col min="2" max="2" width="6" customWidth="1"/><col min="3" max="3" width="48" customWidth="1"/><col min="4" max="4" width="10" customWidth="1"/><col min="5" max="5" width="10" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/></cols>
+<sheetData>${sheetRows}</sheetData><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/></worksheet>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="2"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts>
+<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/></cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const files=[
+    {name:'[Content_Types].xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+    {name:'_rels/.rels',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {name:'xl/workbook.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets><sheet name="Loading plan" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`},
+    {name:'xl/_rels/workbook.xml.rels',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name:'xl/styles.xml',text:styles},
+    {name:'xl/worksheets/sheet1.xml',text:sheet}];
+  return zipStore(files);
+}
+async function exportPlanXlsx(lanes){
+  lanes=(lanes||S.plan.lanes).filter(l=>l.stops.length);
+  if(!lanes.length){ flash('Nothing on the plan to export'); return; }
+  const bytes=buildPlanXlsx(lanes);
+  const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const ok=await saveFile('loading-plan-'+today10()+'.xlsx',blob,blob.type);
+  if(ok) flash(`Excel file saved — ${lanes.length} plan${lanes.length>1?'s':''}`);
 }
 function toTsv(){ return S.plan.lanes.map(laneTsv).join('\n\n'); }
 async function copy(txt,label){
@@ -3757,10 +3903,12 @@ function paintReports(){
     else if(mode==='vehicle'){ const w=r.tr.filter(t=>t.cap); const avg=w.length?Math.round(w.reduce((a,t)=>a+t.kg/t.cap,0)/w.length*100):null;
       cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="n">${avg==null?'—':avg+'%'}</td><td class="mono">${esc(r.lastDate)}</td>`; }
     else if(mode==='driver'){ cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="mono">${esc(r.lastDate)}</td>`; }
-    else cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="hint">${esc([...new Set(r.ls.map(l=>l.driver).filter(Boolean))].join(', ')||'—')}</td>`;
+    else cells=`<td><b>${esc(r.k)}</b> <button class="tiny wabtn" data-dsum="${esc(r.k)}" title="WhatsApp this day's summary">WA</button></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="hint">${esc([...new Set(r.ls.map(l=>l.driver).filter(Boolean))].join(', ')||'—')}</td>`;
     return `<tr class="rg" data-rk="${esc(rk(r.k))}"><td><span style="display:inline-block;${open?'transform:rotate(90deg)':''}">►</span></td>${cells}</tr>`
       +(open?`<tr class="rdet"><td colspan="7">${r.tr.map(t=>tripHtml(t,mode!=='party')).join('')}</td></tr>`:'');
   }).join('')}</table></div></div>`;
+  body.querySelectorAll('[data-dsum]').forEach(b=>b.onclick=e=>{ e.stopPropagation();
+    window.open('https://wa.me/'+waNumber(S.summaryPhone)+'?text='+encodeURIComponent(daySummaryText(b.dataset.dsum)),'_blank','noopener'); });
   body.querySelectorAll('[data-rk]').forEach(tr=>tr.onclick=()=>{ const k=tr.dataset.rk; repOpen.has(k)?repOpen.delete(k):repOpen.add(k); paintReports(); });
 }
 ['repPeriod','repUnconf'].forEach(id=>$('#'+id).onchange=paintReports);
@@ -3851,6 +3999,11 @@ $$('nav button[data-v]').forEach(b=>b.onclick=()=>{ setMenu(false); gotoView(b.d
 // every place that switches tabs goes through here, so currentView and the header label stay honest
 /* Prev / Next through the four Logistics steps, at the right end of the bar under the header */
 const STEPS=[['orders','Add orders'],['plan','Build plan'],['out','Final plan'],['log','Plan log']];
+function paintSumFields(){
+  const d=$('#sumDate'), p=$('#sumPhone'); if(!d) return;
+  if(!d.value) d.value=today10();
+  if(document.activeElement!==p) p.value=S.summaryPhone||'';
+}
 function paintStepNav(v){
   const box=$('#stepNav'); if(!box) return;
   const i=STEPS.findIndex(x=>x[0]===v);
@@ -3865,6 +4018,7 @@ function paintStepNav(v){
 function gotoView(v){
   if(currentView==='admin'&&v!=='admin') adminOpenUntil=0; // leaving Admin locks it again
   if(v==='admin') stale.add('admin');
+  if(v==='log') setTimeout(paintSumFields,0);
   currentView=v;
   $$('nav button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   $$('.view').forEach(sec=>sec.classList.toggle('on',sec.id==='v-'+(REPORT_VIEWS[v]?'reports':v)));
@@ -4497,6 +4651,15 @@ document.addEventListener('click',async e=>{
 });
 $('#tsvFormula').onchange=async()=>{ S.settings.tsvFormula=$('#tsvFormula').checked; await save(); };
 $('#copyTsv').onclick=()=>copy(toTsv(),'Copied — paste into Excel');
+maskDateInput($('#sumDate'));
+$('#sumPhone').onchange=async()=>{ S.summaryPhone=$('#sumPhone').value.replace(/[^\d+]/g,''); $('#sumPhone').value=S.summaryPhone; await save(); };
+$('#sumSend').onclick=()=>{
+  const ph=waNumber(S.summaryPhone||$('#sumPhone').value);
+  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(daySummaryText(sumDay())),'_blank','noopener');
+  if(!ph) flash('No number saved — pick the chat in WhatsApp');
+};
+$('#sumCopy').onclick=()=>copy(daySummaryText(sumDay()),'Day summary copied');
+$('#dlXlsx').onclick=()=>exportPlanXlsx();
 $('#dlCsv').onclick=async()=>{
   const csv=toTsv().split('\n').map(l=>l.split('\t').map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   await saveFile('loading-plan-'+today10()+'.csv',csv,'text/csv');
@@ -4624,7 +4787,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:S.log,plan:S.plan,uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',
+  const data={log:S.log,plan:S.plan,uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -4691,6 +4854,7 @@ function applyModel(m,fromSheet){
     return {id:was?was.id:uid('c'),name:c.name||'',routes:[...c.routes],xroutes:[...(c.xroutes||[])]}; });
   S.settings={...(ms.settings||{})}; normMasters(true);
   ['log','plan','uploads','stock','stockOut','stockMeta','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+  S.summaryPhone=d.summaryPhone||'';
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
   S.plan=S.plan||{poolFilter:[],lanes:[]}; S.plan.lanes=S.plan.lanes||[]; S.plan.poolFilter=S.plan.poolFilter||[];
@@ -4847,6 +5011,9 @@ async function initSync(){
 
 $('#appVer').textContent=`Logistics Desk v${APP_VERSION} · ${APP_BUILD}`;
 gotoView(currentView); // header label before the saved data arrives
+// home-screen app: the small helper file sw.js lets the phone install this as an app and open
+// it without a connection (it always tries the live site first, so a new version shows at once)
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 load().then(()=>{ renderAll(); undoReset(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit
