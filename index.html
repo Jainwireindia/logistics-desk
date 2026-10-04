@@ -40,24 +40,54 @@ header{background:var(--green);border-bottom:2px solid var(--green-dk);position:
 .mver{margin-top:8px;padding:8px 10px 2px;border-top:1px solid rgba(255,255,255,.2);font-size:11px;color:rgba(255,255,255,.6);font-family:ui-monospace,Menlo,monospace}
 .menubtn{flex:0 0 auto;background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;
   font-size:18px;line-height:1;padding:5px 10px}
+.undobar{display:inline-flex;gap:3px;flex:0 0 auto}
+.ubtn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;padding:4px 7px;line-height:0}
+.ubtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ubtn:hover:not(:disabled){background:#fff;color:var(--green-dk)}
+.ubtn:disabled{opacity:.35;cursor:default}
 .menubtn:hover,.menubtn[aria-expanded="true"]{background:#fff;color:var(--green-dk);border-color:#fff}
 .curview::before{content:'›';margin-right:8px;color:rgba(255,255,255,.5)}
 .curview{color:#fff;font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hbadges{margin-left:auto;display:flex;gap:6px;flex:0 0 auto}
 /* the menu drops down under the header bar instead of sitting in it, so the bar is always one
    short line however narrow the screen; two groups, Logistics (daily work) and Master */
-nav{position:absolute;left:0;top:100%;z-index:30;display:flex;flex-direction:column;gap:2px;
-  background:var(--green-dk);border-bottom:2px solid #0b3a21;border-right:2px solid #0b3a21;
-  box-shadow:0 10px 24px rgba(10,30,20,.3);padding:8px 10px 10px;width:250px;max-width:100%;
-  max-height:calc(100vh - 60px);overflow-y:auto}
-nav[hidden]{display:none}
+/* the menu is a drawer down the whole left side, sliding in from the left; it scrolls by itself
+   when it is taller than the screen */
+nav{position:fixed;left:0;top:var(--hdrH,48px);bottom:0;z-index:30;display:flex;flex-direction:column;gap:2px;
+  background:var(--green-dk);border-right:2px solid #0b3a21;box-shadow:6px 0 24px rgba(10,30,20,.3);
+  padding:10px 10px 16px;width:270px;max-width:86vw;overflow-y:auto;overscroll-behavior:contain;
+  transform:translateX(-105%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
+nav.open{transform:none;visibility:visible;transition:transform .22s ease}
+.navshade{position:fixed;left:0;right:0;bottom:0;top:var(--hdrH,48px);background:rgba(10,30,20,.28);z-index:15;opacity:0;pointer-events:none;transition:opacity .2s}
+.navshade.open{opacity:1;pointer-events:auto}
+.mglabel{cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.mglabel::after{content:'▾';font-size:11px;opacity:.7;transition:transform .15s}
+.mgroup.shut .mglabel::after{transform:rotate(-90deg)}
+.mgroup.shut button{display:none}
+@media (prefers-reduced-motion:reduce){ nav,nav.open,.navshade{transition:none} }
 .mgroup{display:flex;flex-direction:column;gap:2px;padding:6px 0 0;margin-top:6px;border-top:1px solid rgba(255,255,255,.2)}
 nav button.mdash{font-size:14.5px}
 .mglabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);padding:4px 10px 3px;font-weight:700}
 nav button{border-color:transparent;background:transparent;color:#fff;padding:7px 10px;font-weight:600;text-align:left;white-space:nowrap}
 nav button:hover{border-color:var(--yellow);color:var(--yellow)}
 nav button.on{background:#fff;color:var(--green-dk);border-color:#fff}
+.mreport .mglabel{color:#bfe8ff}
+.mreport button{color:#d8f1ff}
+.mreport button:hover{border-color:#bfe8ff;color:#fff}
+.mreport button.on{background:#bfe8ff;color:#073b55;border-color:#bfe8ff}
+.rsum{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 0}
+.rtable tr.rg{cursor:pointer}
+.rtable tr.rg:hover td{background:var(--panel2,#f4f7f5)}
+.rdet td{background:var(--panel2,#f4f7f5);padding:6px 10px 10px 30px}
+.rtrip{margin:4px 0 8px}
+.rtrip .rh{font-weight:700;font-size:12.5px}
+.rtrip .ri{font-size:12.5px;color:#333;padding-left:12px}
+.tag.unconf{background:#fff1d6;color:#8a5a00;border:1px solid #f0d58f}
 .mmaster .mglabel{color:#ffe9a8}
+.wabtn{background:#25d366;border-color:#1ea952;color:#fff;font-weight:700}
+.wabtn:hover{background:#1ea952}
+.drvrow{display:flex;align-items:center;gap:6px;margin:0 0 6px}
+.drvrow .pill{margin:0;min-width:90px}
 .mmaster button{color:#ffe9a8}
 .mmaster button:hover{border-color:#ffe9a8;color:#fff}
 .mmaster button.on{background:#ffe9a8;color:#5a4300;border-color:#ffe9a8}
@@ -80,6 +110,7 @@ nav button.on{background:#fff;color:var(--green-dk);border-color:#fff}
   .curview{font-size:12.5px} .curview::before{margin-right:5px} .menubtn{padding:4px 8px;font-size:16px}
   .hbadges{gap:4px} .savebadge .bs{display:none} .savebadge{padding:5px 7px} .savebadge .bi,.savebadge .bi svg{width:14px;height:14px} }
 @media (max-width:420px){ .brand{display:none} }
+/* phones: cards scroll sideways inside themselves instead of pushing the whole page wider */
 .savebadge.clean{opacity:.75}
 .impbox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--edge)}
 .implist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
@@ -122,6 +153,13 @@ nav button.on{background:#fff;color:var(--green-dk);border-color:#fff}
 .clrrow.all .clrname{color:var(--alert)}
 
 .guard{display:flex;border-bottom:1px solid var(--edge);background:var(--panel);font-size:12.5px;flex-wrap:wrap}
+.guardbar{display:flex;align-items:stretch;border-bottom:1px solid var(--edge);background:var(--panel)}
+.guardbar .guard{flex:1 1 auto;min-width:0;border-bottom:none}
+.stepnav{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 12px;border-left:1px solid var(--edge);background:var(--panel)}
+.stepnav[hidden]{display:none}
+.stepnav button{padding:6px 12px;font-weight:700;font-size:12.5px;white-space:nowrap}
+.stepnav button.nx{background:var(--amber);border-color:var(--amber);color:#211500}
+.stepnav .sn{font-size:11px;color:var(--mute);font-family:ui-monospace,Menlo,monospace}
 .gcell{padding:8px 16px;border-right:1px solid var(--edge);display:flex;gap:8px;align-items:baseline}
 .gcell b{font-size:16px;font-family:ui-monospace,Menlo,monospace}
 .gcell small{color:var(--mute);text-transform:uppercase;letter-spacing:.07em;font-size:10px}
@@ -163,6 +201,8 @@ main{padding:16px;max-width:1500px;margin:0 auto}
 .dstat.good{border-left-color:var(--ok)} .dstat.good b{color:var(--ok)}
 .dstat.bad{border-left-color:var(--alert)} .dstat.bad b{color:var(--alert)}
 .dstat.warn{border-left-color:var(--amber)} .dstat.warn b{color:#a5670a}
+.dstat b .pg{color:var(--ok)} .dstat b .pw{color:#a5670a} .dstat b .pb{color:var(--ink,#1a1a1a)} .dstat b .psl{color:var(--mute);margin:0 3px;font-weight:400}
+.dstat.bad b .pb{color:var(--alert)}
 .drow{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #eef2f7;flex-wrap:wrap}
 .drow:last-child{border-bottom:none}
 .dlab{flex:0 0 220px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
@@ -281,6 +321,9 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .pill.suggest{background:#fff3da;border-color:var(--amber);color:#a5670a;font-weight:600}
 .pill.click{cursor:pointer}
 .tag{font-size:10px;padding:1px 6px;border-radius:2px;background:var(--alert);color:#fff;font-weight:700}
+.holdform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:#fff6e6;border-top:1px solid #f0d58f}
+.holdform .hchips .pill{font-size:10.5px}
+.holdnote{padding:4px 10px;font-size:12px;color:#7a4d00;background:#fff8ea;border-top:1px solid #f3e1b5}
 .tag.hold{background:var(--hold)} .tag.age{background:#a5670a} .tag.due{background:#0d6e6e}
 .carddate{font-size:10px;padding:1px 6px;border-radius:2px;background:var(--panel2);border:1px solid var(--edge);
   color:var(--mute);font-family:ui-monospace,Menlo,monospace;font-weight:600}
@@ -337,10 +380,28 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .lgf label{margin-bottom:3px}
 
 @media print{
-  body{background:#fff} header,.guard,nav,.noprint{display:none!important}
+  body{background:#fff} header,.guard,.guardbar,nav,.noprint{display:none!important}
   .printonly{display:block}
   .card{border:none;padding:0} .sheet td{border:1px solid #999}
 }
+/* phone rules last, so they win over the desktop rules above */
+.lanejump{display:none}
+@media (max-width:640px){
+  /* Build Plan on a phone: each column is one screen wide and snaps into place; chips on top jump between them */
+  .lanejump{display:flex;gap:5px;overflow-x:auto;padding:2px 0 8px;position:sticky;top:var(--hdrH,48px);z-index:5;background:var(--bg,#eaf0f8)}
+  .lanejump .pill{white-space:nowrap;margin:0;font-size:12px;padding:4px 9px}
+  .lanejump .pill.over{border-color:var(--alert);color:var(--alert)}
+  .bays{scroll-snap-type:x mandatory;gap:10px;-webkit-overflow-scrolling:touch}
+  .lane,.lane.pool{width:calc(100vw - 42px);flex:0 0 calc(100vw - 42px);scroll-snap-align:start;height:calc(100vh - var(--hdrH,48px) - 70px);min-height:480px}
+  #v-plan .row>div[style*="325px"]{width:auto!important}
+  .guard{flex-wrap:nowrap;overflow-x:auto;font-size:11.5px}
+  .gcell{padding:6px 10px;white-space:nowrap;flex:0 0 auto}
+  .gcell b{font-size:14px}
+  .stepnav{padding:5px 8px;gap:4px} .stepnav .snl{display:none} .stepnav button{padding:6px 12px;font-size:15px}
+  .pctl button{padding:4px 9px;font-size:12px}
+  .lbtns{flex-wrap:wrap}
+}
+@media (max-width:640px){ .card{overflow-x:auto} .row{flex-wrap:wrap} .row>div{flex:1 1 100%!important;min-width:0} .row>div[style*="flex:0 0 auto"]{flex:0 1 auto!important} }
 </style>
 </head>
 <body>
@@ -348,6 +409,10 @@ tr.grp td{background:var(--panel2);font-weight:600}
 <header>
   <div class="hwrap">
     <button id="menuBtn" class="menubtn" aria-expanded="false" aria-controls="mainMenu" title="Menu">☰</button>
+    <span class="undobar">
+      <button id="undoBtn" class="ubtn" disabled aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7"/></svg></button>
+      <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
+    </span>
     <div class="brand"><span class="co">JAIN WIRE NETTING CORPORATION</span><small class="loc">EKM</small><span class="tool">Logistics Desk</span></div>
     <div id="curView" class="curview"></div>
     <div class="hbadges">
@@ -356,7 +421,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
     </div>
   </div>
   <!-- the menu folds away behind ☰ so the header stays one short line on any screen -->
-  <nav id="mainMenu" hidden>
+  <nav id="mainMenu" aria-hidden="true">
     <button data-v="dash" class="on mdash">Dashboard</button>
     <div class="mgroup">
       <div class="mglabel">Logistics</div>
@@ -365,17 +430,26 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <button data-v="out">3 · Final plan</button>
       <button data-v="log">4 · Plan log</button>
     </div>
+    <div class="mgroup mreport">
+      <div class="mglabel">Reports</div>
+      <button data-v="rparty">Party history</button>
+      <button data-v="rveh">Vehicle &amp; driver trips</button>
+      <button data-v="rday">Day-wise</button>
+      <button data-v="stock">Stock required</button>
+    </div>
     <div class="mgroup mmaster">
       <div class="mglabel">Master</div>
-      <button data-v="routes">Master Data</button>
-      <button data-v="stock">Stock Required</button>
+      <button data-v="routes">Setup</button>
+      <button data-v="parties">Parties &amp; map</button>
       <button data-v="uploads">Upload log</button>
+      <button data-v="admin">Admin 🔒</button>
     </div>
     <div class="mver" id="appVer"></div>
   </nav>
 </header>
+<div class="navshade" id="navShade"></div>
 
-<div class="guard" id="guard"></div>
+<div class="guardbar"><div class="guard" id="guard"></div><div class="stepnav" id="stepNav" hidden></div></div>
 
 <main>
 
@@ -413,7 +487,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
     <div class="row" style="margin-top:10px">
       <div style="flex:0 0 auto"><button class="primary" id="addPaste">Add these orders</button></div>
       <div style="flex:0 0 auto"><span class="hint">Every paste is listed in <a href="#" data-goto="uploads">Upload log</a>.
-        Deleting orders and other data is in <a href="#" data-goto="routes">Master Data → Clear data</a>.</span></div>
+        Deleting orders and other data is in <a href="#" data-goto="admin">Admin → Clear data</a>.</span></div>
     </div>
     <p class="hint" id="parseNote"></p>
     <div class="impbox">
@@ -460,21 +534,15 @@ tr.grp td{background:var(--panel2);font-weight:600}
   </div>
 
   <div class="card">
-    <h2>Backup — everything in this tool</h2>
+    <h2>Backup</h2>
     <p class="hint" style="margin-top:0;margin-bottom:10px">
-      This covers all of it: orders on hand, party &amp; route tags, the plan you're building, the plan log, and route library.
-      The tool saves as you go, but a reload stays on the same device and browser it was saved on — it won't follow you
-      to a different phone, browser, or after clearing site data. Download a backup before anything risky, and whenever
-      you want a copy on another device.
+      A copy of everything in this tool as one file — orders, parties, the plan, the log and all the setup.
+      With the Google Sheet connected this is only for emergencies. Restoring a backup is in <a href="#" data-goto="admin">Admin</a>.
     </p>
     <div class="row">
       <div style="flex:0 0 auto"><button class="primary" id="backupExport">Download full backup</button></div>
-      <div style="flex:0 0 auto">
-        <button id="backupImport">Restore from backup</button>
-        <input type="file" id="backupFile" accept=".json" style="display:none">
-      </div>
     </div>
-    <p class="hint" id="backupNote"></p>
+    <p class="hint" id="backupExpNote"></p>
   </div>
 
   <div class="card">
@@ -493,7 +561,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
         <div id="vehNoList"></div>
       </div>
       <div style="flex:1 1 300px">
-        <label>Driver names</label>
+        <label>Drivers &amp; WhatsApp numbers</label>
         <div class="row" style="margin-bottom:8px">
           <div><input id="newDriver" placeholder="Driver name"></div>
           <div style="flex:0 0 auto"><button class="primary" id="addDriver">Add</button></div>
@@ -534,18 +602,6 @@ tr.grp td{background:var(--panel2);font-weight:600}
   </div>
 
   <div class="card">
-    <h2>Google Maps route</h2>
-    <p class="hint" style="margin-top:0;margin-bottom:10px">Used by the <b>Map route</b> button on each vehicle. Each stop is found by the party's place and pincode.</p>
-    <div class="row">
-      <div><label>Start from (godown address)</label><input id="mapStart" placeholder="e.g. Angamaly South, Angamaly, Kerala"></div>
-      <div style="flex:0 0 220px"><label>Add to every place</label><input id="mapRegion" placeholder="e.g. Kerala"></div>
-    </div>
-    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);cursor:pointer">
-      <input type="checkbox" id="mapReturn" style="width:auto"> End the route back at the start
-    </label>
-  </div>
-
-  <div class="card">
     <h2>Route combinations</h2>
     <p class="hint" style="margin-top:0">
       The corridor combos you actually send a vehicle out on — e.g. Ptta + Ktm + Idukki. Each one
@@ -561,8 +617,25 @@ tr.grp td{background:var(--panel2);font-weight:600}
   </div>
 
 
+</section>
+
+<!-- PARTIES & MAP (master) -->
+<section class="view" id="v-parties">
   <div class="card">
-    <h2>Which routes can each party go on</h2>
+    <h2>Google Maps route</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Used by the <b>Map route</b> button on each vehicle. Each stop is found by the party's place and pincode.</p>
+    <div class="row">
+      <div><label>Start from (godown address)</label><input id="mapStart" placeholder="e.g. Angamaly South, Angamaly, Kerala"></div>
+      <div style="flex:0 0 220px"><label>Add to every place</label><input id="mapRegion" placeholder="e.g. Kerala"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);cursor:pointer">
+      <input type="checkbox" id="mapReturn" style="width:auto"> End the route back at the start
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>Parties — routes, place &amp; location</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Routes each party can go on, and where it is. The <b>location link</b> (a Google Maps link to the shop) goes into the WhatsApp text for the driver.</p>
     <div class="row" style="margin-bottom:10px">
       <div><label>Find party</label><input id="pSearch" placeholder="Type to filter"></div>
       <div style="flex:0 0 auto"><label>Show</label>
@@ -572,17 +645,60 @@ tr.grp td{background:var(--panel2);font-weight:600}
           <option value="untagged">Only parties with no route</option>
         </select></div>
     </div>
+    <div class="row" style="margin:-2px 0 10px;align-items:center">
+      <div style="flex:0 0 auto"><label style="margin:0">Send locations to driver</label></div>
+      <div style="flex:0 0 220px"><select id="waDriver"></select></div>
+      <div style="flex:1 1 200px"><span class="hint" style="margin:0">Then tap <b>WhatsApp</b> on a party — its name, place and location go to that driver.</span></div>
+    </div>
     <div class="scroll"><table id="partyTable"></table></div>
   </div>
 
+</section>
+
+<!-- ADMIN (PIN) -->
+<section class="view" id="v-admin">
+  <div class="card" id="adminLock" style="max-width:420px">
+    <h2>Admin</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Clearing data and restoring backups need the admin PIN.</p>
+    <div class="row">
+      <div style="flex:0 0 140px"><label>PIN</label><input id="adminPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" style="font-size:20px;letter-spacing:.4em;text-align:center"></div>
+      <div style="flex:0 0 auto"><button class="primary" id="adminGo">Unlock</button></div>
+    </div>
+    <p class="hint" id="adminMsg"></p>
+  </div>
+  <div id="adminBody" hidden>
   <div class="card" style="border-color:var(--alert)">
     <h2 style="color:var(--alert)">Clear data</h2>
     <p class="hint" style="margin-top:0;margin-bottom:6px">
       Clear one kind of data at a time. Each one asks you to confirm, and nothing else is touched.
-      There's no undo, so download a backup first if you might want it back.
+      Undo (↶ at the top) brings it back straight after; download a backup first if you might want it later.
       <button class="tiny" id="clrBackup" style="margin-left:6px">Download backup now</button>
     </p>
     <div id="clearList"></div>
+  </div>
+
+  <div class="card">
+    <h2>Restore from a backup file</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Replaces everything in this tool with the backup's contents (and the sheet, on the next sync).</p>
+    <div class="row">
+      <div style="flex:0 0 auto">
+        <button id="backupImport">Restore from backup</button>
+        <input type="file" id="backupFile" accept=".json" style="display:none">
+      </div>
+    </div>
+    <p class="hint" id="backupNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>Change admin PIN</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">4 digits. The PIN is shared by every device connected to the sheet.</p>
+    <div class="row">
+      <div style="flex:0 0 160px"><label>New PIN</label><input id="pinNew" type="password" inputmode="numeric" maxlength="4" autocomplete="off"></div>
+      <div style="flex:0 0 160px"><label>New PIN again</label><input id="pinNew2" type="password" inputmode="numeric" maxlength="4" autocomplete="off"></div>
+      <div style="flex:0 0 auto"><button class="primary" id="pinSave">Change PIN</button></div>
+    </div>
+  </div>
+    <div class="row"><div style="flex:0 0 auto"><button class="ghost" id="adminLockBtn">Lock admin</button></div></div>
   </div>
 </section>
 
@@ -624,6 +740,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <div id="poolFilterPills"></div>
     </div>
   </div>
+  <div class="lanejump" id="laneJump"></div>
   <div class="bays" id="bays"></div>
 </section>
 
@@ -667,7 +784,40 @@ tr.grp td{background:var(--panel2);font-weight:600}
 </section>
 
 <!-- STOCK REQUIRED (master) -->
+<section class="view" id="v-reports">
+  <div class="card" style="padding-bottom:10px">
+    <h2 id="repTitle">Reports</h2>
+    <p class="hint" id="repHint" style="margin:2px 0 8px"></p>
+    <div id="repToggle" style="margin-bottom:8px"></div>
+    <div class="row" style="margin-bottom:6px;align-items:flex-end">
+      <div style="flex:0 0 auto"><label>Period</label>
+        <select id="repPeriod" style="width:auto">
+          <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option>
+          <option value="month">This month</option><option value="lastmonth">Last month</option>
+          <option value="90">Last 90 days</option><option value="all">Everything in the log</option>
+        </select></div>
+      <div><label id="repFindLbl">Find</label><input id="repFind" placeholder="Type to filter"></div>
+      <div><label>Item contains</label><input id="repItem" placeholder="e.g. 1x1x8x5"></div>
+      <div style="flex:0 0 auto"><label>&nbsp;</label><button id="repCopy">Copy lines</button></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;font-size:12.5px">
+      <input type="checkbox" id="repUnconf" checked style="width:auto"> Include loads not yet confirmed in Plan log (shown as <span class="tag unconf">NOT CONFIRMED</span>)</label>
+    <div class="rsum" id="repSum"></div>
+  </div>
+  <div id="repBody"></div>
+</section>
+
 <section class="view" id="v-stock">
+  <div class="card">
+    <h2>Paste current stock</h2>
+    <p class="hint" style="margin:2px 0 8px">Copy the item name and qty columns from your stock Excel and paste here — other columns are ignored.
+      Each figure <b>replaces</b> the old one for that item; from then on only Plan log deliveries count it down.</p>
+    <textarea id="stockPaste" style="min-height:100px" placeholder="1/2x1/2x8x4      12
+1x1x8x5 lite      0
+Tata MS Wire 10g   350"></textarea>
+    <div class="row" style="margin-top:8px"><div style="flex:0 0 auto"><button class="primary" id="stockRead">Read stock</button></div></div>
+    <div id="stockPreview"></div>
+  </div>
   <div class="card" style="padding-bottom:10px">
     <h2>Stock required</h2>
     <p class="hint" style="margin:2px 0 8px">Every distinct item in Orders, A–Z, with qty needed across all parties. Open a row to see which parties.</p>
@@ -678,6 +828,13 @@ tr.grp td{background:var(--panel2);font-weight:600}
           <option value="az">Item name A–Z</option>
           <option value="qty">Quantity needed (high first)</option>
           <option value="parties">Most parties waiting</option>
+        </select></div>
+      <div style="flex:0 0 auto"><label>Show</label>
+        <select id="stockShow" style="width:auto">
+          <option value="all">All items</option>
+          <option value="out">Out of stock only</option>
+          <option value="short">Short or out of stock</option>
+          <option value="nostock">No stock figure yet</option>
         </select></div>
       <div style="flex:0 0 auto"><label>&nbsp;</label>
         <button id="stockCopy">Copy list</button></div>
@@ -726,7 +883,7 @@ function updateSyncBadge(){
   el.style.display='';
   delete el.dataset.k; // the sheet badge caches its drawn state; this plain-text one replaces it
   if(dbNS){ el.className='savebadge clean'; el.title='Synced through your account — should show the same data in any browser you open this link in.'; el.textContent='Synced'; }
-  else if(!window.claude){ el.className='savebadge clean'; el.title="Saved in this browser on this device. To move it to another device or browser, use Master Data → Download full backup, then Restore there."; el.textContent='This browser'; }
+  else if(!window.claude){ el.className='savebadge clean'; el.title="Saved in this browser on this device. To move it to another device or browser, use Setup → Download full backup, then Admin → Restore on the other one."; el.textContent='This browser'; }
   else { el.className='savebadge'; el.title="Cross-browser sync isn't active here — this browser's data stays local. Use backup/restore to move it."; el.textContent='Local only'; }
 }
 // core/orders/log are split into three documents rather than one blob, since a single document
@@ -835,7 +992,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.2', APP_BUILD='04-10-2026';
+const APP_VERSION='1.5', APP_BUILD='04-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -877,7 +1034,36 @@ let dirty=false, saving=false, saveTimer=null, saveFailed=false;
 // write ~1.2s later, instead of blocking the screen on a full-state write per keystroke.
 // save() is awaited by nearly every click handler before it re-renders, so it must never
 // reject — a throw here would stop the repaint that follows and leave the click looking dead.
-async function save(){ try{ markDirty(); }catch(e){ showError('save: '+(e.stack||e.message)); } }
+async function save(){ try{ undoRecord(); markDirty(); }catch(e){ showError('save: '+(e.stack||e.message)); } }
+/* ---------- undo / redo ----------
+   Every save remembers how everything looked just before it, up to 40 steps back. Undo puts
+   that back (and it syncs like any other change). Only the two header buttons do this - no
+   keyboard shortcut. Changes pulled in from the sheet clear the history, so an undo never
+   quietly reverses something done on another device. */
+const UNDO_MAX=40; let undoStack=[], redoStack=[], undoLast=null, undoMute=false, undoClearNext=false;
+const undoSnap=()=>JSON.stringify(S,(k,v)=>k==='open'?undefined:v);
+function undoRecord(){
+  const cur=undoSnap();
+  if(undoClearNext){ undoClearNext=false; undoStack=[]; redoStack=[]; undoLast=cur; paintUndo(); return; }
+  if(!undoMute&&undoLast!==null&&cur!==undoLast){ undoStack.push(undoLast); if(undoStack.length>UNDO_MAX) undoStack.shift(); redoStack=[]; }
+  undoLast=cur; paintUndo();
+}
+function undoReset(){ undoStack=[]; redoStack=[]; undoLast=undoSnap(); paintUndo(); }
+function paintUndo(){
+  const u=document.getElementById('undoBtn'), r=document.getElementById('redoBtn'); if(!u) return;
+  u.disabled=!undoStack.length; r.disabled=!redoStack.length;
+  u.title=undoStack.length?`Undo the last change (${undoStack.length} step${undoStack.length>1?'s':''} back)`:'Nothing to undo';
+  r.title=redoStack.length?'Redo':'Nothing to redo';
+}
+async function undoGo(back){
+  const from=back?undoStack:redoStack, to=back?redoStack:undoStack;
+  if(!from.length) return;
+  to.push(undoSnap());
+  const snap=from.pop();
+  S=JSON.parse(snap); undoLast=snap;
+  undoMute=true; try{ await save(); } finally{ undoMute=false; }
+  renderAll(); paintUndo(); flash(back?'Undone':'Redone');
+}
 function markDirty(){
   dirty=true; saveFailed=false; updateSaveBadge();
   clearTimeout(saveTimer); saveTimer=setTimeout(flushSave,1200);
@@ -889,7 +1075,7 @@ async function flushSave(){
   try{ await store.set('lpb:v3', S); dirty=false; saveFailed=false; }
   catch(e){ saveFailed=true; }
   saving=false; updateSaveBadge();
-  if(typeof scheduleSync==='function' && syncCfg) scheduleSync(2500);
+  if(typeof scheduleSync==='function' && syncCfg) scheduleSync(1200);
 }
 const BADGE_ICON={
   ok:'<path d="M3 8.5l3.2 3.2L13 5"/>',
@@ -931,6 +1117,7 @@ async function load(){
   S.combos=S.combos||[];   // saved route combinations shown as possible plans on the dashboard
   S.stock=S.stock||{};     // {itemKey: number} manual "stock ready" baseline, item's dominant unit
   S.stockOut=S.stockOut||{}; // {itemKey: {unit: qty}} running total confirmed delivered via Plan Log apply
+  S.stockMeta=S.stockMeta||{}; // {itemKey: {at, zeroAt, unit, label}} when stock was last given, and when it ran out
   S.finalNotes=S.finalNotes||{}; // {idsKey: "text"} bracketed note typed onto a Final Plan item row
   S.dupOk=(S.dupOk&&typeof S.dupOk==='object'&&!Array.isArray(S.dupOk))?S.dupOk:{};
   normUploads(!(d&&Array.isArray(d.uploads)));
@@ -1033,6 +1220,7 @@ function reindex(){
     const live=new Set(itemsOf(p).map(o=>batchKey(o.tab,o.date)));
     if(itemsOf(p).length){
       rec.holdBatches=rec.holdBatches.filter(k=>live.has(k));
+      if(rec.holdInfo){ Object.keys(rec.holdInfo).forEach(k=>{ if(!rec.holdBatches.includes(k)) delete rec.holdInfo[k]; }); if(!Object.keys(rec.holdInfo).length) delete rec.holdInfo; }
       Object.keys(rec.dueBatches).forEach(k=>{ if(!live.has(k)) delete rec.dueBatches[k]; });
     }
   });
@@ -1077,7 +1265,26 @@ function weightOf(p){
 }
 // hold, checked for one specific tab's batch of a party's orders
 function batchKey(tab,date){ return (tab||'')+'|'+(date||''); }
-function isHeld(p,tab,date){ return (S.parties[p]?.holdBatches||[]).includes(batchKey(tab,date)); }
+// a hold can carry a reason and an "until" date ({reason, until: yyyy-mm-dd}); after the until
+// date has passed the batch counts as free again and the Dashboard says so until it's dismissed
+function holdInfo(p,tab,date){ return (S.parties[p]?.holdInfo||{})[batchKey(tab,date)]||null; }
+function holdLapsed(p,tab,date){ const i=holdInfo(p,tab,date); return !!(i&&i.until&&isPast(i.until)); }
+function isHeld(p,tab,date){ return (S.parties[p]?.holdBatches||[]).includes(batchKey(tab,date))&&!holdLapsed(p,tab,date); }
+function setHold(p,tab,date,on,info){
+  const rec=S.parties[p]=S.parties[p]||{routes:[],place:'',pincode:''};
+  rec.holdBatches=rec.holdBatches||[]; rec.holdInfo=rec.holdInfo||{};
+  const k=batchKey(tab,date);
+  rec.holdBatches=rec.holdBatches.filter(x=>x!==k); delete rec.holdInfo[k];
+  if(on){ rec.holdBatches.push(k); if(info&&(info.reason||info.until)) rec.holdInfo[k]={reason:info.reason||'',until:info.until||'',at:Date.now()}; }
+  if(!Object.keys(rec.holdInfo).length) delete rec.holdInfo;
+}
+// holds whose until date has passed, for parties still on hand
+function lapsedHolds(){
+  const out=[];
+  partiesToday().forEach(p=>{ const rec=S.parties[p]||{};
+    (rec.holdBatches||[]).forEach(k=>{ const i=(rec.holdInfo||{})[k]; if(i&&i.until&&isPast(i.until)){ const [tab,date]=k.split('|'); out.push({p,tab,date,info:i}); } }); });
+  return out;
+}
 function lineHeld(o){ return isHeld(o.party,o.tab,o.date); }
 // any tab at all on hold for this party - used where a single party-level yes/no is wanted
 // (counts, badges, exclusions that don't have one specific tab in view)
@@ -1089,11 +1296,16 @@ function toggleHold(p,tab,date){
   i<0?rec.holdBatches.push(k):rec.holdBatches.splice(i,1);
 }
 // HOLD tag for a specific set of lines (one card, one stop): full hold, part hold, or nothing
+let holdForm=null; // which batch's "put on hold" form is open in Orders
+const HOLD_REASONS=['Payment pending','Party asked to wait','Site not ready','No stock'];
 function holdTag(items){
-  const h=items.filter(lineHeld).length;
+  const held=items.filter(lineHeld), h=held.length;
   if(!h) return '';
-  return h===items.length?'<span class="tag hold">HOLD</span>'
-    :`<span class="tag hold" title="${h} of ${items.length} lines on hold">HOLD ${h}/${items.length}</span>`;
+  const infos=[...new Map(held.map(o=>[batchKey(o.tab,o.date),holdInfo(o.party,o.tab,o.date)])).values()].filter(Boolean);
+  const why=infos.map(i=>[i.reason,i.until?'until '+isoToDMY(i.until):''].filter(Boolean).join(' · ')).filter(Boolean).join(' / ');
+  const until=infos.length===1&&infos[0].until?' · '+isoToDMY(infos[0].until).slice(0,5):'';
+  return h===items.length?`<span class="tag hold"${why?` title="${esc(why)}"`:''}>HOLD${until}</span>`
+    :`<span class="tag hold" title="${h} of ${items.length} lines on hold${why?' — '+esc(why):''}">HOLD ${h}/${items.length}${until}</span>`;
 }
 function assignedSet(){
   const s=new Set(); S.plan.lanes.forEach(l=>l.stops.forEach(st=>s.add(st.party))); return s;
@@ -1274,6 +1486,49 @@ function openLaneMap(l){
   window.open(r.url,'_blank','noopener');
   if(r.missing.length) flash(`Left out (no place/pincode): ${r.missing.join(', ')}`);
 }
+/* ---------- WhatsApp text for the driver ----------
+   Stops in delivery order, each with the place, the shop's location link (Parties & map) or a
+   Maps search for it, and the items to hand over; then the whole route as one Maps link. */
+function driverPhone(name){
+  if(!name) return '';
+  const ph=S.fleet.phones||{}; const k=Object.keys(ph).find(x=>x.toLowerCase()===String(name).trim().toLowerCase());
+  let d=String(k?ph[k]:'').replace(/\D/g,'');
+  if(d.length===10) d='91'+d;          // Indian mobile typed without the country code
+  if(d.length===11&&d[0]==='0') d='91'+d.slice(1);
+  return d;
+}
+let waDriverPick='';
+// one party's location, for Parties & map → WhatsApp
+function partyLocText(p){
+  const r=S.parties[p]||{}, where=[r.place,r.pincode].filter(Boolean).join(' ');
+  const L=['*'+p+'*'];
+  if(where) L.push(where);
+  if(r.loc) L.push('📍 '+r.loc); else if(where) L.push('📍 '+mapsUrl(p));
+  return L.join('\n');
+}
+function driverText(g){
+  const order=(g.laneSnap&&g.laneSnap.stops&&g.laneSnap.stops.length)?g.laneSnap.stops.map(s=>s.party):[...g.stops].reverse().map(s=>s.party);
+  const snap=new Map((Array.isArray(g.snapshot)?g.snapshot:[]).map(o=>[o.id,o]));
+  const L=['*JAIN WIRE NETTING CORPORATION — EKM*','*Delivery '+(g.createdAt||today10())+'*'];
+  L.push('Vehicle: '+(g.vehicleNo||g.vehicle||'—')+(g.vehicleNo&&g.vehicle?' ('+g.vehicle+')':''));
+  if(g.driver) L.push('Driver: '+g.driver);
+  let n=0;
+  order.forEach(p=>{
+    const st=g.stops.find(s=>s.party===p); if(!st) return;
+    const r=S.parties[p]||{};
+    const items=(st.orderIds||[]).map(id=>{ const o=S.orders.find(x=>x.id===id)||snap.get(id); if(!o) return null;
+      const lq=st.loadQty&&st.loadQty[id]; return '   • '+stripTags(o.item)+' × '+(lq!=null?lq:o.qty); }).filter(Boolean);
+    if(!items.length) return;
+    L.push(''); L.push(`${++n}. *${p}*`);
+    const where=[r.place,r.pincode].filter(Boolean).join(' ');
+    if(where) L.push('   '+where);
+    if(r.loc) L.push('   📍 '+r.loc); else if(where) L.push('   📍 '+mapsUrl(p));
+    items.forEach(x=>L.push(x));
+  });
+  const route=laneMapRoute({stops:order.map(p=>({party:p}))});
+  if(route.count>=2){ L.push(''); L.push('Full route: '+route.url); }
+  return L.join('\n');
+}
 function mapsUrl(p){
   const r=S.parties[p]||{};
   return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([p,r.place,r.pincode].filter(Boolean).join(' '));
@@ -1402,6 +1657,7 @@ function mergeParty(oldN,newN){
     routes:[...new Set([...(np.routes||[]),...(op.routes||[])])],
     holdTabs:[],
     holdBatches:[...new Set([...(np.holdBatches||[]),...(op.holdBatches||[])])],
+    holdInfo:{...(op.holdInfo||{}),...(np.holdInfo||{})},
     dueDate:'',
     dueBatches:{...(op.dueBatches||{}),...(np.dueBatches||{})},
     place:np.place||op.place||'',
@@ -1515,6 +1771,8 @@ function paintDash(){
   const totalWt=parties.reduce((n,p)=>n+weightOf(p),0);
 
   const stat=(v,l,cls)=>`<div class="dstat ${cls||''}"><b>${v}</b><small>${l}</small></div>`;
+  // two numbers in one tile: first one coloured, then the second in black - e.g. 10 parties / 50 item lines
+  const pair=(a,b,l,ca,cls)=>`<div class="dstat ${cls||''}"><b><span class="${ca||'pg'}">${a}</span><span class="psl">/</span><span class="pb">${b}</span></b><small>${l}</small></div>`;
 
   /* Possible plans: each saved route combination, with what's on hand for it right now.
      A party counts toward a combo if any of its route tags is in the combo. Parties already
@@ -1545,7 +1803,7 @@ function paintDash(){
     <p class="hint" style="margin-top:0">
       What's on hand for each saved route combination. <b>Not yet placed</b> is the weight still
       free to load — the rest is already sitting on a vehicle in Build plan. Parties on hold and
-      items completely out of stock aren't counted. Combinations are set up in Master Data.
+      items completely out of stock aren't counted. Combinations are set up in Setup.
     </p>
     <table><tr><th></th><th>Combination</th><th>Routes</th><th class="n">Parties</th>
       <th class="n">Item lines</th><th class="n">Not yet placed</th><th class="n">Total kg</th></tr>
@@ -1575,12 +1833,12 @@ function paintDash(){
 
   // Stock shortages — items where a "stock ready" baseline has been entered on the Stock
   // Required page and current stock (ready minus confirmed-delivered) can't cover total demand
-  const shorts=shortageItems();
+  const shorts=shortageItems().filter(g=>g.currentStock>0);
   const shortageSection=shorts.length?`<div class="card" style="border-color:var(--alert)">
     <h2 style="color:var(--alert)">${shorts.length} item${shorts.length>1?'s':''} short on stock</h2>
     <p class="hint" style="margin-top:0">
-      Order needs more than what's marked as stock ready, after what Plan Log has already
-      confirmed delivered. Update stock ready on the Stock Required page as it changes.
+      Orders need more than the current stock (the last stock figure given, less what Plan log
+      has confirmed delivered since). Paste fresh stock in Reports → Stock required.
     </p>
     ${shorts.map(g=>{
       const open=stockShortOpen.has(g.key);
@@ -1599,6 +1857,20 @@ function paintDash(){
     }).join('')}
   </div>`:'';
 
+  // Out of stock: items whose current stock is at zero, counted in days from the day the
+  // stock figure said 0 or a Plan log delivery used up the last of it
+  const outs=outOfStockList();
+  const outSection=outs.length?`<div class="card" style="border-color:var(--alert)">
+    <h2 style="color:var(--alert)">${outs.length} item${outs.length>1?'s':''} out of stock</h2>
+    <table><tr><th>Item</th><th>Out since</th><th class="n">Days</th><th class="n">Parties waiting</th><th>Qty waiting</th></tr>
+    ${outs.map(o=>`<tr><td><b>${esc(o.label)}</b></td>
+      <td class="mono">${o.since?dmyOf(o.since):'<span class="hint">not known</span>'}</td>
+      <td class="n" style="${o.days>=4?'color:var(--alert);font-weight:800':''}">${o.days==null?'—':o.days===0?'today':o.days+' day'+(o.days>1?'s':'')}</td>
+      <td class="n">${o.g?o.g.parties.length:'<span class="hint">none</span>'}</td>
+      <td class="mono">${o.g?esc(o.g.qtyText):''}</td></tr>`).join('')}</table>
+    <p class="hint" style="margin:6px 0 0">Update with a fresh stock paste in Reports → Stock required.</p>
+  </div>`:'';
+
   // "Needs attention" rows carry the fix inline, so nothing sends you off to another tab
   const arow=(p,inner)=>`<div class="arow"><span class="aname">${esc(p)}</span>${inner}</div>`;
   const agingSection=aging5.length?`<div class="asec"><h4 class="bad">5+ days old</h4>
@@ -1614,6 +1886,12 @@ function paintDash(){
       <input data-adue="${i}" value="${esc(isoToDMY(b.due))}" placeholder="dd-mm-yyyy" style="width:100px">
       <button class="tiny primary" data-aduesave="${i}">Confirm</button>
       <button class="tiny ghost" data-adueclear="${i}">Clear date</button>`)).join('')}</div>`:'';
+  const lapsed=lapsedHolds();
+  const lapsedSection=lapsed.length?`<div class="asec"><h4 class="warn">Hold ended — these batches are free to plan again</h4>
+    ${lapsed.map((h,i)=>arow(h.p,`<span class="g">${esc(h.date||'no date')} batch${h.tab?' · '+esc(h.tab):''}${h.info.reason?' · '+esc(h.info.reason):''} · held until ${esc(isoToDMY(h.info.until))}</span>
+      <input data-hext="${i}" placeholder="new until dd-mm-yyyy" style="width:150px">
+      <button class="tiny primary" data-hextsave="${i}">Hold longer</button>
+      <button class="tiny ghost" data-hrel="${i}">Release</button>`)).join('')}</div>`:'';
   const dupSection=dupPs.length?`<div class="asec"><h4 class="bad">Duplicate order lines — same item, qty and date twice</h4>
     ${dupPs.map(p=>{
       const ds=itemsOf(p).filter(o=>isDupLine(o.id));
@@ -1658,16 +1936,12 @@ function paintDash(){
   <div class="card">
     <h2>Today at a glance — ${esc(todayStr)}</h2>
     <div class="dstats">
-      ${stat(addedPartiesToday,'parties added today','good')}
-      ${stat(addedToday.length,'item lines added today')}
-      ${stat(parties.length,'parties on hand')}
-      ${stat(S.orders.length,'item lines on hand')}
-      ${stat(num(totalWt)+' kg','total weight on hand')}
-      ${stat(placed,'on the plan', placed&&placed===parties.length?'good':'')}
-      ${stat(unplaced,'not placed yet', unplaced?'bad':'good')}
-      ${stat(held,'on hold', held?'warn':'')}
-      ${stat(aging2.length,'2+ days old', aging2.length?'warn':'good')}
-      ${stat(aging5.length,'5+ days old', aging5.length?'bad':'')}
+      ${pair(addedPartiesToday,addedToday.length,'parties / items added today')}
+      ${pair(parties.length,S.orders.length,'parties / items on hand')}
+      ${stat(num(totalWt)+' kg','weight on hand')}
+      ${pair(placed,unplaced,'on the plan / not placed','pg',unplaced?'bad':'good')}
+      ${pair(aging2.length,aging5.length,'2+ days / 5+ days old',aging2.length?'pw':'pg',aging5.length?'bad':aging2.length?'warn':'')}
+      ${stat(held,'parties on hold', held?'warn':'')}
       ${stat(openLogs.length,'logs to clear', openLogs.length?'warn':'')}
       ${_dupExtra.size?stat(_dupExtra.size,'duplicate lines','bad'):''}
     </div>
@@ -1675,12 +1949,14 @@ function paintDash(){
 
   ${comboSection}
 
+  ${outSection}
+
   ${shortageSection}
 
-  ${(dupPs.length||noRoute.length||noPlace.length||overdue.length||aging5.length)?`<div class="card">
+  ${(dupPs.length||noRoute.length||noPlace.length||overdue.length||aging5.length||lapsed.length)?`<div class="card">
     <h2>Needs your attention</h2>
     <p class="hint" style="margin-top:0">Fixed right here — no need to go find the party elsewhere.</p>
-    ${dupSection}${agingSection}${overdueSection}${routeSection}${placeSection}
+    ${lapsedSection}${dupSection}${agingSection}${overdueSection}${routeSection}${placeSection}
   </div>`:''}
 
   <div class="card">
@@ -1696,6 +1972,14 @@ function paintDash(){
       <th class="n">Capacity</th><th class="n">Used</th></tr>${laneRows}</table>
   </div>`;
 
+  box.querySelectorAll('[data-hext]').forEach(el=>maskDateInput(el));
+  box.querySelectorAll('[data-hrel]').forEach(el=>el.onclick=async()=>{
+    const h=lapsed[+el.dataset.hrel]; if(!h) return; setHold(h.p,h.tab,h.date,false); await save(); renderAll(); flash(`${h.p} released from hold`); });
+  box.querySelectorAll('[data-hextsave]').forEach(el=>el.onclick=async()=>{
+    const h=lapsed[+el.dataset.hextsave]; if(!h) return;
+    const raw=box.querySelector(`[data-hext="${el.dataset.hextsave}"]`).value.trim(), iso=parseDMY(raw);
+    if(!iso||isPast(iso)){ flash('Enter a future date as dd-mm-yyyy'); return; }
+    setHold(h.p,h.tab,h.date,true,{reason:h.info.reason,until:iso}); await save(); renderAll(); flash(`${h.p} held until ${isoToDMY(iso)}`); });
   box.querySelectorAll('[data-ajump]').forEach(el=>el.onclick=()=>{
     ordQuery=el.dataset.ajump;
     $$('.ordSearch').forEach(o=>o.value=ordQuery);
@@ -1761,7 +2045,7 @@ function paintOrders(){
   const sel=$('#pasteTab');
   { const cur=sel.value, tabs=sheetTabs();
     sel.innerHTML=tabs.length?tabs.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')
-      :'<option value="">No tab (add tabs in Master Data)</option>';
+      :'<option value="">No tab (add tabs in Setup)</option>';
     if(tabs.includes(cur)) sel.value=cur; }
   const boxes=$$('.view.on .ordBody');
   const setCount=t=>{ const a=$('#ordCount'),b=$('#ordCountDash'); if(a)a.textContent=t; if(b)b.textContent=t; };
@@ -1877,12 +2161,21 @@ function paintOrders(){
               ${placeLine(p)?`<br><span class="opl">${esc(placeLine(p))}</span>`:''}</span>
             <span class="osum">${its.length} item${its.length>1?'s':''} · ${num(blockWt)} kg</span>
             <span class="oact">
-              <button class="tiny ${held?'primary':'ghost'}" data-hold="${esc(p)}" data-holdtab="${esc(blockTab)}" data-holddate="${esc(d)}" title="Hold just this ${esc(d||'undated')} batch">${held?'On hold':'Hold'}</button>
+              <button class="tiny ${held?'primary':'ghost'}" data-hold="${esc(p)}" data-holdtab="${esc(blockTab)}" data-holddate="${esc(d)}" title="${held?'Tap to take this batch off hold':'Hold just this '+esc(d||'undated')+' batch — with a reason and an until date'}">${held?'On hold ✕':'Hold'}</button>
               <input data-due="${esc(p)}" data-duetab="${esc(blockTab)}" data-duedate="${esc(d)}" value="${esc(isoToDMY(dueOf(p,blockTab,d)))}" placeholder="dd-mm-yyyy" title="Due date for just this ${esc(d||'undated')} batch" style="width:100px">
               <button class="tiny ${editing?'primary':'ghost'}" data-eedit="${esc(p)}" title="${editing?'Done editing':'Edit this order'}">${editing?'✓ Done':'✎'}</button>
               <button class="tiny ghost" data-odel="${esc(p)}" data-odeldate="${esc(d)}" data-odeltab="${esc(blockTab)}">Remove</button>
             </span>
           </div>
+          ${(()=>{ const hi=held?holdInfo(p,blockTab,d):null; const k=p+'|'+batchKey(blockTab,d);
+            if(holdForm===k) return `<div class="holdform" data-hfk="${esc(k)}">
+              <b>Hold this batch</b>
+              <input data-hreason placeholder="Reason, e.g. payment pending" value="" style="flex:1 1 200px">
+              <span class="hchips">${HOLD_REASONS.map(r=>`<span class="pill click" data-hchip="${esc(r)}">${esc(r)}</span>`).join('')}</span>
+              <label style="margin:0">Until</label><input data-huntil placeholder="dd-mm-yyyy (optional)" style="width:140px">
+              <button class="tiny primary" data-hsave="${esc(p)}" data-holdtab="${esc(blockTab)}" data-holddate="${esc(d)}">Put on hold</button>
+              <button class="tiny ghost" data-hcancel>Cancel</button></div>`;
+            return hi?`<div class="holdnote">On hold${hi.reason?': <b>'+esc(hi.reason)+'</b>':''}${hi.until?' · until '+esc(isoToDMY(hi.until)):' · no end date'}</div>`:''; })()}
           <div class="oitems">${itemsHtml}</div>
         </div>`;
       });
@@ -1905,8 +2198,23 @@ function wireOrderBox(box){
     }
     await save();renderAll();}));
   box.querySelectorAll('[data-hold]').forEach(b=>b.onclick=async()=>{
-    toggleHold(b.dataset.hold,b.dataset.holdtab,b.dataset.holddate);
-    await save();renderOrders();renderPlan();});
+    const p=b.dataset.hold, t=b.dataset.holdtab, d=b.dataset.holddate;
+    if(isHeld(p,t,d)||(S.parties[p]?.holdBatches||[]).includes(batchKey(t,d))){ setHold(p,t,d,false); holdForm=null; await save(); renderOrders(); renderPlan(); renderDash(); return; }
+    holdForm=p+'|'+batchKey(t,d); renderOrders();
+    const f=document.querySelector('.view.on .holdform [data-hreason]'); if(f) f.focus();
+  });
+  box.querySelectorAll('.holdform').forEach(f=>{
+    const u=f.querySelector('[data-huntil]'); maskDateInput(u);
+    f.querySelectorAll('[data-hchip]').forEach(c=>c.onclick=()=>{ f.querySelector('[data-hreason]').value=c.dataset.hchip; });
+    f.querySelector('[data-hcancel]').onclick=()=>{ holdForm=null; renderOrders(); };
+    f.querySelector('[data-hsave]').onclick=async e=>{
+      const b=e.currentTarget, raw=u.value.trim(), iso=raw?parseDMY(raw):'';
+      if(raw&&!iso){ flash('Enter the until date as dd-mm-yyyy'); return; }
+      if(iso&&isPast(iso)){ flash('That date has already passed'); return; }
+      setHold(b.dataset.hsave,b.dataset.holdtab,b.dataset.holddate,true,{reason:f.querySelector('[data-hreason]').value.trim(),until:iso});
+      holdForm=null; await save(); renderOrders(); renderPlan(); renderDash();
+    };
+  });
   box.querySelectorAll('[data-due]').forEach(el=>el.onchange=async()=>{
     const p=el.dataset.due, tab=el.dataset.duetab, d=el.dataset.duedate, raw=el.value.trim();
     const iso=parseDMY(raw);
@@ -1914,9 +2222,9 @@ function wireOrderBox(box){
     setDue(p,tab,d,iso||''); await save();renderOrders();renderPlan();renderDash();});
   box.querySelectorAll('[data-tab]').forEach(el=>el.onchange=async()=>{
     const p=el.dataset.tab,d=el.dataset.tabdate,oldTab=el.dataset.tabold,newTab=el.value;
-    const wasHeld=isHeld(p,oldTab,d);
+    const wasHeld=isHeld(p,oldTab,d), hi=holdInfo(p,oldTab,d);
     S.orders.forEach(o=>{if(o.party===p&&(o.date||'')===d&&(o.tab||'')===oldTab)o.tab=newTab;});
-    if(wasHeld){ toggleHold(p,oldTab,d); if(!isHeld(p,newTab,d)) toggleHold(p,newTab,d); }
+    if(wasHeld){ setHold(p,oldTab,d,false); setHold(p,newTab,d,true,hi); }
     const due=dueOf(p,oldTab,d); if(due){ setDue(p,oldTab,d,''); setDue(p,newTab,d,due); }
     await save();renderOrders();});
   box.querySelectorAll('[data-eedit]').forEach(b=>b.onclick=async()=>{
@@ -1960,11 +2268,20 @@ function paintRoutes(){
         <button class="tiny ghost" style="margin-left:5px;padding:0 4px" data-${attr}="${esc(v)}">×</button></span>`).join('')
     : '<span class="hint">None added yet.</span>';
   $('#vehNoList').innerHTML=fleetList(S.fleet.vehicles,'vdel');
-  $('#driverList').innerHTML=fleetList(S.fleet.drivers,'ddel');
+  S.fleet.phones=S.fleet.phones||{};
+  $('#driverList').innerHTML=S.fleet.drivers.length?S.fleet.drivers.map(d=>`<div class="drvrow">
+      <span class="pill on">${esc(d)}</span>
+      <input data-dphone="${esc(d)}" value="${esc(S.fleet.phones[d]||'')}" placeholder="WhatsApp number" inputmode="tel" style="width:150px;padding:3px 6px">
+      <button class="tiny ghost" data-ddel="${esc(d)}" title="Remove driver">×</button></div>`).join('')
+    :'<span class="hint">None added yet.</span>';
+  $('#driverList').querySelectorAll('[data-dphone]').forEach(el=>el.onchange=async()=>{
+    const v=el.value.replace(/[^\d+]/g,''); el.value=v;
+    if(v) S.fleet.phones[el.dataset.dphone]=v; else delete S.fleet.phones[el.dataset.dphone];
+    await save(); renderLog(); });
   $('#vehNoList').querySelectorAll('[data-vdel]').forEach(b=>b.onclick=async()=>{
     S.fleet.vehicles=S.fleet.vehicles.filter(x=>x!==b.dataset.vdel); await save();renderRoutes();renderLog();});
   $('#driverList').querySelectorAll('[data-ddel]').forEach(b=>b.onclick=async()=>{
-    S.fleet.drivers=S.fleet.drivers.filter(x=>x!==b.dataset.ddel); await save();renderRoutes();renderLog();});
+    S.fleet.drivers=S.fleet.drivers.filter(x=>x!==b.dataset.ddel); if(S.fleet.phones) delete S.fleet.phones[b.dataset.ddel]; await save();renderRoutes();renderLog();});
 
   $('#routeList').innerHTML=S.routes.map(r=>{
     return `<span class="pill on" style="margin-right:6px">${esc(r)}
@@ -2029,15 +2346,21 @@ function paintRoutes(){
 
   const t=$('#partyTable');
   if(!names.length){t.innerHTML='<tr><td class="hint">No parties match.</td></tr>';return;}
-  t.innerHTML='<tr><th style="width:230px">Party</th><th style="width:140px">Place</th><th style="width:90px">Pincode</th><th>Routes it can go on</th><th style="width:120px"></th></tr>'+
+  const wd=$('#waDriver');
+  if(wd){ const cur=wd.value||waDriverPick;
+    wd.innerHTML=`<option value="">— pick in WhatsApp —</option>`+S.fleet.drivers.map(d=>`<option value="${esc(d)}"${d===cur?' selected':''}>${esc(d)}${driverPhone(d)?'':' (no number)'}</option>`).join('');
+    wd.onchange=()=>{ waDriverPick=wd.value; }; }
+  t.innerHTML='<tr><th style="width:230px">Party</th><th style="width:130px">Place</th><th style="width:90px">Pincode</th><th style="width:170px">Location link</th><th>Routes it can go on</th><th style="width:200px"></th></tr>'+
     names.map(n=>{
       const rec=S.parties[n], rs=rec.routes||[];
       return `<tr>
         <td><input data-rename="${esc(n)}" value="${esc(n)}" style="padding:3px 6px;font-weight:600"> ${today.has(n)?'<span class="pill on">on hand</span>':''}</td>
         <td><input data-place="${esc(n)}" value="${esc(rec.place||'')}" style="padding:3px 6px" placeholder="town"></td>
         <td><input data-pin="${esc(n)}" value="${esc(rec.pincode||'')}" style="padding:3px 6px" placeholder="6 digits" inputmode="numeric"></td>
+        <td><input data-ploc="${esc(n)}" value="${esc(rec.loc||'')}" style="padding:3px 6px" placeholder="maps.app.goo.gl/…" inputmode="url"></td>
         <td>${S.routes.map(r=>`<span class="pill click ${rs.includes(r)?'on':''}" data-p="${esc(n)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</td>
-        <td><a href="${mapsUrl(n)}" target="_blank" rel="noopener" class="pill click">map</a>
+        <td style="white-space:nowrap"><a href="${mapsUrl(n)}" target="_blank" rel="noopener" class="pill click">map</a>
+            <button class="tiny wabtn" data-pwa="${esc(n)}" title="Send this party's location to the driver picked above">WhatsApp</button>
             <button class="tiny ghost" data-pdel="${esc(n)}">Remove</button></td></tr>`;
     }).join('');
   t.querySelectorAll('[data-r]').forEach(el=>el.onclick=async()=>{
@@ -2046,6 +2369,14 @@ function paintRoutes(){
     await save();renderRoutes();renderPlan();});
   t.querySelectorAll('[data-place]').forEach(el=>el.onchange=async()=>{
     S.parties[el.dataset.place].place=el.value.trim(); await save();renderOrders();renderPlan();renderDash();});
+  t.querySelectorAll('[data-pwa]').forEach(el=>el.onclick=()=>{
+    const p=el.dataset.pwa, d=$('#waDriver').value, ph=driverPhone(d);
+    window.open('https://wa.me/'+(ph||'')+'?text='+encodeURIComponent(partyLocText(p)),'_blank','noopener');
+    if(!(S.parties[p]?.loc)&&!placeLine(p)) flash(`No place or location link saved for ${p} — only the name goes`);
+    else if(d&&!ph) flash(`No number saved for ${d} — pick the chat in WhatsApp`);
+  });
+  t.querySelectorAll('[data-ploc]').forEach(el=>el.onchange=async()=>{
+    S.parties[el.dataset.ploc].loc=el.value.trim(); await save(); renderLog();});
   t.querySelectorAll('[data-pin]').forEach(el=>el.onchange=async()=>{
     S.parties[el.dataset.pin].pincode=el.value.trim(); await save();renderOrders();renderPlan();renderDash();});
   t.querySelectorAll('[data-rename]').forEach(el=>el.onchange=()=>
@@ -2126,7 +2457,7 @@ function partyCard(p,laneId,idx,total){
 function paintVehPick(){
   const sel=$('#vehPick'), ts=vehTypes(), cur=sel.value;
   sel.innerHTML=ts.length?ts.map((t,i)=>`<option value="${i}">${esc(t.label)}</option>`).join('')
-    :'<option value="">No vehicle types — add them in Master Data</option>';
+    :'<option value="">No vehicle types — add them in Setup</option>';
   if(cur&&ts[+cur]) sel.value=cur;
   $('#addVeh').disabled=!ts.length;
 }
@@ -2155,7 +2486,7 @@ function paintPlan(){
   const poolEmpty=!inR.length&&!outR.length;
   const hiddenByView=poolEmpty&&total>0; // parties exist, but the search box or route pills hide all of them
   const searchTerm=($('#poolSearch')?.value||'').trim();
-  let h=`<div class="lane pool ${poolEmpty&&!hiddenByView?'clear':''}">
+  let h=`<div class="lane pool ${poolEmpty&&!hiddenByView?'clear':''}" data-jl="pool">
     <div class="lanehead"><div class="t"><h3>Not placed yet</h3><span class="seqbox">${inR.length+outR.length}</span></div>
       <div class="lanemeta"><span>${hiddenByView?`${total} waiting, hidden by ${searchTerm?'your search':'the route filter'}`:poolEmpty?'Every party is on a vehicle':'Waiting to be placed'}</span></div></div>
     <div class="drop" data-lane="pool">
@@ -2174,7 +2505,7 @@ function paintPlan(){
     const xOpen=laneExclOpen.has(l.id);
     const avail=availableForLane(l).length;
     const dupHere=l.stops.filter(s=>laneCountFor(s.party)>1).length;
-    h+=`<div class="lane">
+    h+=`<div class="lane" data-jl="${l.id}">
       <div class="lanehead"><div class="t"><h3>${esc(l.name)}</h3>
         <button class="tiny ghost" data-lrev="${l.id}" title="Flip the delivery order">⇅</button>
         <button class="tiny ghost" data-lanedel="${l.id}">×</button></div>
@@ -2213,6 +2544,13 @@ function paintPlan(){
       </div></div>`;
   });
   $('#bays').innerHTML=h;
+  // phones: one column fills the screen, so a row of chips jumps between Waiting and each vehicle
+  const unpl=partiesToday().filter(p=>unplacedItems(p).length).length;
+  $('#laneJump').innerHTML=`<span class="pill click" data-jump="pool">Waiting <b>${unpl}</b></span>`+S.plan.lanes.map(l=>{
+    const w=laneWeight(l), pct=l.cap?Math.round(w/l.cap*100):0;
+    return `<span class="pill click${w>l.cap?' over':''}" data-jump="${l.id}">${esc(l.name)} <b>${pct}%</b></span>`; }).join('');
+  $('#laneJump').querySelectorAll('[data-jump]').forEach(c=>c.onclick=()=>{
+    const el=$(`#bays [data-jl="${c.dataset.jump}"]`); if(el) $('#bays').scrollTo({left:el.offsetLeft-$('#bays').offsetLeft,behavior:'smooth'}); });
   wireCards();
   wireLaneControls();
   renderGuard();
@@ -2715,7 +3053,9 @@ function paintLog(){
             <input list="fleetDrivers" data-ldrv="${g.id}" value="${esc(g.driver||'')}" placeholder="Driver name">
           </span>
           <button class="tiny primary" data-lfleetsave="${g.id}">Confirm vehicle &amp; driver</button>
-          <span class="hint" style="margin:0">Anything new here is added to the master lists.</span>
+          <button class="tiny wabtn" data-lwa="${g.id}" title="Opens WhatsApp with the stops, items and shop locations for the driver">WhatsApp to driver</button>
+          <button class="tiny ghost" data-lwacopy="${g.id}" title="Copy the same text">Copy text</button>
+          <span class="hint" style="margin:0">Anything new here is added to the master lists.${g.driver&&!driverPhone(g.driver)?` No WhatsApp number saved for ${esc(g.driver)} — add it in Setup.`:''}</span>
         </div>
         <p class="hint" style="margin-top:0">
           Each line starts assumed <b>fully gone</b> — only touch the ones that came back whole or in
@@ -2764,6 +3104,17 @@ function paintLog(){
         btn.textContent=`Apply delivery — updates ${n} line${n===1?'':'s'}`;
       }
     };
+  });
+  box.querySelectorAll('[data-lwa]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation();
+    const g=S.log.find(x=>x.id===el.dataset.lwa); if(!g) return;
+    const ph=driverPhone(g.driver);
+    window.open('https://wa.me/'+(ph||'')+'?text='+encodeURIComponent(driverText(g)),'_blank','noopener');
+    if(!ph) flash(g.driver?`No number saved for ${g.driver} — pick the chat in WhatsApp`:'No driver set — pick the chat in WhatsApp');
+  });
+  box.querySelectorAll('[data-lwacopy]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation();
+    const g=S.log.find(x=>x.id===el.dataset.lwacopy); if(g) copy(driverText(g),'Driver text copied');
   });
   box.querySelectorAll('[data-lfleetsave]').forEach(el=>el.onclick=async e=>{
     e.stopPropagation();
@@ -2860,7 +3211,8 @@ function paintLog(){
         S.stockOut[key]=S.stockOut[key]||{};
         Object.entries(units).forEach(([u,n])=>{ S.stockOut[key][u]=(S.stockOut[key][u]||0)+n; });
       });
-      g.stockDelta=delta;
+      g.stockDelta=delta; g.appliedAt=Date.now();
+      refreshZero(Object.keys(delta));
       // the loaded-qty edits for these lines are used up - whatever balance is left plans as ordered
       S.plan.lanes.forEach(l=>l.stops.forEach(st=>{ if(st.loadQty) allIds.forEach(id=>delete st.loadQty[id]); }));
       S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>stopItems(s).length));
@@ -2877,6 +3229,8 @@ function paintLog(){
         else S.orders.push({...snapO});
       });
       if(g.stockDelta) Object.entries(g.stockDelta).forEach(([key,units])=>{
+        // a stock figure given after this delivery already counts it - nothing to give back
+        const sm=S.stockMeta[key]; if(sm&&sm.at&&(!g.appliedAt||sm.at>g.appliedAt)) return;
         if(!S.stockOut[key]) return;
         Object.entries(units).forEach(([u,n])=>{
           S.stockOut[key][u]=+(( S.stockOut[key][u]||0)-n).toFixed(3);
@@ -2884,7 +3238,8 @@ function paintLog(){
         });
         if(!Object.keys(S.stockOut[key]).length) delete S.stockOut[key];
       });
-      g.resolved=false; g.snapshot=null; g.stockDelta=null;
+      const sk=Object.keys(g.stockDelta||{});
+      g.resolved=false; g.snapshot=null; g.stockDelta=null; refreshZero(sk);
       await save(); renderAll(); flash('Reopened — quantities restored to before that apply');});
   });
   box.querySelectorAll('[data-logdel]').forEach(el=>el.onclick=e=>{
@@ -3033,13 +3388,14 @@ function stockGroups(){
     const mixedUnits=e.qtyLines.size>1;
     const neededInDom=e.qty.get(domUnit)||0;
     const stockReady=(S.stock[e.key]??null);
-    const deliveredOut=S.stockOut[e.key]?.[domUnit]||0;
+    const meta=S.stockMeta[e.key]||null;
+    const deliveredOut=S.stockOut[e.key]?.[meta&&meta.unit!=null?meta.unit:domUnit]||0;
     // stock can't physically go below zero even if more got marked delivered than was ever
     // marked ready (a stale "ready" number, or deliveries logged out of order) - clamp it
     const currentStock=stockReady==null?null:Math.max(0,+(stockReady-deliveredOut).toFixed(3));
     const shortBy=currentStock==null?0:Math.max(0,+(neededInDom-currentStock).toFixed(3));
     return {key:e.key,label,qty:e.qty,qtyText:qtyText(e.qty),weight:e.weight,units:[...e.units],
-            domUnit,mixedUnits,neededInDom,stockReady,deliveredOut,currentStock,shortBy,
+            domUnit,mixedUnits,neededInDom,stockReady,deliveredOut,currentStock,shortBy,meta,
             parties:[...e.parties.values()]
               .map(p=>({...p,qtyText:qtyText(p.qty),tags:[...p.tags]}))
               .sort((a,b)=>b.weight-a.weight||a.party.localeCompare(b.party))};
@@ -3051,6 +3407,69 @@ function shortageItems(){ return stockGroups().filter(g=>g.stockReady!=null&&g.s
 let _shortKeys=null;
 function shortKeySet(){ if(!_shortKeys) _shortKeys=new Set(shortageItems().map(g=>g.key)); return _shortKeys; }
 function isItemShort(itemText){ return shortKeySet().has(stockKey(itemText)); }
+/* ---------- current stock ----------
+   A new stock figure REPLACES everything before it for that item: the old figure and the
+   deliveries counted against it are dropped, and only Plan log deliveries applied after it
+   count down from it. stockMeta remembers when it was given and when it hit zero. */
+const DAY_MS=86400000;
+function stockNow(key,g){
+  if(S.stock[key]==null) return null;
+  const m=S.stockMeta[key]||{};
+  if(g===undefined&&m.unit==null) g=stockGroups().find(x=>x.key===key);
+  const u=m.unit!=null?m.unit:(g?g.domUnit:'');
+  return Math.max(0,+(S.stock[key]-(S.stockOut[key]?.[u]||0)).toFixed(3));
+}
+function setStock(key,n,label){
+  if(n==null){ delete S.stock[key]; delete S.stockMeta[key]; delete S.stockOut[key]; return; }
+  const g=stockGroups().find(x=>x.key===key);
+  n=Math.max(0,+n);
+  S.stock[key]=n; delete S.stockOut[key];
+  const now=Date.now();
+  S.stockMeta[key]={at:now,zeroAt:n<=0?now:null,unit:g?g.domUnit:'',label:label||(g?g.label:key)};
+}
+// after a delivery is applied or undone: note the moment an item runs out (or comes back)
+function refreshZero(keys){
+  keys.forEach(k=>{
+    if(S.stock[k]==null) return;
+    const m=S.stockMeta[k]=S.stockMeta[k]||{at:null,zeroAt:null};
+    const cur=stockNow(k);
+    if(cur<=0){ if(!m.zeroAt) m.zeroAt=Date.now(); } else m.zeroAt=null;
+  });
+}
+function daysSince(ts){ return ts?Math.max(0,Math.floor((startOfDay(Date.now())-startOfDay(ts))/DAY_MS)):null; }
+function startOfDay(ts){ const d=new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+function dmyOf(ts){ const d=new Date(ts); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
+// every item with a stock figure that is at zero now, longest-out first
+function outOfStockList(){
+  const groups=new Map(stockGroups().map(g=>[g.key,g]));
+  return Object.keys(S.stock).map(k=>{
+    const g=groups.get(k)||null, cur=stockNow(k,g); if(cur==null||cur>0) return null;
+    const m=S.stockMeta[k]||{};
+    const since=m.zeroAt||null;
+    return {key:k,label:g?g.label:(m.label||k),since,days:daysSince(since),g,unit:g?g.domUnit:(m.unit||'')};
+  }).filter(Boolean).sort((a,b)=>(b.days??-1)-(a.days??-1)||a.label.localeCompare(b.label));
+}
+/* paste from the stock register: any columns, as long as each line has the item name and a
+   qty. The item is the first cell with a letter in it; the qty is the last number on the line. */
+function parseStockPaste(text){
+  const groups=stockGroups();
+  const compact=s=>stockKey(s).replace(/\s+/g,'');
+  const byCompact=new Map(groups.map(g=>[compact(g.label),g])); groups.forEach(g=>{ if(!byCompact.has(compact(g.key))) byCompact.set(compact(g.key),g); });
+  const rows=[], seen=new Map();
+  text.replace(/\r/g,'').split('\n').forEach(line=>{
+    if(!line.trim()) return;
+    const c=(line.includes('\t')?line.split('\t'):line.split(/\s{2,}/)).map(x=>x.trim());
+    const ii=c.findIndex(x=>/[a-z]/i.test(x)&&!/^[\d.,]+\s*[a-z]{0,4}$/i.test(x)); if(ii<0) return;
+    let qty=null;
+    for(let j=c.length-1;j>ii;j--){ const m=c[j].replace(/,/g,'').match(/^(-?[\d.]+)\s*[a-z]{0,6}$/i); if(m){ qty=Math.max(0,parseFloat(m[1])); break; } }
+    if(qty==null||isNaN(qty)) return;
+    const name=c[ii], g=byCompact.get(compact(name)), key=g?g.key:stockKey(name);
+    if(!key) return;
+    const r={name,key,qty,g,old:S.stock[key]!=null?stockNow(key,g||null):null};
+    if(seen.has(key)) rows[seen.get(key)]=r; else { seen.set(key,rows.length); rows.push(r); }
+  });
+  return rows;
+}
 const stockOpen=new Set();
 const stockTabs=new Set();
 const stockRoutes=new Set();
@@ -3124,6 +3543,10 @@ function paintStock(){
     return {...g,parties,qty:q,qtyText:qtyText(q),weight:parties.reduce((a,p)=>a+p.weight,0)};
   }).filter(Boolean);
   if(q) list=list.filter(g=>g.key.includes(q));
+  const show=$('#stockShow')?.value||'all';
+  if(show==='out') list=list.filter(g=>g.stockReady!=null&&g.currentStock<=0);
+  else if(show==='short') list=list.filter(g=>g.stockReady!=null&&(g.currentStock<=0||g.shortBy>0));
+  else if(show==='nostock') list=list.filter(g=>g.stockReady==null);
 
   if(sort==='qty') list.sort((a,b)=>b.weight-a.weight||a.label.localeCompare(b.label));
   else if(sort==='parties') list.sort((a,b)=>b.parties.length-a.parties.length||a.label.localeCompare(b.label));
@@ -3145,12 +3568,12 @@ function paintStock(){
   let h='<div class="card"><table class="sheet"><tr class="title">'+
     '<td style="width:44px"></td><td>Item</td><td style="width:110px">Qty needed</td>'+
     '<td style="width:110px">Unit wt</td><td style="width:120px">Total wt</td>'+
-    '<td style="width:110px">Parties</td><td style="width:150px">Stock ready</td></tr>';
+    '<td style="width:110px">Parties</td><td style="width:170px">Current stock</td></tr>';
   list.forEach(g=>{
     const open=stockOpen.has(g.key);
     const unit=g.units.length===1?num(g.units[0]):(g.units.length?'mixed':'');
     const unitLabel=g.domUnit||'pcs';
-    const readyVal=g.stockReady==null?'':g.stockReady;
+    const readyVal=g.stockReady==null?'':g.currentStock; // typing a number here sets a fresh current stock
     const mixedTitle=g.mixedUnits?`Tracking ${unitLabel} only — this item also has lines in another unit, not counted here.`:'';
     h+=`<tr class="pty" data-stogg="${esc(g.key)}" style="cursor:pointer">
       <td class="num"><span style="display:inline-block;transition:transform .15s;${open?'transform:rotate(90deg)':''}">►</span></td>
@@ -3162,9 +3585,12 @@ function paintStock(){
       <td>
         <span title="${esc(mixedTitle)}"><input type="number" step="any" inputmode="decimal" data-stockready="${esc(g.key)}"
           value="${readyVal}" placeholder="—" style="width:60px;text-align:right"> <span class="hint">${esc(unitLabel)}</span></span>
-        ${g.stockReady!=null?(g.shortBy>0
+        ${g.stockReady!=null?(g.currentStock<=0
+            ?`<div class="hint" style="color:var(--alert);font-weight:700">out of stock${g.meta&&g.meta.zeroAt?` · ${daysSince(g.meta.zeroAt)}d (since ${dmyOf(g.meta.zeroAt)})`:''}</div>`
+            :g.shortBy>0
             ?`<div class="hint" style="color:var(--alert);font-weight:700">short ${num(g.shortBy)} ${esc(unitLabel)}</div>`
-            :`<div class="hint">have ${num(g.currentStock)} ${esc(unitLabel)}</div>`):''}
+            :`<div class="hint">enough for all orders</div>`):''}
+        ${g.meta&&g.meta.at?`<div class="hint" style="font-size:10.5px">given ${dmyOf(g.meta.at)}${g.deliveredOut?` · ${num(g.deliveredOut)} out since`:''}</div>`:''}
       </td></tr>`;
     if(open){
       g.parties.forEach(p=>{
@@ -3190,12 +3616,160 @@ function paintStock(){
     el.onclick=e=>e.stopPropagation();
     el.onchange=async()=>{
       const key=el.dataset.stockready, v=el.value.trim();
-      if(v==='') delete S.stock[key];
-      else { const n=parseFloat(v); if(!isNaN(n)) S.stock[key]=n; else { el.value=''; return; } }
+      if(v==='') setStock(key,null);
+      else { const n=parseFloat(v); if(!isNaN(n)) setStock(key,n); else { el.value=''; return; } }
       await save(); renderAll();
     };
   });
 }
+let stockPending=null;
+function paintStockPreview(){
+  const box=$('#stockPreview'); if(!box) return;
+  if(!stockPending){ box.innerHTML=''; return; }
+  const rows=stockPending;
+  if(!rows.length){ box.innerHTML='<p class="hint" style="color:var(--alert)">No item + qty lines found. Each line needs an item name and a number.</p>'; return; }
+  const inOrders=rows.filter(r=>r.g).length;
+  box.innerHTML=`<p class="hint" style="margin:10px 0 6px">${rows.length} item${rows.length>1?'s':''} read · <b>${inOrders}</b> match items in Orders · ${rows.length-inOrders} not in any order now (kept, used when orders come)</p>
+    <div style="max-height:340px;overflow:auto;border:1px solid var(--edge);border-radius:var(--r)"><table>
+    <tr><th>Item as pasted</th><th>Matches</th><th class="n">Was</th><th class="n">Now</th></tr>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.g?esc(r.g.label):'<span class="hint">not in orders</span>'}</td>
+      <td class="n">${r.old==null?'—':num(r.old)}</td><td class="n"><b style="${r.qty<=0?'color:var(--alert)':''}">${num(r.qty)}</b></td></tr>`).join('')}
+    </table></div>
+    <div class="row" style="margin-top:8px;gap:8px">
+      <div style="flex:0 0 auto"><button class="primary" id="stockApply">Set ${rows.length} stock figure${rows.length>1?'s':''}</button></div>
+      <div style="flex:0 0 auto"><button class="ghost" id="stockCancel">Cancel</button></div></div>`;
+  $('#stockApply').onclick=async()=>{
+    rows.forEach(r=>setStock(r.key,r.qty,r.g?r.g.label:r.name));
+    const n=rows.length; stockPending=null; $('#stockPaste').value='';
+    await save(); renderAll(); paintStockPreview(); flash(`Current stock set for ${n} item${n>1?'s':''}`);
+  };
+  $('#stockCancel').onclick=()=>{ stockPending=null; paintStockPreview(); };
+}
+$('#stockRead').onclick=()=>{ stockPending=parseStockPaste($('#stockPaste').value); paintStockPreview(); };
+/* ---------- reports ----------
+   Built from the Plan log: every logged vehicle is a trip. A confirmed entry counts what was
+   marked as gone when it was applied (from its saved snapshot); an open entry counts what was
+   loaded and is flagged NOT CONFIRMED. Clearing the Plan log clears this history too. */
+const REPORT_VIEWS={rparty:'party',rveh:'vehicle',rdrv:'driver',rday:'day'};
+const repOpen=new Set();
+function repDayKey(d){ const m=String(d||'').match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/); return m?m[3]+m[2].padStart(2,'0')+m[1].padStart(2,'0'):''; }
+function lineQtyOut(g,id,o){
+  const orig=parseNum(o.qty), L=logLoad(g,id);
+  if(!g.resolved) return L!=null?L:orig;
+  const v=g.qtyGone&&!Array.isArray(g.qtyGone)?g.qtyGone[id]:null;
+  const base=(L!=null&&!isNaN(orig)&&L>orig)?L:orig;
+  const gone=v!=null?+v:(L!=null?L:orig);
+  return isNaN(base)?gone:Math.max(0,Math.min(gone,base));
+}
+function reportLines(){
+  const out=[];
+  S.log.forEach(g=>{
+    const snap=new Map((Array.isArray(g.snapshot)?g.snapshot:[]).map(o=>[o.id,o]));
+    const cap=g.laneSnap&&g.laneSnap.cap||0;
+    (g.stops||[]).forEach(st=>(st.orderIds||[]).forEach(id=>{
+      const o=g.resolved?snap.get(id):S.orders.find(x=>x.id===id); if(!o) return;
+      const orig=parseNum(o.qty), q=lineQtyOut(g,id,o);
+      let qty, wt;
+      if(isNaN(q)){ qty=String(o.qty||''); wt=parseNum(o.weight)||0; }
+      else{
+        if(q<=0) return; // stayed on the truck / not delivered
+        const suf=(String(o.qty||'').match(/^[\d.,]+(.*)$/)||['',''])[1];
+        qty=num(+q.toFixed(3))+suf;
+        const u=parseNum(o.unit), w=parseNum(o.weight);
+        wt=!isNaN(u)?q*u:(!isNaN(w)&&orig>0?w*q/orig:(w||0));
+      }
+      out.push({g,date:g.createdAt||'',dk:repDayKey(g.createdAt),vehicle:g.vehicle||'',vehicleNo:g.vehicleNo||'',driver:g.driver||'',
+        cap,party:st.party,item:o.item,qty,weight:+(+wt||0).toFixed(3),conf:!!g.resolved,tab:o.tab||''});
+    }));
+  });
+  return out;
+}
+function repPeriodRange(v){
+  const t=new Date(); t.setHours(0,0,0,0);
+  const k=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  if(v==='all') return ['','99999999'];
+  if(v==='month') return [k(new Date(t.getFullYear(),t.getMonth(),1)),'99999999'];
+  if(v==='lastmonth') return [k(new Date(t.getFullYear(),t.getMonth()-1,1)),k(new Date(t.getFullYear(),t.getMonth(),0))];
+  const from=new Date(t); from.setDate(from.getDate()-(+v-1)); return [k(from),'99999999'];
+}
+function repFiltered(mode){
+  const [a,b]=repPeriodRange($('#repPeriod').value);
+  const f=$('#repFind').value.trim().toLowerCase(), it=$('#repItem').value.trim().toLowerCase().replace(/\s+/g,'');
+  const unconf=$('#repUnconf').checked;
+  return reportLines().filter(l=>{
+    if(!unconf&&!l.conf) return false;
+    if(l.dk&&(l.dk<a||l.dk>b)) return false;
+    if(!l.dk&&$('#repPeriod').value!=='all') return false;
+    if(it&&!l.item.toLowerCase().replace(/\s+/g,'').includes(it)) return false;
+    if(f){
+      const hay=mode==='party'?l.party:mode==='vehicle'?(l.vehicleNo+' '+l.vehicle):mode==='driver'?l.driver:(l.date+' '+l.party+' '+l.vehicleNo+' '+l.driver);
+      if(!hay.toLowerCase().includes(f)) return false;
+    }
+    return true;
+  });
+}
+const vehLabel=l=>l.vehicleNo||(l.vehicle?l.vehicle+' (no number)':'(no vehicle)');
+function tripsOf(lines){
+  const m=new Map();
+  lines.forEach(l=>{ let t=m.get(l.g.id); if(!t){ t={g:l.g,date:l.date,dk:l.dk,lines:[],kg:0,parties:new Set(),conf:l.conf,cap:l.cap}; m.set(l.g.id,t); }
+    t.lines.push(l); t.kg+=l.weight; t.parties.add(l.party); });
+  return [...m.values()].sort((a,b)=>b.dk.localeCompare(a.dk));
+}
+function tripHtml(t,showParty){
+  const g=t.g, pct=t.cap?Math.round(t.kg/t.cap*100):null;
+  const byP=new Map(); t.lines.forEach(l=>{ if(!byP.has(l.party)) byP.set(l.party,[]); byP.get(l.party).push(l); });
+  return `<div class="rtrip"><div class="rh">${esc(t.date||'no date')} · ${esc(g.vehicleNo||g.vehicle||'vehicle')}${g.vehicleNo&&g.vehicle?` <span class="hint">(${esc(g.vehicle)})</span>`:''}${g.driver?' · '+esc(g.driver):''}
+    · ${num(+t.kg.toFixed(1))} kg${pct!=null?` <span class="hint">(${pct}% of ${num(t.cap)})</span>`:''}${t.conf?'':' <span class="tag unconf">NOT CONFIRMED</span>'}</div>
+    ${[...byP].map(([p,ls])=>`<div class="ri">${showParty?`<b>${esc(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
+}
+let repLast=[];
+let repSub='vehicle'; // Vehicle & driver trips: which way the trips are grouped
+function paintReports(){
+  const mode=currentView==='rveh'?repSub:(REPORT_VIEWS[currentView]||'party');
+  const tg=$('#repToggle');
+  tg.innerHTML=currentView==='rveh'?`<div class="segtoggle"><button data-rsub="vehicle" class="${repSub==='vehicle'?'on':''}">By vehicle</button><button data-rsub="driver" class="${repSub==='driver'?'on':''}">By driver</button></div>`:'';
+  tg.querySelectorAll('[data-rsub]').forEach(b=>b.onclick=()=>{ repSub=b.dataset.rsub; $('#repFind').value=''; paintReports(); });
+  const T={party:['Party history','Every delivery to each party from the Plan log. Use "Item contains" to find when a party last got an item.','Find party'],
+    vehicle:['Vehicle & driver trips','Trips per vehicle number, with load against capacity.','Find vehicle'],
+    driver:['Vehicle & driver trips','Trips per driver, with the vehicles they took.','Find driver'],
+    day:['Day-wise','What went out each day.','Find party / vehicle / driver']}[mode];
+  $('#repTitle').textContent=T[0]; $('#repHint').textContent=T[1]+' Built from the Plan log — clearing the log clears this history.'; $('#repFindLbl').textContent=T[2];
+  const lines=repFiltered(mode); repLast=lines;
+  const trips=tripsOf(lines), kg=lines.reduce((a,l)=>a+l.weight,0);
+  const stat=(v,l)=>`<div class="dstat"><b>${v}</b><small>${l}</small></div>`;
+  $('#repSum').innerHTML=lines.length?`<div class="dstats" style="width:100%">${stat(trips.length,'trips')}${stat(new Set(lines.map(l=>l.party)).size,'parties')}${stat(lines.length,'item lines')}${stat(num(Math.round(kg))+' kg','delivered')}</div>`:'';
+  const body=$('#repBody');
+  if(!lines.length){ body.innerHTML=`<div class="card"><p class="hint">${S.log.length?'Nothing in the Plan log matches this period and filter.':'No trips yet — reports fill in as vehicles are added to the Plan log.'}</p></div>`; return; }
+  const keyOf={party:l=>l.party,vehicle:vehLabel,driver:l=>l.driver||'(no driver set)',day:l=>l.date||'no date'}[mode];
+  const groups=new Map(); lines.forEach(l=>{ const k=keyOf(l); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(l); });
+  let list=[...groups].map(([k,ls])=>{ const tr=tripsOf(ls); return {k,ls,tr,kg:ls.reduce((a,l)=>a+l.weight,0),last:tr[0]?tr[0].dk:'',lastDate:tr[0]?tr[0].date:''}; });
+  if(mode==='day') list.sort((a,b)=>b.last.localeCompare(a.last)); else list.sort((a,b)=>b.kg-a.kg||a.k.localeCompare(b.k));
+  const head={party:'<th>Party</th><th class="n">Trips</th><th class="n">Item lines</th><th class="n">Delivered kg</th><th>Last delivery</th><th>On hand now</th>',
+    vehicle:'<th>Vehicle</th><th class="n">Trips</th><th class="n">Parties</th><th class="n">Delivered kg</th><th class="n">Avg load</th><th>Last trip</th>',
+    driver:'<th>Driver</th><th class="n">Trips</th><th class="n">Parties</th><th class="n">Delivered kg</th><th>Vehicles</th><th>Last trip</th>',
+    day:'<th>Date</th><th class="n">Trips</th><th class="n">Parties</th><th class="n">Delivered kg</th><th>Vehicles</th><th>Drivers</th>'}[mode];
+  const rk=k=>mode+'|'+k;
+  body.innerHTML=`<div class="card"><div style="overflow-x:auto"><table class="rtable"><tr><th style="width:22px"></th>${head}</tr>${list.map(r=>{
+    const open=repOpen.has(rk(r.k)), ps=new Set(r.ls.map(l=>l.party)).size;
+    let cells;
+    if(mode==='party'){ const oh=itemsOf(r.k); const ohKg=oh.reduce((a,o)=>a+(parseFloat(o.weight)||0),0);
+      cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${r.ls.length}</td><td class="n">${num(Math.round(r.kg))}</td><td class="mono">${esc(r.lastDate)}</td><td class="hint">${oh.length?`${oh.length} line${oh.length>1?'s':''} · ${num(Math.round(ohKg))} kg`:'—'}</td>`; }
+    else if(mode==='vehicle'){ const w=r.tr.filter(t=>t.cap); const avg=w.length?Math.round(w.reduce((a,t)=>a+t.kg/t.cap,0)/w.length*100):null;
+      cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="n">${avg==null?'—':avg+'%'}</td><td class="mono">${esc(r.lastDate)}</td>`; }
+    else if(mode==='driver'){ cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="mono">${esc(r.lastDate)}</td>`; }
+    else cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="hint">${esc([...new Set(r.ls.map(l=>l.driver).filter(Boolean))].join(', ')||'—')}</td>`;
+    return `<tr class="rg" data-rk="${esc(rk(r.k))}"><td><span style="display:inline-block;${open?'transform:rotate(90deg)':''}">►</span></td>${cells}</tr>`
+      +(open?`<tr class="rdet"><td colspan="7">${r.tr.map(t=>tripHtml(t,mode!=='party')).join('')}</td></tr>`:'');
+  }).join('')}</table></div></div>`;
+  body.querySelectorAll('[data-rk]').forEach(tr=>tr.onclick=()=>{ const k=tr.dataset.rk; repOpen.has(k)?repOpen.delete(k):repOpen.add(k); paintReports(); });
+}
+['repPeriod','repUnconf'].forEach(id=>$('#'+id).onchange=paintReports);
+['repFind','repItem'].forEach(id=>$('#'+id).oninput=paintReports);
+$('#repCopy').onclick=()=>{
+  const ls=[...repLast].sort((a,b)=>a.dk.localeCompare(b.dk)||a.party.localeCompare(b.party));
+  const txt=['DATE\tPARTY\tITEM\tQTY\tKG\tVEHICLE\tDRIVER\tSTATUS'].concat(ls.map(l=>[l.date,l.party,l.item,l.qty,l.weight,vehLabel(l),l.driver,l.conf?'delivered':'not confirmed'].join('\t'))).join('\n');
+  copy(txt,`Copied ${ls.length} lines`);
+};
 function stockText(){
   let list=stockGroups().sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true,sensitivity:'base'}));
   return list.map(g=>`${g.label}\t${g.qtyText}\t${g.weight}`).join('\n');
@@ -3207,8 +3781,8 @@ function stockText(){
    you switch to it, so one edit no longer rebuilds five screens you can't see. */
 const PAINT={
   dash:()=>{ paintDash(); paintOrders(); },
-  orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); paintClear(); }, plan:paintPlan, out:paintOut, log:paintLog, stock:paintStock,
-  uploads:paintUploads
+  orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); }, parties:()=>{ paintRoutes(); paintMasters(); }, admin:paintAdmin, plan:paintPlan, out:paintOut, log:paintLog, stock:paintStock,
+  uploads:paintUploads, rparty:paintReports, rveh:paintReports, rdrv:paintReports, rday:paintReports
 };
 let currentView='dash';
 const stale=new Set(Object.keys(PAINT));
@@ -3234,6 +3808,7 @@ function refresh(){
   try{ reindex(); }catch(e){ showError('reindex: '+(e.stack||e.message)); }
   _shortKeys=null; // shortage flags depend on orders/stock/log, all of which invalidate a repaint
   try{ renderGuard(); }catch(e){ showError('renderGuard: '+(e.stack||e.message)); }
+  if(REPORT_VIEWS[currentView]) stale.add(currentView);
   if(stale.has(currentView)){
     try{ PAINT[currentView](); stale.delete(currentView); }
     catch(e){ showError('paint '+currentView+': '+(e.stack||e.message)); }
@@ -3241,28 +3816,62 @@ function refresh(){
 }
 function renderDash(){   invalidate('dash','stock');           refresh(); }
 function renderOrders(){ invalidate('dash','orders','stock');  refresh(); }
-function renderRoutes(){ invalidate('routes','dash','stock');  refresh(); }
+function renderRoutes(){ invalidate('routes','parties','admin','dash','stock');  refresh(); }
 function renderPlan(){   invalidate('plan','dash','out');      refresh(); }
 function renderOut(){    invalidate('out');                    refresh(); }
 function renderLog(){    invalidate('log','dash','stock');     refresh(); }
 function renderAll(){    invalidate();                         refresh(); }
 
 // ☰ menu: one short header line; the two groups drop down underneath when opened
+const menuOpen=()=>$('#mainMenu').classList.contains('open');
 function setMenu(open){
-  $('#mainMenu').hidden=!open; $('#menuBtn').setAttribute('aria-expanded',open?'true':'false');
+  setHdrH();
+  $('#mainMenu').classList.toggle('open',open); $('#navShade').classList.toggle('open',open);
+  $('#mainMenu').setAttribute('aria-hidden',open?'false':'true');
+  $('#menuBtn').setAttribute('aria-expanded',open?'true':'false');
 }
-$('#menuBtn').onclick=e=>{ e.stopPropagation(); setMenu($('#mainMenu').hidden); };
-document.addEventListener('click',e=>{ if(!$('#mainMenu').hidden && !e.target.closest('#mainMenu,#menuBtn')) setMenu(false); });
+function setHdrH(){ const h=document.querySelector('header'); if(h) document.documentElement.style.setProperty('--hdrH',h.getBoundingClientRect().height+'px'); }
+window.addEventListener('resize',setHdrH); setHdrH();
+$('#undoBtn').onclick=()=>undoGo(true);
+$('#redoBtn').onclick=()=>undoGo(false);
+$('#menuBtn').onclick=e=>{ e.stopPropagation(); setMenu(!menuOpen()); };
+document.addEventListener('click',e=>{ if(menuOpen() && !e.target.closest('#mainMenu,#menuBtn')) setMenu(false); });
+// each group (Logistics / Reports / Master) folds up on a tap of its heading; remembered per device
+const MG_KEY='ld:navshut';
+let navShut=[]; try{ navShut=JSON.parse(localStorage.getItem(MG_KEY)||'[]'); }catch(e){}
+$$('#mainMenu .mgroup').forEach(gp=>{
+  const lb=gp.querySelector('.mglabel'), name=lb.textContent.trim();
+  if(navShut.includes(name)&&!gp.querySelector('button.on')) gp.classList.add('shut');
+  lb.onclick=e=>{ e.stopPropagation(); gp.classList.toggle('shut');
+    navShut=$$('#mainMenu .mgroup.shut .mglabel').map(x=>x.textContent.trim());
+    try{ localStorage.setItem(MG_KEY,JSON.stringify(navShut)); }catch(e){} };
+});
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') setMenu(false); });
 $$('nav button[data-v]').forEach(b=>b.onclick=()=>{ setMenu(false); gotoView(b.dataset.v); });
 // every place that switches tabs goes through here, so currentView and the header label stay honest
+/* Prev / Next through the four Logistics steps, at the right end of the bar under the header */
+const STEPS=[['orders','Add orders'],['plan','Build plan'],['out','Final plan'],['log','Plan log']];
+function paintStepNav(v){
+  const box=$('#stepNav'); if(!box) return;
+  const i=STEPS.findIndex(x=>x[0]===v);
+  if(i<0){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false;
+  const pv=STEPS[i-1], nx=STEPS[i+1];
+  box.innerHTML=`${pv?`<button data-step="${pv[0]}" title="Back to ${pv[1]}">‹ <span class="snl">${i}. ${pv[1]}</span></button>`:''}
+    <span class="sn">${i+1}/4</span>
+    ${nx?`<button class="nx" data-step="${nx[0]}" title="Go to ${nx[1]}"><span class="snl">${i+2}. ${nx[1]}</span> ›</button>`:''}`;
+  box.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ gotoView(b.dataset.step); window.scrollTo(0,0); });
+}
 function gotoView(v){
+  if(currentView==='admin'&&v!=='admin') adminOpenUntil=0; // leaving Admin locks it again
+  if(v==='admin') stale.add('admin');
   currentView=v;
   $$('nav button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  $$('.view').forEach(sec=>sec.classList.toggle('on',sec.id==='v-'+v));
+  $$('.view').forEach(sec=>sec.classList.toggle('on',sec.id==='v-'+(REPORT_VIEWS[v]?'reports':v)));
   const b=$(`nav button[data-v="${v}"]`), grp=b?.closest('.mgroup')?.querySelector('.mglabel')?.textContent||'';
   const nm=b?b.textContent.replace(/^\d+\s*·\s*/,''):'';
   $('#curView').textContent=grp?`${grp} · ${nm}`:nm;
+  paintStepNav(v);
   refresh();
 }
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-goto]'); if(!a) return; e.preventDefault(); gotoView(a.dataset.goto); });
@@ -3436,14 +4045,14 @@ const CLEARS=[
     n:()=>S.log.length, unit:['entry','entries'], run:()=>{ S.log=[]; S.stockOut={}; }},
   {k:'uploads', name:'Upload log', what:'The list of past pastes. Orders themselves stay.',
     n:()=>(S.uploads||[]).length, unit:['upload','uploads'], run:()=>{ S.uploads=[]; S.upSeq=0; }},
-  {k:'stock', name:'Stock ready figures', what:'The stock-ready numbers typed in Stock Required.',
-    n:()=>Object.keys(S.stock||{}).length, unit:['item','items'], run:()=>{ S.stock={}; }},
+  {k:'stock', name:'Current stock figures', what:'The current-stock numbers in Stock Required, with their dates.',
+    n:()=>Object.keys(S.stock||{}).length, unit:['item','items'], run:()=>{ S.stock={}; S.stockMeta={}; S.stockOut={}; }},
   {k:'notes', name:'Final Plan notes', what:'Bracket notes typed on Final Plan item rows.',
     n:()=>Object.keys(S.finalNotes||{}).length, unit:['note','notes'], run:()=>{ S.finalNotes={}; }},
   {k:'combos', name:'Route combinations', what:'Saved combinations and their exclusions. The routes themselves stay.',
     n:()=>(S.combos||[]).length, unit:['combination','combinations'], run:()=>{ S.combos=[]; }},
   {k:'fleet', name:'Vehicle numbers & drivers', what:'Both lists.',
-    n:()=>S.fleet.vehicles.length+S.fleet.drivers.length, unit:['entry','entries'], run:()=>{ S.fleet={vehicles:[],drivers:[]}; }},
+    n:()=>S.fleet.vehicles.length+S.fleet.drivers.length, unit:['entry','entries'], run:()=>{ S.fleet={vehicles:[],drivers:[],phones:{}}; }},
   {k:'parties', name:'Party master', what:'Every party\'s routes, place, pincode, hold and due dates. Parties with orders on hand come back with no routes.',
     n:()=>Object.keys(S.parties).length, unit:['party','parties'],
     run:()=>{ S.parties={}; S.orders.forEach(o=>{ if(!S.parties[o.party]) S.parties[o.party]={routes:[],place:'',pincode:''}; }); }},
@@ -3469,6 +4078,37 @@ function paintClear(){
   });
 }
 $('#clrBackup').onclick=()=>$('#backupExport').click();
+
+/* ---------- admin (PIN) ----------
+   Clear data and Restore sit behind a 4-digit PIN (1010 until changed). Only a hash of the PIN
+   is kept, and it syncs through the sheet so every device uses the same PIN. It stops slips
+   and casual use - it is not real security, since anyone with the file can read the code.
+   Forgotten PIN: run resetAdminPin in the sheet's Apps Script (back to 1010). */
+const DEFAULT_PIN='1010';
+let adminOpenUntil=0;
+function pinHash(p){ let h=2166136261; for(const ch of 'ld-admin|'+p){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619)>>>0; } return 'p1:'+h.toString(36); }
+function pinOk(p){ return pinHash(p)===(S.adminPin||pinHash(DEFAULT_PIN)); }
+const adminUnlocked=()=>Date.now()<adminOpenUntil;
+function paintAdmin(){
+  const ok=adminUnlocked();
+  $('#adminLock').hidden=ok; $('#adminBody').hidden=!ok;
+  if(ok) paintClear(); else { $('#adminPin').value=''; }
+}
+$('#adminGo').onclick=()=>{
+  const v=$('#adminPin').value.trim();
+  if(!pinOk(v)){ $('#adminMsg').textContent='Wrong PIN.'; $('#adminPin').value=''; $('#adminPin').focus(); return; }
+  $('#adminMsg').textContent=''; adminOpenUntil=Date.now()+10*60000; paintAdmin();
+};
+$('#adminPin').onkeydown=e=>{ if(e.key==='Enter') $('#adminGo').click(); };
+$('#adminPin').oninput=()=>{ if($('#adminPin').value.length===4) $('#adminGo').click(); };
+$('#adminLockBtn').onclick=()=>{ adminOpenUntil=0; paintAdmin(); };
+$('#pinSave').onclick=async()=>{
+  const a=$('#pinNew').value.trim(), b=$('#pinNew2').value.trim();
+  if(!/^\d{4}$/.test(a)){ flash('The PIN must be 4 digits'); return; }
+  if(a!==b){ flash('The two PINs are not the same'); return; }
+  S.adminPin=pinHash(a); $('#pinNew').value=''; $('#pinNew2').value='';
+  await save(); flash('Admin PIN changed — on every device after the next sync');
+};
 
 /* ---------- vehicle types, sheet tabs, maps settings (Master Data) ---------- */
 function paintMasters(){
@@ -3750,11 +4390,11 @@ $('#backupExport').onclick=async()=>{
     JSON.stringify(payload,null,2),
     'application/json'
   );
-  $('#backupNote').textContent=ok
+  $('#backupExpNote').textContent=ok
     ? `Downloaded — ${S.orders.length} order lines, ${Object.keys(S.parties).length} parties, ${S.log.length} log entries.`
     : 'Download was cancelled or unavailable here — try again.';
 };
-$('#backupImport').onclick=()=>$('#backupFile').click();
+$('#backupImport').onclick=()=>{ if(!adminUnlocked()){ gotoView('admin'); return; } $('#backupFile').click(); };
 $('#backupFile').onchange=async e=>{
   const f=e.target.files[0]; if(!f)return;
   let payload; try{payload=JSON.parse(await f.text());}catch(_){ $('#backupNote').textContent='That file is not readable JSON.'; e.target.value=''; return; }
@@ -3770,7 +4410,7 @@ $('#backupFile').onchange=async e=>{
     S=Object.assign({orders:[],parties:{},routes:[],plan:{route:'',lanes:[]},log:[],seq:1,combos:[],stock:{},stockOut:{}},incoming);
     normMasters(true);
     S.combos=S.combos||[];   // backups taken before combinations existed
-    S.stock=S.stock||{}; S.stockOut=S.stockOut||{};   // backups taken before stock tracking existed
+    S.stock=S.stock||{}; S.stockOut=S.stockOut||{}; S.stockMeta=S.stockMeta||{};   // backups taken before stock tracking existed
     S.dupOk=(S.dupOk&&typeof S.dupOk==='object'&&!Array.isArray(S.dupOk))?S.dupOk:{};
     S.finalNotes=S.finalNotes||{};
     S.fleet=S.fleet||{vehicles:[],drivers:[]};
@@ -3795,6 +4435,7 @@ $('#logFilter').onchange=renderLog;
 let stockTimer=null;
 $('#stockSearch').oninput=()=>{ clearTimeout(stockTimer); stockTimer=setTimeout(paintStock,160); };
 $('#stockSort').onchange=paintStock;
+$('#stockShow').onchange=()=>paintStock();
 $('#stockCopy').onclick=()=>copy(stockText(),'Copied — item, qty, total weight');
 $('#pSearch').oninput=renderRoutes;
 $('#poolSearch').oninput=renderPlan;
@@ -3837,7 +4478,7 @@ $('#addCombo').onclick=async()=>{
 };
 $('#addVeh').onclick=async()=>{
   const t=vehTypes()[+$('#vehPick').value];
-  if(!t){ flash('Add a vehicle type in Master Data first'); return; }
+  if(!t){ flash('Add a vehicle type in Setup first'); return; }
   const {name,cap}=t;
   S.plan.lanes.push({id:uid('L'),name:freeLaneName(name,null),cap:+cap,title:'',routes:[],stops:[]});
   await save();renderPlan();flash('Vehicle added — now pick its routes in its column');
@@ -3979,11 +4620,11 @@ function toModel(){
   });
   const st=S.settings||{};
   const masters={routes:[...S.routes],tabs,vehTypes:(S.vehTypes||[]).map(v=>({name:v.name,cap:+v.cap||0})),
-    vehicles:[...S.fleet.vehicles],drivers:[...S.fleet.drivers],
+    vehicles:[...S.fleet.vehicles],drivers:[...S.fleet.drivers],phones:{...(S.fleet.phones||{})},
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:S.log,plan:S.plan,uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,
+  const data={log:S.log,plan:S.plan,uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -4015,7 +4656,7 @@ function mergeModels(b,l,r){
   const byName=a=>Object.fromEntries((a||[]).map(v=>[v.name,v]));
   const masters={routes:m3list(bm.routes,lm.routes,rm.routes), tabs:m3list(bm.tabs,lm.tabs,rm.tabs),
     vehTypes:Object.values(m3map(byName(bm.vehTypes),byName(lm.vehTypes),byName(rm.vehTypes))),
-    vehicles:m3list(bm.vehicles,lm.vehicles,rm.vehicles), drivers:m3list(bm.drivers,lm.drivers,rm.drivers),
+    vehicles:m3list(bm.vehicles,lm.vehicles,rm.vehicles), drivers:m3list(bm.drivers,lm.drivers,rm.drivers), phones:m3map(bm.phones,lm.phones,rm.phones),
     combos:m3(bm.combos,lm.combos,rm.combos)||[], settings:m3map(bm.settings,lm.settings,rm.settings)};
   const bd=b.data||{}, ld=l.data||{}, rd=r.data||{};
   const data={};
@@ -4023,7 +4664,7 @@ function mergeModels(b,l,r){
     if(k==='log'||k==='uploads') data[k]=m3ids(bd[k],ld[k],rd[k]);
     else if(k==='plan'){ const bp=bd.plan||{},lp=ld.plan||{},rp=rd.plan||{};
       data.plan={...m3map(bp,lp,rp), lanes:m3ids(bp.lanes,lp.lanes,rp.lanes)}; }
-    else if(k==='partyExtra'||k==='orderMeta'||k==='dupOk'||k==='finalNotes') data[k]=m3map(bd[k],ld[k],rd[k]);
+    else if(k==='partyExtra'||k==='orderMeta'||k==='dupOk'||k==='finalNotes'||k==='stock'||k==='stockOut'||k==='stockMeta') data[k]=m3map(bd[k],ld[k],rd[k]);
     else if(k==='seq'||k==='upSeq') data[k]=Math.max(+ld[k]||0,+rd[k]||0);
     else { const v=m3(bd[k],ld[k],rd[k]); if(v!==undefined) data[k]=v; }
   });
@@ -4032,6 +4673,7 @@ function mergeModels(b,l,r){
 
 // put a (merged or sheet) model into this device's data
 function applyModel(m,fromSheet){
+  undoClearNext=true; // the next save starts a fresh undo history
   const blanks=S.orders.filter(o=>!str(o.item)); // half-typed lines in Orders edit mode stay put
   const d=m.data||{}, meta=d.orderMeta||{}, t=today10();
   S.orders=(m.orders||[]).map(o=>({id:o.id,party:o.party,item:o.item,qty:o.qty,unit:o.unit,weight:o.weight,
@@ -4043,15 +4685,16 @@ function applyModel(m,fromSheet){
   const ms=m.masters||{};
   S.routes=[...(ms.routes||[])]; S.tabs=[...(ms.tabs||[])];
   S.vehTypes=(ms.vehTypes||[]).map(v=>({name:v.name,cap:+v.cap||0}));
-  S.fleet={vehicles:[...(ms.vehicles||[])],drivers:[...(ms.drivers||[])]};
+  S.fleet={vehicles:[...(ms.vehicles||[])],drivers:[...(ms.drivers||[])],phones:{...(ms.phones||{})}};
   const oldC=S.combos||[];
   S.combos=(ms.combos||[]).map(c=>{ const was=oldC.find(o=>(o.name||'')===(c.name||'')&&same(o.routes,c.routes));
     return {id:was?was.id:uid('c'),name:c.name||'',routes:[...c.routes],xroutes:[...(c.xroutes||[])]}; });
   S.settings={...(ms.settings||{})}; normMasters(true);
-  ['log','plan','uploads','stock','stockOut','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+  ['log','plan','uploads','stock','stockOut','stockMeta','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+  S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
   S.plan=S.plan||{poolFilter:[],lanes:[]}; S.plan.lanes=S.plan.lanes||[]; S.plan.poolFilter=S.plan.poolFilter||[];
-  S.log=S.log||[]; S.uploads=S.uploads||[]; S.stock=S.stock||{}; S.stockOut=S.stockOut||{}; S.finalNotes=S.finalNotes||{}; S.dupOk=S.dupOk||{};
+  S.log=S.log||[]; S.uploads=S.uploads||[]; S.stock=S.stock||{}; S.stockOut=S.stockOut||{}; S.stockMeta=S.stockMeta||{}; S.finalNotes=S.finalNotes||{}; S.dupOk=S.dupOk||{};
   // every party with orders has a record; new lines typed in the sheet bring their route (column B)
   S.orders.forEach(o=>{ if(o.party&&!S.parties[o.party]) S.parties[o.party]={routes:[],place:'',pincode:'',loc:''}; });
   (fromSheet||[]).forEach(o=>{
@@ -4078,7 +4721,7 @@ function paintSyncBadge(el){
   el.style.display='';
   const st=syncState;
   const was=el.dataset.k||'';
-  if(syncFirst){ setBadge(el,'dirty','cloud','Sheet: choose data','Choose','Open Master Data → Google Sheet sync'); return; }
+  if(syncFirst){ setBadge(el,'dirty','cloud','Sheet: choose data','Choose','Open Setup → Google Sheet sync'); return; }
   if(st.s==='busy'){ setBadge(el,'saving busy','spin','Syncing with sheet…','Syncing','Syncing with the Google Sheet…'); return; }
   if(st.s==='err'){ setBadge(el,'failed','cloudx','Sheet not reached — retry','Retry',st.msg+' — tap to retry'); return; }
   const t=st.at?hhmm(st.at):'';
@@ -4122,7 +4765,8 @@ async function adopt(version,remote,local){
   applyModel(merged.model,merged.fromSheet);
   syncBase={version,model:bare(remote)};
   await kvSet(SYNC_BASE_KEY,syncBase);
-  await save(); flushSave(); renderAll();
+  undoMute=true; try{ await save(); } finally{ undoMute=false; }
+  flushSave(); renderAll();
 }
 function localHasData(){ return S.orders.length||Object.keys(S.parties).length||S.log.length||S.routes.length||(S.vehTypes||[]).length; }
 async function firstSync(local){
@@ -4194,7 +4838,7 @@ $('#syncOff').onclick=()=>armConfirm($('#syncOff'),'Yes, disconnect',async()=>{
 $('#syncBadge').onclick=()=>{ if(syncCfg){ if(syncFirst) gotoView('routes'); else syncNow('manual'); } };
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&syncCfg) syncNow('focus'); });
 window.addEventListener('online',()=>{ if(syncCfg) syncNow('online'); });
-setInterval(()=>{ if(syncCfg&&document.visibilityState==='visible') syncNow('poll'); },60000);
+setInterval(()=>{ if(syncCfg&&document.visibilityState==='visible'&&!syncBusy) syncNow('poll'); },30000); // a check that finds nothing new is quick (the sheet answers from memory)
 async function initSync(){
   syncCfg=await kvGet(SYNC_CFG_KEY); syncBase=await kvGet(SYNC_BASE_KEY);
   paintSync(); updateSyncBadge();
@@ -4203,7 +4847,7 @@ async function initSync(){
 
 $('#appVer').textContent=`Logistics Desk v${APP_VERSION} · ${APP_BUILD}`;
 gotoView(currentView); // header label before the saved data arrives
-load().then(()=>{ renderAll(); updateSaveBadge(); updateSyncBadge(); initSync(); });
+load().then(()=>{ renderAll(); undoReset(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit
 window.addEventListener('beforeunload',e=>{ if(dirty||saving){ e.preventDefault(); e.returnValue=''; } });
