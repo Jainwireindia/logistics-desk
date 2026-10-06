@@ -231,6 +231,10 @@ th.n,td.n{text-align:right}
 .duppanel{border:2px solid var(--alert);border-radius:var(--r);background:#fff6f6;padding:10px 12px;margin-top:4px;color:var(--ink);font-size:12.5px}
 #dashStats [hidden]{display:none!important}
 .seemore{display:block;margin:6px 0 2px;font-weight:600}
+.mantoggle{background:transparent;border:none;padding:0;font:inherit;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--green-dk);cursor:pointer;display:flex;align-items:center;gap:8px}
+.mantoggle .mcar{display:inline-block;transition:transform .15s;font-size:11px}
+.mantoggle[aria-expanded="true"] .mcar{transform:rotate(90deg)}
+#manBody[hidden]{display:none}
 .manroutes .pill{font-size:12px;padding:3px 9px;margin:0 5px 5px 0}
 .manlines{margin-top:12px}
 .manrow{display:grid;grid-template-columns:minmax(170px,3fr) 80px 80px 95px minmax(110px,2fr) 30px;gap:6px;align-items:center;margin-bottom:6px}
@@ -522,14 +526,15 @@ tr.grp td{background:var(--panel2);font-weight:600}
     <div class="row" style="margin-top:10px">
       <div style="flex:0 0 auto"><button class="primary" id="addPaste">Add these orders</button></div>
       <div style="flex:0 0 auto"><span class="hint">Every paste is listed in <a href="#" data-goto="uploads">Upload log</a>.
-        Deleting orders and other data is in <a href="#" data-goto="admin">Admin → Clear data</a>.</span></div>
+        <span id="sheetLinkHint"></span></span></div>
     </div>
     <p class="hint" id="parseNote"></p>
   </div>
 
   <div class="card" id="manCard">
-    <h2>Type an order</h2>
-    <p class="hint" style="margin-top:0;margin-bottom:10px">One party at a time. Total wt is worked out as qty × unit wt — type over it if it's different.
+    <button class="mantoggle" id="manToggle" aria-expanded="false"><span class="mcar">►</span> Type an order</button>
+    <div id="manBody" hidden>
+    <p class="hint" style="margin-top:10px;margin-bottom:10px">One party at a time. Total wt is worked out as qty × unit wt — type over it if it's different.
       Goes through the same duplicate check and is listed in Upload log as <b>typed</b>.</p>
     <div class="row mantop">
       <div style="flex:0 0 auto;min-width:180px"><label>Sheet tab</label><select id="manTab"></select></div>
@@ -552,6 +557,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <div style="flex:0 0 auto"><button class="ghost" id="manClear">Clear the form</button></div>
     </div>
     <div class="hint" id="manNote"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -588,6 +594,10 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <div style="flex:0 0 220px"><label>This device's name</label><input id="devName" maxlength="24" placeholder="e.g. Paul phone, Office PC"></div>
     </div>
     <p class="hint" style="margin:2px 0 0">Shown on a published plan ("Published 21:30 · Paul phone"), so everyone knows where it came from.</p>
+    <div class="row" style="margin-top:10px">
+      <div style="flex:1 1 420px"><label>Google Sheet link</label><input id="sheetLink" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></div>
+    </div>
+    <p class="hint" style="margin:2px 0 0">For the "Open the Google Sheet" link on Add orders. Paste it once — it is kept in the sheet and reaches every device, never in the website file.</p>
   </div>
 
   <div class="card">
@@ -2195,6 +2205,10 @@ function paintOrders(){
       :'<option value="">No tab (add tabs in Setup)</option>';
     if(tabs.includes(cur)) sel.value=cur; }
   if(currentView==='orders') paintManual();
+  { const h=$('#sheetLinkHint'), u=S.sheetLink||'';
+    h.innerHTML=u?`<a href="${esc(u)}" target="_blank" rel="noopener" id="openSheet">Open the Google Sheet ↗</a>`
+      :'<a href="#" data-goto="routes">Add the Google Sheet link in Setup</a> to open it from here.'; }
+  { const i=$('#sheetLink'); if(i&&document.activeElement!==i) i.value=S.sheetLink||''; }
   const boxes=$$('.view.on .ordBody');
   const setCount=t=>{ const a=$('#ordCount'),b=$('#ordCountDash'); if(a)a.textContent=t; if(b)b.textContent=t; };
 
@@ -2412,6 +2426,7 @@ function wireOrderBox(box){
 
 /* ---------- 2 routes ---------- */
 function paintRoutes(){
+  { const i=$('#sheetLink'); if(i&&document.activeElement!==i) i.value=S.sheetLink||''; }
   const fleetList=(arr,attr)=>arr.length
     ? arr.map(v=>`<span class="pill on" style="margin-right:6px">${esc(v)}
         <button class="tiny ghost" style="margin-left:5px;padding:0 4px" data-${attr}="${esc(v)}">×</button></span>`).join('')
@@ -4648,6 +4663,11 @@ function manClear(keep){
   if(!keep) $('#manNote').textContent='';
   manPaintRoutes(); manPaintTotal();
 }
+// the form stays folded until asked for, and stays open while several orders are typed
+$('#manToggle').onclick=()=>{
+  const b=$('#manBody'), open=b.hidden; b.hidden=!open; $('#manToggle').setAttribute('aria-expanded',open);
+  if(open){ paintManual(); $('#manParty').focus(); }
+};
 $('#manParty').onchange=manPartyChanged;
 $('#manAddLine').onclick=()=>manAddRow(true);
 $('#manClear').onclick=()=>manClear();
@@ -4969,6 +4989,11 @@ function paintPubBar(){
 function showPlanNotice(){ if(planNoticeFlash){ flash(planNoticeFlash); planNoticeFlash=''; } }
 $('#devName').value=(()=>{ try{ return localStorage.getItem('ld:device')||''; }catch(e){ return ''; } })();
 $('#devName').placeholder='e.g. Paul phone ('+deviceName()+')';
+$('#sheetLink').onchange=async()=>{
+  const v=$('#sheetLink').value.trim();
+  if(v&&!/^https:\/\/docs\.google\.com\/spreadsheets\//.test(v)){ flash('That is not a Google Sheets link — copy it from the sheet\'s address bar'); return; }
+  S.sheetLink=v; await save(); renderAll(); flash(v?'Google Sheet link saved':'Google Sheet link removed');
+};
 $('#devName').onchange=()=>{ const v=$('#devName').value.trim().slice(0,24); try{ v?localStorage.setItem('ld:device',v):localStorage.removeItem('ld:device'); }catch(e){} flash('Device name saved'); };
 
 /* ======================= Google Sheet sync (v1.1) =======================
@@ -5027,7 +5052,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:S.log,plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',
+  const data={log:S.log,plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -5104,6 +5129,7 @@ function applyModel(m,fromSheet){
   ['log','uploads','stock','stockOut','stockMeta','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
   takePublishedPlan(d.plan); // Build Plan is this device's own draft - see publishPlan()
   S.summaryPhone=d.summaryPhone||'';
+  S.sheetLink=d.sheetLink||'';
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
   S.plan=S.plan||{poolFilter:[],lanes:[]}; S.plan.lanes=S.plan.lanes||[]; S.plan.poolFilter=S.plan.poolFilter||[];
