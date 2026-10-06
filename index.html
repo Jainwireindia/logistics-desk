@@ -53,6 +53,10 @@ header{background:var(--green);border-bottom:2px solid var(--green-dk);position:
 .ubtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ubtn:hover:not(:disabled){background:#fff;color:var(--green-dk)}
 .ubtn:disabled{opacity:.35;cursor:default}
+.logibtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:var(--amber);color:#211500;border:1px solid var(--amber);font-weight:700;padding:4px 10px;font-size:13px}
+.logibtn svg{width:18px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+.logibtn:hover{background:#fff;border-color:#fff}
+.logibtn.on{background:transparent;color:#fff;border-color:rgba(255,255,255,.45)}
 .menubtn:hover,.menubtn[aria-expanded="true"]{background:#fff;color:var(--green-dk);border-color:#fff}
 .curview::before{content:'›';margin-right:8px;color:rgba(255,255,255,.5)}
 .curview{color:#fff;font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -120,12 +124,6 @@ nav button.on{background:#fff;color:var(--green-dk);border-color:#fff}
 @media (max-width:420px){ .brand{display:none} }
 /* phones: cards scroll sideways inside themselves instead of pushing the whole page wider */
 .savebadge.clean{opacity:.75}
-.impbox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--edge)}
-.implist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
-.improw{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--edge);border-radius:var(--r);background:var(--panel2,#f6f8f7)}
-.improw .nm{font-weight:700;min-width:130px}
-.improw select{width:170px}
-.improw.done{opacity:.6}
 .remark{font-size:11px;font-weight:600;color:#8a5a00;background:#fff4d6;border:1px solid #f0d58f;border-radius:4px;padding:0 5px;margin-left:4px;white-space:normal}
 .savebadge.clean:hover{opacity:1}
 .savebadge.dirty{background:var(--yellow);color:#3d2c00;border-color:var(--yellow)}
@@ -231,6 +229,16 @@ th.n,td.n{text-align:right}
 .duprow{color:var(--alert);font-size:11.5px;background:#fdeeee;font-weight:600}
 .duprow button{margin-left:8px;font-weight:400}
 .duppanel{border:2px solid var(--alert);border-radius:var(--r);background:#fff6f6;padding:10px 12px;margin-top:4px;color:var(--ink);font-size:12.5px}
+#dashStats [hidden]{display:none!important}
+.seemore{display:block;margin:6px 0 2px;font-weight:600}
+.manroutes .pill{font-size:12px;padding:3px 9px;margin:0 5px 5px 0}
+.manlines{margin-top:12px}
+.manrow{display:grid;grid-template-columns:minmax(170px,3fr) 80px 80px 95px minmax(110px,2fr) 30px;gap:6px;align-items:center;margin-bottom:6px}
+.manrow input{width:100%;min-width:0}
+.manrow .n,.manrow input.n{text-align:right}
+.manhead{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+.manrow input.auto{background:var(--panel2,#f6f8f7)}
+.manrow button{padding:2px 0}
 .duphead{font-weight:700;color:var(--alert);margin-bottom:8px;font-size:13px}
 .duppanel table{background:#fff;margin-bottom:10px}
 .dupwhy{color:var(--alert);font-weight:600}
@@ -419,6 +427,15 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .pubrow .pst{flex:1 1 220px}
 .pubnote{margin-top:6px;padding:8px 10px;border-radius:10px;border:1px solid var(--alert,#b3261e);background:#fdecea;font-size:13px}
 .tag.from{background:#e8f0fe;color:#1a4b9c;border-color:#9bb5e8}
+/* phone rules last so they win over the desktop ones above */
+@media (max-width:640px){
+  .logibtn{padding:4px 7px} .logibtn .lbl{display:none}
+  .manhead{display:none}
+  .manrow{grid-template-columns:1fr 1fr 1fr 30px;padding:8px 0;border-bottom:1px dashed var(--edge);margin-bottom:4px}
+  .manrow [data-mf="item"]{grid-column:1 / 4}
+  .manrow [data-mdel]{grid-column:4;grid-row:1}
+  .manrow [data-mf="remark"]{grid-column:1 / 5}
+}
 </style>
 </head>
 <body>
@@ -430,6 +447,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <button id="undoBtn" class="ubtn" disabled aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7"/></svg></button>
       <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
     </span>
+    <button id="logiBtn" class="logibtn" title="Logistics — back to the step you were on"><svg viewBox="0 0 20 16"><path d="M1.5 3.5h10v8h-10z"/><path d="M11.5 6.5h4l3 3v2h-7"/><circle cx="5" cy="12.5" r="1.6"/><circle cx="15" cy="12.5" r="1.6"/></svg><span class="lbl">Logistics</span></button>
     <div class="brand"><span class="co">JAIN WIRE NETTING CORPORATION</span><small class="loc">EKM</small><span class="tool">Logistics Desk</span></div>
     <div id="curView" class="curview"></div>
     <div class="hbadges">
@@ -507,15 +525,33 @@ tr.grp td{background:var(--panel2);font-weight:600}
         Deleting orders and other data is in <a href="#" data-goto="admin">Admin → Clear data</a>.</span></div>
     </div>
     <p class="hint" id="parseNote"></p>
-    <div class="impbox">
-      <div class="row" style="align-items:center;gap:10px">
-        <div style="flex:0 0 auto"><button id="impXlsBtn">Import old sheet (.xlsx)</button>
-          <input type="file" id="impXls" accept=".xlsx" hidden></div>
-        <div style="flex:1 1 260px"><span class="hint">One-time move from your old order sheet. In Google Sheets: File → Download → Microsoft Excel (.xlsx), then pick it here.
-          Each tab loads into the paste box above — check it, then press <b>Add these orders</b>. Duplicates are caught as usual.</span></div>
-      </div>
-      <div id="impXlsList"></div>
+  </div>
+
+  <div class="card" id="manCard">
+    <h2>Type an order</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">One party at a time. Total wt is worked out as qty × unit wt — type over it if it's different.
+      Goes through the same duplicate check and is listed in Upload log as <b>typed</b>.</p>
+    <div class="row mantop">
+      <div style="flex:0 0 auto;min-width:180px"><label>Sheet tab</label><select id="manTab"></select></div>
+      <div style="flex:0 0 auto;width:130px"><label>Order date</label><input id="manDate" placeholder="dd-mm-yyyy"></div>
+      <div style="flex:1 1 320px"><label>Party name</label><input id="manParty" list="manPartyList" autocomplete="off" placeholder="as in Tally, e.g. STEELANE AGENCIES KAKKANAD"><datalist id="manPartyList"></datalist></div>
     </div>
+    <p class="hint" id="manPartyNote" style="margin:4px 0 0"></p>
+    <div style="margin-top:10px"><label>Routes</label><div id="manRoutes" class="manroutes"></div></div>
+    <div class="manlines">
+      <div class="manrow manhead"><span>Item</span><span class="n">Qty</span><span class="n">Unit wt</span><span class="n">Total wt</span><span>Remark</span><span></span></div>
+      <div id="manItems"></div>
+    </div>
+    <datalist id="manItemList"></datalist>
+    <div class="row" style="margin-top:8px;align-items:center">
+      <div style="flex:0 0 auto"><button class="tiny" id="manAddLine">+ Add item line</button></div>
+      <div style="flex:1 1 auto;text-align:right"><span class="mono" id="manTotal"></span></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div style="flex:0 0 auto"><button class="primary" id="manSave">Add this order</button></div>
+      <div style="flex:0 0 auto"><button class="ghost" id="manClear">Clear the form</button></div>
+    </div>
+    <div class="hint" id="manNote"></div>
   </div>
 
   <div class="card">
@@ -780,14 +816,13 @@ tr.grp td{background:var(--panel2);font-weight:600}
     <div class="row">
       <div style="flex:0 0 auto"><button class="primary" id="copyTsv">Copy for Excel</button></div>
       <div style="flex:0 0 auto"><button id="dlXlsx">Download Excel</button></div>
-      <div style="flex:0 0 auto"><button id="dlCsv">Download CSV</button></div>
       <div style="flex:0 0 auto;padding-bottom:6px"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--ink);margin:0"
         title="Total weight is pasted as qty × unit wt, so editing the qty in Excel updates the weight"><input type="checkbox" id="tsvFormula" style="width:auto"> Weight as formula</label></div>
       <div style="flex:0 0 auto"><button class="ghost" onclick="window.print()">Print</button></div>
       <div style="flex:0 0 auto"><button class="primary" id="addLog">Add this plan to the log</button></div>
     </div>
     <p class="hint" id="outNote">Listed in loading order — number 1 goes into the truck first and comes out last.
-      Place is shown here and on print for your reference; it is left out of Copy for Excel and the CSV.</p>
+      Place is shown here and on print for your reference; it is left out of Copy for Excel and the Excel file.</p>
   </div>
   <div id="outBody"></div>
 </section>
@@ -1029,7 +1064,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.7', APP_BUILD='04-10-2026';
+const APP_VERSION='1.8', APP_BUILD='06-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1547,23 +1582,29 @@ let waDriverPick='';
 /* End-of-day summary: every vehicle logged on that date (confirmed or not), with its parties
    and kg, totals on top. Built from the same lines as the reports. */
 function waNumber(raw){ let d=String(raw||'').replace(/\D/g,''); if(d.length===10) d='91'+d; if(d.length===11&&d[0]==='0') d='91'+d.slice(1); return d; }
+/* WhatsApp day summary: date heading, then each vehicle number with its driver and the party
+   names in delivery order (first stop first). No items, weights or numbering - the screen
+   report keeps the detail. */
 function daySummaryText(day){
-  const lines=reportLines().filter(l=>l.date===day);
-  const trips=tripsOf(lines);
-  const L=['*JAIN WIRE NETTING CORPORATION — EKM*','*Dispatch summary '+day+'*'];
+  const trips=tripsOf(reportLines().filter(l=>l.date===day));
+  const L=[`*${day} Loading Plan*`];
   if(!trips.length){ L.push('No vehicles logged for this day.'); return L.join('\n'); }
-  const kg=lines.reduce((a,l)=>a+l.weight,0), ps=new Set(lines.map(l=>l.party)).size;
-  L.push(`${trips.length} vehicle${trips.length>1?'s':''} · ${ps} part${ps>1?'ies':'y'} · ${num(Math.round(kg))} kg`);
-  trips.forEach((t,i)=>{
-    const g=t.g, pct=t.cap?Math.round(t.kg/t.cap*100):null;
+  trips.forEach(t=>{
+    const g=t.g;
     L.push('');
-    L.push(`${i+1}. *${g.vehicleNo||g.vehicle||'Vehicle'}*${g.vehicleNo&&g.vehicle?' ('+g.vehicle+')':''}${g.driver?' · '+g.driver:''}`);
-    L.push(`   ${t.parties.size} part${t.parties.size>1?'ies':'y'} · ${num(Math.round(t.kg))} kg${pct!=null?' ('+pct+'%)':''}${t.conf?'':' · not confirmed yet'}`);
-    L.push('   '+[...t.parties].join(', '));
+    L.push(`*${g.vehicleNo||g.vehicle||'Vehicle'}*${g.driver?' · Driver: '+g.driver:''}`);
+    tripParties(t).forEach(p=>L.push(p));
   });
-  const open=trips.filter(t=>!t.conf).length;
-  if(open){ L.push(''); L.push(`${open} vehicle${open>1?'s':''} not confirmed in the Plan log yet.`); }
   return L.join('\n');
+}
+// a log entry's parties in delivery order: the vehicle as it was arranged on screen, else the
+// loading order reversed (number 1 is loaded first and delivered last)
+function deliveryOrder(g){
+  return (g.laneSnap&&g.laneSnap.stops&&g.laneSnap.stops.length)?g.laneSnap.stops.map(s=>s.party):[...(g.stops||[])].reverse().map(s=>s.party);
+}
+function tripParties(t){
+  const order=deliveryOrder(t.g), have=[...t.parties];
+  return [...order.filter(p=>t.parties.has(p)),...have.filter(p=>!order.includes(p))].filter((p,i,a)=>a.indexOf(p)===i);
 }
 function sumDay(){ const v=$('#sumDate').value.trim(); const iso=parseDMY(v); return iso?isoToDMY(iso):today10(); }
 // one party's location, for Parties & map → WhatsApp
@@ -1830,6 +1871,25 @@ function renderGuard(){
 }
 
 /* ---------- 1 dashboard ---------- */
+/* Dashboard sections keep a fixed size: the first DASH_SHOW rows, then "See N more". Opening
+   one is remembered until the page is reloaded. Orders on hand is not clipped. */
+const DASH_SHOW=5, dashMore=new Set();
+function clipDash(box){
+  box.querySelectorAll('[data-clip]').forEach(el=>{
+    const key=el.dataset.clip;
+    const rows=el.matches('table')?[...el.querySelectorAll('tr')].filter(tr=>!tr.querySelector('th')&&!tr.classList.contains('cdet'))
+      :el.matches('.asec')?[...el.querySelectorAll('.arow')]:[...el.children];
+    if(rows.length<=DASH_SHOW+1) return; // never hide just one row behind a button
+    const open=dashMore.has(key);
+    if(!open) rows.slice(DASH_SHOW).forEach(r=>{ r.hidden=true;
+      for(let n=r.nextElementSibling;n&&n.classList.contains('cdet');n=n.nextElementSibling) n.hidden=true; });
+    const btn=document.createElement('button');
+    btn.className='tiny seemore'; btn.dataset.seemore=key;
+    btn.textContent=open?'Show less ▴':`See ${rows.length-DASH_SHOW} more ▾`;
+    btn.onclick=()=>{ open?dashMore.delete(key):dashMore.add(key); paintDash(); };
+    if(el.matches('table')) el.after(btn); else el.appendChild(btn);
+  });
+}
 function paintDash(){
   const box=$('#dashStats'); if(!box) return;
   const parties=partiesToday();
@@ -1885,11 +1945,11 @@ function paintDash(){
       free to load — the rest is already sitting on a vehicle in Build plan. Parties on hold and
       items completely out of stock aren't counted. Combinations are set up in Setup.
     </p>
-    <table><tr><th></th><th>Combination</th><th>Routes</th><th class="n">Parties</th>
+    <table data-clip="combos"><tr><th></th><th>Combination</th><th>Routes</th><th class="n">Parties</th>
       <th class="n">Item lines</th><th class="n">Not yet placed</th><th class="n">Total kg</th></tr>
     ${comboRows.map(r=>{
       const open=comboOpen.has(r.c.id);
-      const detail=open?`<tr><td colspan="7" style="background:var(--panel2)">
+      const detail=open?`<tr class="cdet"><td colspan="7" style="background:var(--panel2)">
         ${r.match.length?r.match.map(p=>`
           <div style="margin:6px 0 8px">
             <b>${esc(p)}</b>${a.has(p)?' <span class="pill">on a vehicle</span>':''}
@@ -1920,7 +1980,7 @@ function paintDash(){
       Orders need more than the current stock (the last stock figure given, less what Plan log
       has confirmed delivered since). Paste fresh stock in Reports → Stock required.
     </p>
-    ${shorts.map(g=>{
+    <div data-clip="short">${shorts.map(g=>{
       const open=stockShortOpen.has(g.key);
       const unitLabel=g.domUnit||'pcs';
       const detail=open?`<div style="padding:6px 0 6px 20px">
@@ -1934,7 +1994,7 @@ function paintDash(){
             <span style="color:var(--alert);font-weight:700">(short by ${num(g.shortBy)} ${esc(unitLabel)})</span></span>
         </div>${detail}
       </div>`;
-    }).join('')}
+    }).join('')}</div>
   </div>`:'';
 
   // Out of stock: items whose current stock is at zero, counted in days from the day the
@@ -1942,7 +2002,7 @@ function paintDash(){
   const outs=outOfStockList();
   const outSection=outs.length?`<div class="card" style="border-color:var(--alert)">
     <h2 style="color:var(--alert)">${outs.length} item${outs.length>1?'s':''} out of stock</h2>
-    <table><tr><th>Item</th><th>Out since</th><th class="n">Days</th><th class="n">Parties waiting</th><th>Qty waiting</th></tr>
+    <table data-clip="out"><tr><th>Item</th><th>Out since</th><th class="n">Days</th><th class="n">Parties waiting</th><th>Qty waiting</th></tr>
     ${outs.map(o=>`<tr><td><b>${esc(o.label)}</b></td>
       <td class="mono">${o.since?dmyOf(o.since):'<span class="hint">not known</span>'}</td>
       <td class="n" style="${o.days>=4?'color:var(--alert);font-weight:800':''}">${o.days==null?'—':o.days===0?'today':o.days+' day'+(o.days>1?'s':'')}</td>
@@ -1953,7 +2013,7 @@ function paintDash(){
 
   // "Needs attention" rows carry the fix inline, so nothing sends you off to another tab
   const arow=(p,inner)=>`<div class="arow"><span class="aname">${esc(p)}</span>${inner}</div>`;
-  const agingSection=aging5.length?`<div class="asec"><h4 class="bad">5+ days old</h4>
+  const agingSection=aging5.length?`<div class="asec" data-clip="aging"><h4 class="bad">5+ days old</h4>
     ${aging5.map(p=>{
       const g=openLogEntryFor(p);
       return arow(p,`<span class="g">${partyAge(p)}d old</span>
@@ -1962,31 +2022,31 @@ function paintDash(){
            :`<button class="tiny ghost" data-ajump="${esc(p)}">Open in Orders</button>`}`);
     }).join('')}</div>`:'';
   const soon=dueSoonBatches();
-  const soonSection=soon.length?`<div class="asec"><h4 class="warn">Due today / tomorrow</h4>
+  const soonSection=soon.length?`<div class="asec" data-clip="soon"><h4 class="warn">Due today / tomorrow</h4>
     ${soon.map(b=>arow(b.p,`<span class="g">${esc(b.date||'no date')} batch${b.tab?' · '+esc(b.tab):''} · ${num(itemsOf(b.p).filter(o=>(o.tab||'')===b.tab&&(o.date||'')===b.date).reduce((a,o)=>a+(wtNum(o.weight)||0),0))} kg</span>
       <span class="tag ${b.when==='today'?'':'due'}" style="${b.when==='today'?'background:var(--alert)':''}">DUE ${b.when.toUpperCase()}</span>
       ${assignedSet().has(b.p)?'<span class="pill on">on a vehicle</span>':'<button class="tiny primary" data-ajump="'+esc(b.p)+'">Open in Orders</button>'}`)).join('')}</div>`:'';
-  const overdueSection=overdue.length?`<div class="asec"><h4 class="bad">Past due date</h4>
+  const overdueSection=overdue.length?`<div class="asec" data-clip="overdue"><h4 class="bad">Past due date</h4>
     ${overdue.map((b,i)=>arow(b.p,`<span class="g">${esc(b.date||'no date')} batch${b.tab?' · '+esc(b.tab):''}</span>
       <input data-adue="${i}" value="${esc(isoToDMY(b.due))}" placeholder="dd-mm-yyyy" style="width:100px">
       <button class="tiny primary" data-aduesave="${i}">Confirm</button>
       <button class="tiny ghost" data-adueclear="${i}">Clear date</button>`)).join('')}</div>`:'';
   const lapsed=lapsedHolds();
-  const lapsedSection=lapsed.length?`<div class="asec"><h4 class="warn">Hold ended — these batches are free to plan again</h4>
+  const lapsedSection=lapsed.length?`<div class="asec" data-clip="lapsed"><h4 class="warn">Hold ended — these batches are free to plan again</h4>
     ${lapsed.map((h,i)=>arow(h.p,`<span class="g">${esc(h.date||'no date')} batch${h.tab?' · '+esc(h.tab):''}${h.info.reason?' · '+esc(h.info.reason):''} · held until ${esc(isoToDMY(h.info.until))}</span>
       <input data-hext="${i}" placeholder="new until dd-mm-yyyy" style="width:150px">
       <button class="tiny primary" data-hextsave="${i}">Hold longer</button>
       <button class="tiny ghost" data-hrel="${i}">Release</button>`)).join('')}</div>`:'';
-  const dupSection=dupPs.length?`<div class="asec"><h4 class="bad">Duplicate order lines — same item, qty and date twice</h4>
+  const dupSection=dupPs.length?`<div class="asec" data-clip="dup"><h4 class="bad">Duplicate order lines — same item, qty and date twice</h4>
     ${dupPs.map(p=>{
       const ds=itemsOf(p).filter(o=>isDupLine(o.id));
       return arow(p,`<span class="g">${ds.map(o=>esc(o.item)+' ×'+esc(o.qty)).join(', ')}</span>
         <button class="tiny primary" data-ajump="${esc(p)}">Open in Orders</button>`);
     }).join('')}</div>`:'';
-  const routeSection=noRoute.length?`<div class="asec"><h4 class="bad">No route tagged — cannot be planned</h4>
+  const routeSection=noRoute.length?`<div class="asec" data-clip="noroute"><h4 class="bad">No route tagged — cannot be planned</h4>
     ${noRoute.map(p=>arow(p,`<span class="arpills">${S.routes.map(r=>
       `<span class="pill click" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>`)).join('')}</div>`:'';
-  const placeSection=noPlace.length?`<div class="asec"><h4 class="warn">No place / pincode saved</h4>
+  const placeSection=noPlace.length?`<div class="asec" data-clip="noplace"><h4 class="warn">No place / pincode saved</h4>
     ${noPlace.map(p=>arow(p,`<input data-aplace="${esc(p)}" value="${esc(S.parties[p]?.place||'')}" placeholder="place" style="width:140px">
       <input data-apin="${esc(p)}" value="${esc(S.parties[p]?.pincode||'')}" placeholder="pincode" style="width:95px" inputmode="numeric">
       <button class="tiny primary" data-aplacesave="${esc(p)}">Confirm</button>`)).join('')}</div>`:'';
@@ -2046,17 +2106,18 @@ function paintDash(){
 
   <div class="card">
     <h2>By sheet tab</h2>
-    <table><tr><th>Tab</th><th class="n">Parties</th><th class="n">Item lines</th>
+    <table data-clip="tabs"><tr><th>Tab</th><th class="n">Parties</th><th class="n">Item lines</th>
       <th class="n">Weight kg</th><th class="n">Added today</th><th class="n">2+ days</th></tr>
       ${tabRows||'<tr><td colspan="6" class="hint">Nothing on hand.</td></tr>'}</table>
   </div>
 
   <div class="card">
     <h2>Vehicles on the current plan</h2>
-    <table><tr><th>Vehicle</th><th>Routes</th><th class="n">Stops</th><th class="n">Loaded kg</th>
+    <table data-clip="lanes"><tr><th>Vehicle</th><th>Routes</th><th class="n">Stops</th><th class="n">Loaded kg</th>
       <th class="n">Capacity</th><th class="n">Used</th></tr>${laneRows}</table>
   </div>`;
 
+  clipDash(box);
   box.querySelectorAll('[data-hext]').forEach(el=>maskDateInput(el));
   box.querySelectorAll('[data-hrel]').forEach(el=>el.onclick=async()=>{
     const h=lapsed[+el.dataset.hrel]; if(!h) return; setHold(h.p,h.tab,h.date,false); await save(); renderAll(); flash(`${h.p} released from hold`); });
@@ -2133,6 +2194,7 @@ function paintOrders(){
     sel.innerHTML=tabs.length?tabs.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')
       :'<option value="">No tab (add tabs in Setup)</option>';
     if(tabs.includes(cur)) sel.value=cur; }
+  if(currentView==='orders') paintManual();
   const boxes=$$('.view.on .ordBody');
   const setCount=t=>{ const a=$('#ordCount'),b=$('#ordCountDash'); if(a)a.textContent=t; if(b)b.textContent=t; };
 
@@ -2933,6 +2995,7 @@ function paintOut(){
         <div style="flex:0 0 auto;display:flex;gap:6px">
           <button class="tiny" data-lmap="${l.id}">🗺 Map route</button>
           <button class="tiny" data-copylane="${l.id}">Copy Plan ${idx+1}</button>
+          <button class="tiny" data-xlsxlane="${l.id}">Download Excel</button>
           <button class="tiny primary" data-addlanelog="${l.id}">Add to log</button>
         </div>
       </div>
@@ -2962,6 +3025,9 @@ function paintOut(){
   $('#outBody').querySelectorAll('[data-copylane]').forEach((b,i)=>b.onclick=()=>{
     const l=S.plan.lanes.find(x=>x.id===b.dataset.copylane); if(!l)return;
     copy(laneTsv(l),`Copied Plan ${i+1} — paste into Excel`);
+  });
+  $('#outBody').querySelectorAll('[data-xlsxlane]').forEach(b=>b.onclick=()=>{
+    const l=S.plan.lanes.find(x=>x.id===b.dataset.xlsxlane); if(l) exportPlanXlsx([l]);
   });
   $('#outBody').querySelectorAll('[data-addlanelog]').forEach(b=>b.onclick=()=>{
     const l=S.plan.lanes.find(x=>x.id===b.dataset.addlanelog);
@@ -3079,12 +3145,20 @@ function buildPlanXlsx(lanes){
     {name:'xl/worksheets/sheet1.xml',text:sheet}];
   return zipStore(files);
 }
+/* "For Jain Wire Ekm Loading Idukki, Tdpa, Pala 06-10-26 0745.xlsx" - the routes of the plan(s)
+   being saved (vehicle name if none picked), today as DD-MM-YY and the time as 12-hour hhmm with no am/pm (2:15 pm = 0215). */
+function planXlsxName(lanes,now){
+  const d=now||new Date(), p2=n=>String(n).padStart(2,'0');
+  const rts=[...new Set(lanes.flatMap(l=>laneRoutes(l).length?laneRoutes(l):[l.name]))].filter(Boolean);
+  const name=`For Jain Wire Ekm Loading ${rts.join(', ')} ${p2(d.getDate())}-${p2(d.getMonth()+1)}-${String(d.getFullYear()).slice(2)} ${p2(d.getHours()%12||12)}${p2(d.getMinutes())}`;
+  return name.replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim()+'.xlsx';
+}
 async function exportPlanXlsx(lanes){
   lanes=(lanes||S.plan.lanes).filter(l=>l.stops.length);
   if(!lanes.length){ flash('Nothing on the plan to export'); return; }
   const bytes=buildPlanXlsx(lanes);
   const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const ok=await saveFile('loading-plan-'+today10()+'.xlsx',blob,blob.type);
+  const ok=await saveFile(planXlsxName(lanes),blob,blob.type);
   if(ok) flash(`Excel file saved — ${lanes.length} plan${lanes.length>1?'s':''}`);
 }
 function toTsv(){ return S.plan.lanes.map(laneTsv).join('\n\n'); }
@@ -3892,12 +3966,14 @@ function tripsOf(lines){
     t.lines.push(l); t.kg+=l.weight; t.parties.add(l.party); });
   return [...m.values()].sort((a,b)=>b.dk.localeCompare(a.dk));
 }
-function tripHtml(t,showParty){
+// one trip: vehicle number, driver, load, then each party (first delivery first) with its items
+function tripHtml(t,showParty,noDate){
   const g=t.g, pct=t.cap?Math.round(t.kg/t.cap*100):null;
-  const byP=new Map(); t.lines.forEach(l=>{ if(!byP.has(l.party)) byP.set(l.party,[]); byP.get(l.party).push(l); });
-  return `<div class="rtrip"><div class="rh">${esc(t.date||'no date')} · ${esc(g.vehicleNo||g.vehicle||'vehicle')}${g.vehicleNo&&g.vehicle?` <span class="hint">(${esc(g.vehicle)})</span>`:''}${g.driver?' · '+esc(g.driver):''}
+  const byP=new Map(); tripParties(t).forEach(p=>byP.set(p,[])); t.lines.forEach(l=>byP.get(l.party).push(l));
+  return `<div class="rtrip"><div class="rh">${noDate?'':esc(t.date||'no date')+' · '}<b>${esc(g.vehicleNo||g.vehicle||'vehicle')}</b>${g.vehicleNo&&g.vehicle?` <span class="hint">(${esc(g.vehicle)})</span>`:!g.vehicleNo?' <span class="hint">(no number)</span>':''}
+    · Driver: ${g.driver?esc(g.driver):'<span class="hint">not set</span>'}
     · ${num(+t.kg.toFixed(1))} kg${pct!=null?` <span class="hint">(${pct}% of ${num(t.cap)})</span>`:''}${t.conf?'':' <span class="tag unconf">NOT CONFIRMED</span>'}</div>
-    ${[...byP].map(([p,ls])=>`<div class="ri">${showParty?`<b>${esc(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
+    ${[...byP].filter(([p,ls])=>ls.length).map(([p,ls])=>`<div class="ri">${showParty?`<b>${esc(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
 }
 let repLast=[];
 let repSub='vehicle'; // Vehicle & driver trips: which way the trips are grouped
@@ -3936,7 +4012,7 @@ function paintReports(){
     else if(mode==='driver'){ cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="mono">${esc(r.lastDate)}</td>`; }
     else cells=`<td><b>${esc(r.k)}</b> <button class="tiny wabtn" data-dsum="${esc(r.k)}" title="WhatsApp this day's summary">WA</button></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="hint">${esc([...new Set(r.ls.map(l=>l.driver).filter(Boolean))].join(', ')||'—')}</td>`;
     return `<tr class="rg" data-rk="${esc(rk(r.k))}"><td><span style="display:inline-block;${open?'transform:rotate(90deg)':''}">►</span></td>${cells}</tr>`
-      +(open?`<tr class="rdet"><td colspan="7">${r.tr.map(t=>tripHtml(t,mode!=='party')).join('')}</td></tr>`:'');
+      +(open?`<tr class="rdet"><td colspan="7">${r.tr.map(t=>tripHtml(t,mode!=='party',mode==='day')).join('')}</td></tr>`:'');
   }).join('')}</table></div></div>`;
   body.querySelectorAll('[data-dsum]').forEach(b=>b.onclick=e=>{ e.stopPropagation();
     window.open('https://wa.me/'+waNumber(S.summaryPhone)+'?text='+encodeURIComponent(daySummaryText(b.dataset.dsum)),'_blank','noopener'); });
@@ -4046,8 +4122,12 @@ function paintStepNav(v){
     ${nx?`<button class="nx" data-step="${nx[0]}" title="Go to ${nx[1]}"><span class="snl">${i+2}. ${nx[1]}</span> ›</button>`:''}`;
   box.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ gotoView(b.dataset.step); window.scrollTo(0,0); });
 }
+const LOGI_STEPS=['orders','plan','out','log'];
+function lastLogiStep(){ try{ const v=localStorage.getItem('ld:lastlogi'); return LOGI_STEPS.includes(v)?v:'orders'; }catch(_){ return 'orders'; } }
 function gotoView(v){
   if(currentView==='admin'&&v!=='admin') adminOpenUntil=0; // leaving Admin locks it again
+  if(LOGI_STEPS.includes(v)) try{ localStorage.setItem('ld:lastlogi',v); }catch(_){}
+  $('#logiBtn').classList.toggle('on',LOGI_STEPS.includes(v));
   if(v==='admin') stale.add('admin');
   if(v==='log') setTimeout(paintSumFields,0);
   currentView=v;
@@ -4062,6 +4142,8 @@ function gotoView(v){
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-goto]'); if(!a) return; e.preventDefault(); gotoView(a.dataset.goto); });
 
 $('#saveBadge').onclick=()=>flushSave();
+// header shortcut: straight back to whichever Logistics step was used last on this device
+$('#logiBtn').onclick=()=>{ gotoView(lastLogiStep()); window.scrollTo(0,0); };
 /* ---------- upload log ----------
    One record per paste that was added, with a frozen copy of each line as it was pasted (the
    order itself may later be edited, part-delivered or deleted - the record keeps what came in).
@@ -4147,7 +4229,7 @@ function paintUploads(){
         <span class="caret">▸</span>
         <span class="upno">#${u.no}</span>
         <span class="upwhen">${esc(u.day||'—')}${u.time?' '+esc(u.time):''}</span>
-        <span class="uptab">${esc(u.tab||'no tab')}</span>${u.src==='sheet'?'<span class="uptab" style="background:#0d6e6e" title="Typed straight into the Google Sheet">from sheet</span>':u.src==='file'?'<span class="uptab" style="background:#6b4fa0" title="Imported from the old sheet file">old sheet</span>':''}
+        <span class="uptab">${esc(u.tab||'no tab')}</span>${u.src==='sheet'?'<span class="uptab" style="background:#0d6e6e" title="Typed straight into the Google Sheet">from sheet</span>':u.src==='file'?'<span class="uptab" style="background:#6b4fa0" title="Imported from the old sheet file">old sheet</span>':u.src==='typed'?'<span class="uptab" style="background:#8a5a00" title="Typed in the Type an order form">typed</span>':''}
         <span class="upsum"><b>${parties.length}</b> part${parties.length===1?'y':'ies'} · <b>${u.lines.length}</b> line${u.lines.length===1?'':'s'} · <b>${num(Math.round(wt))}</b> kg
           · ${stillHere.length} still in Orders${u.skipped.length?` · <span style="color:var(--alert)">${u.skipped.length} skipped as duplicate</span>`:''}
           ${u.approx?' · <i>from before the upload log — grouped by day and tab</i>':''}</span>
@@ -4191,21 +4273,29 @@ function paintUploads(){
      date <TAB> PARTY
      <TAB> item <TAB> qty      (one per item)
    a new date|party row starts whenever the party or its order date changes */
+/* Lines of the same date + party are kept together, with a blank line between parties. A line
+   (same date, party, item and qty) that already came in through an earlier upload is copied only
+   once; a repeat inside one upload was added on purpose, so it stays. */
 function uploadTsv(lines){
-  const out=[]; let last='';
+  const groups=new Map(), seen=new Map();
   lines.forEach(l=>{
+    const dk=[l.date||'',l.party,String(l.item).toLowerCase().replace(/\s+/g,''),String(l.qty??'').replace(/\s+/g,'').toLowerCase()].join('|');
+    const from=l._u||'';
+    if(seen.has(dk)&&seen.get(dk)!==from) return;
+    seen.set(dk,from);
     const k=(l.date||'')+'|'+l.party;
-    if(k!==last){ out.push(`${l.date||''}\t${l.party}`); last=k; }
-    out.push(`\t${l.item}\t${l.qty??''}`);
+    if(!groups.has(k)) groups.set(k,{date:l.date||'',party:l.party,lines:[]});
+    groups.get(k).lines.push(l);
   });
-  return out.join('\n');
+  return [...groups.values()].map(g=>[`${g.date}\t${g.party}`,...g.lines.map(l=>`\t${l.item}\t${l.qty??''}`)].join('\n')).join('\n\n');
 }
 $('#upCopyAll').onclick=()=>{
   const q=$('#upSearch').value.trim().toLowerCase(), ft=$('#upTab').value, fd=$('#upDate').value;
   const hit=l=>!q||String(l.party).toLowerCase().includes(q)||String(l.item).toLowerCase().includes(q);
-  const ls=(S.uploads||[]).filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)).flatMap(u=>u.lines.filter(hit));
+  const ls=(S.uploads||[]).filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)).flatMap(u=>u.lines.filter(hit).map(l=>({...l,_u:u.id})));
   if(!ls.length){ flash('Nothing to copy'); return; }
-  copy(uploadTsv(ls),`Copied ${ls.length} line${ls.length===1?'':'s'}`);
+  const txt=uploadTsv(ls), n=txt.split('\n').filter(x=>x.startsWith('\t')).length;
+  copy(txt,`Copied ${n} line${n===1?'':'s'}${n<ls.length?` — ${ls.length-n} repeat${ls.length-n===1?'':'s'} left out`:''}`);
 };
 function dmyKey(s){ const m=String(s||'').match(/^(\d{2})-(\d{2})-(\d{4})$/); return m?+(m[3]+m[2]+m[1]):0; }
 // a vehicle stop whose party has nothing left in Orders is just an empty card - take it off
@@ -4371,125 +4461,36 @@ function classifyPaste(rows){
   return {fresh,dupes};
 }
 
-/* ---------- one-time import of the old order sheet (.xlsx) ----------
-   A tiny .xlsx reader (an .xlsx is a zip of XML files) - no library, nothing downloaded.
-   Each tab becomes the same tab-separated text a copy from Google Sheets gives, so it goes
-   through the normal paste box: same parser, same duplicate check, same Upload log. */
-let impBook=null, impPending=null; const impDone=new Set();
-async function unzipXlsx(buf){
-  const dv=new DataView(buf), u8=new Uint8Array(buf);
-  let e=-1; for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-66000);i--) if(dv.getUint32(i,true)===0x06054b50){ e=i; break; }
-  if(e<0) throw new Error('not an .xlsx file');
-  const n=dv.getUint16(e+10,true); let p=dv.getUint32(e+16,true);
-  const files={}, dec=new TextDecoder();
-  for(let k=0;k<n;k++){
-    if(dv.getUint32(p,true)!==0x02014b50) break;
-    const method=dv.getUint16(p+10,true), csize=dv.getUint32(p+20,true);
-    const nl=dv.getUint16(p+28,true), el=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), off=dv.getUint32(p+42,true);
-    files[dec.decode(u8.subarray(p+46,p+46+nl))]={method,csize,off};
-    p+=46+nl+el+cl;
-  }
-  return async name=>{
-    const f=files[name]; if(!f) return null;
-    const start=f.off+30+dv.getUint16(f.off+26,true)+dv.getUint16(f.off+28,true);
-    const raw=u8.subarray(start,start+f.csize);
-    if(f.method===0) return dec.decode(raw);
-    const ds=new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-    return await new Response(ds).text();
-  };
-}
-function xmlDoc(t){ return new DOMParser().parseFromString(t||'<x/>','application/xml'); }
-function colIdx(ref){ let c=0; for(const ch of ref.replace(/\d+/g,'')) c=c*26+ch.charCodeAt(0)-64; return c-1; }
-function xlNum(v){ const x=Number(v); return isFinite(x)?String(Math.round(x*1000)/1000):String(v); }
-function xlDate(serial){ const d=new Date(Date.UTC(1899,11,30)+Math.round(serial)*86400000);
-  return String(d.getUTCDate()).padStart(2,'0')+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+d.getUTCFullYear(); }
-async function readOldSheet(file){
-  if(typeof DecompressionStream==='undefined') throw new Error('this browser is too old to open .xlsx files - update it, or copy-paste each tab instead');
-  const get=await unzipXlsx(await file.arrayBuffer());
-  const wb=xmlDoc(await get('xl/workbook.xml')); if(!wb.getElementsByTagName('sheet').length) throw new Error('no tabs found in this file');
-  const rels={}; [...xmlDoc(await get('xl/_rels/workbook.xml.rels')).getElementsByTagName('Relationship')].forEach(r=>rels[r.getAttribute('Id')]=r.getAttribute('Target'));
-  const ss=[...xmlDoc(await get('xl/sharedStrings.xml')).getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent).join(''));
-  const out=[];
-  for(const sh of wb.getElementsByTagName('sheet')){
-    const rid=sh.getAttribute('r:id')||[...sh.attributes].find(a=>/(^|:)id$/.test(a.name)&&a.name!=='sheetId')?.value;
-    let tgt=rels[rid]||''; tgt=tgt.startsWith('/')?tgt.slice(1):'xl/'+tgt.replace(/^\.\//,'');
-    const doc=xmlDoc(await get(tgt)); const lines=[];
-    for(const row of doc.getElementsByTagName('row')){
-      const cells=['','','','','','',''];
-      for(const c of row.getElementsByTagName('c')){
-        const ci=colIdx(c.getAttribute('r')||'A'); if(ci>6) continue;
-        const t=c.getAttribute('t'), v=c.getElementsByTagName('v')[0]?.textContent;
-        let val='';
-        if(t==='s') val=ss[+v]||'';
-        else if(t==='inlineStr') val=[...c.getElementsByTagName('t')].map(x=>x.textContent).join('');
-        else if(t==='str'||t==='e') val=t==='e'?'':(v||'');
-        else if(t==='b') val=v==='1'?'TRUE':'FALSE';
-        else if(v!=null&&v!=='') val=(ci===0&&+v>30000&&+v<80000)?xlDate(+v):xlNum(v);
-        cells[ci]=String(val).replace(/[\t\r\n]+/g,' ').trim();
-      }
-      if(cells.some(Boolean)) lines.push(cells.join('\t'));
-    }
-    const text=lines.join('\n');
-    out.push({name:sh.getAttribute('name'),hidden:(sh.getAttribute('state')||'visible')!=='visible',text,parsed:parsePaste(text,'')});
-  }
-  return out;
-}
-const impNorm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-function paintImport(){
-  const box=$('#impXlsList'); if(!box) return;
-  if(!impBook){ box.innerHTML=''; return; }
-  const tabs=sheetTabs();
-  box.innerHTML=`<div class="implist">${impBook.map((b,i)=>{
-    const n=b.parsed.rows.length, ps=new Set(b.parsed.rows.map(r=>r.party)).size;
-    const match=tabs.find(t=>impNorm(t)===impNorm(b.name))||'';
-    const done=impDone.has(b.name);
-    return `<div class="improw${done?' done':''}">
-      <span class="nm">${esc(b.name)}${b.hidden?' <span class="tag" title="Hidden tab in the old sheet">HIDDEN</span>':''}</span>
-      <span class="hint">${n} item line${n===1?'':'s'} · ${ps} part${ps===1?'y':'ies'}</span>
-      <span class="hint">→</span>
-      <select data-imptab="${i}"><option value="">— choose a tab —</option>${tabs.map(t=>`<option${t===(b.pick??match)?' selected':''}>${esc(t)}</option>`).join('')}</select>
-      <button class="${done?'ghost':'primary'} tiny" data-impload="${i}"${n?'':' disabled'}>${done?'✓ Added — load again':'Load into paste box'}</button>
-    </div>`;}).join('')}</div>`;
-  box.querySelectorAll('[data-imptab]').forEach(s=>s.onchange=()=>{ impBook[+s.dataset.imptab].pick=s.value; });
-  box.querySelectorAll('[data-impload]').forEach(btn=>btn.onclick=()=>{
-    const b=impBook[+btn.dataset.impload], tab=box.querySelector(`[data-imptab="${btn.dataset.impload}"]`).value;
-    if(!tab){ flash('Choose which tab these orders go to first'); return; }
-    $('#pasteTab').value=tab; $('#paste').value=b.text; impPending={name:b.name,text:b.text};
-    $('#parseNote').textContent=`Loaded "${b.name}" from the file (${b.parsed.rows.length} item lines) into the box for ${tab}. Check it, then press Add these orders.`;
-    $('#paste').scrollIntoView({behavior:'smooth',block:'center'});
-  });
-}
-$('#impXlsBtn').onclick=()=>$('#impXls').click();
-$('#impXls').onchange=async e=>{
-  const f=e.target.files[0]; e.target.value=''; if(!f) return;
-  $('#impXlsList').innerHTML='<p class="hint">Reading the file…</p>';
-  try{ impBook=await readOldSheet(f); impDone.clear(); paintImport(); }
-  catch(err){ impBook=null; $('#impXlsList').innerHTML=`<p class="hint" style="color:var(--alert)">Couldn't read that file: ${esc(err.message||String(err))}</p>`; }
-};
 $('#addPaste').onclick=async()=>{
   const tab=$('#pasteTab').value;
   const {rows,note}=parsePaste($('#paste').value,tab);
   const noteEl=$('#parseNote');
   noteEl.textContent=note;
   if(!rows.length)return;
+  await addOrderRows(rows,tab,note,noteEl,{onAdded:()=>{ $('#paste').value=''; },
+    cancelMsg:'Cancelled — nothing added. The paste is still in the box.'});
+};
+/* Shared by the paste box and Type an order: duplicate check (with the pick-and-tick panel in
+   noteEl), then add, Upload log entry and save. opts.src tags the upload ('typed' for the form);
+   opts.onAdded runs once lines are in (clears the box/form). */
+async function addOrderRows(rows,tab,note,noteEl,opts){
+  opts=opts||{};
   const {fresh,dupes}=classifyPaste(rows);
-  const fromFile=impPending&&impPending.text===$('#paste').value?impPending:null;
   const finish=async(toAdd,keptDupes)=>{
     const added=commitPasteRows(toAdd);
     const skippedRows=rows.filter(r=>!toAdd.includes(r));
-    if(added.length||skippedRows.length) recordUpload(tab,rows.length,added,skippedRows,fromFile?'file':undefined);
-    if(fromFile){ impDone.add(fromFile.name); impPending=null; paintImport(); }
+    if(added.length||skippedRows.length) recordUpload(tab,rows.length,added,skippedRows,opts.src);
     // a duplicate the person chose to add is genuine - remember how many copies are expected
     // so it isn't flagged as a duplicate afterwards
     if(keptDupes&&keptDupes.length){
       const c=new Map(); S.orders.forEach(o=>{ const k=dupKey(o); c.set(k,(c.get(k)||0)+1); });
       keptDupes.forEach(d=>{ const n=c.get(d.key)||0; if(n>1) S.dupOk[d.key]=n; });
     }
-    $('#paste').value='';
+    if(opts.onAdded) opts.onAdded(toAdd);
     const skipped=rows.length-toAdd.length;
     noteEl.textContent=`${note} Added ${toAdd.length} line${toAdd.length===1?'':'s'}${skipped?`, skipped ${skipped} duplicate${skipped===1?'':'s'}`:''}.`;
     await save();renderAll();
-    flash(toAdd.length?`Added ${toAdd.length} item lines to ${tab}${skipped?` — ${skipped} duplicates skipped`:''}`:'Nothing added — all lines were duplicates');
+    flash(toAdd.length?`Added ${toAdd.length} item line${toAdd.length===1?'':'s'} to ${tab}${skipped?` — ${skipped} duplicates skipped`:''}`:'Nothing added — all lines were duplicates');
   };
   if(!dupes.length){ await finish(rows,null); return; }
   // hold everything back until the person decides - nothing is added yet
@@ -4536,7 +4537,139 @@ $('#addPaste').onclick=async()=>{
   // keep the original paste order: new lines and ticked duplicates, in the sequence they were pasted
   mainBtn.onclick=()=>{ const kp=new Set(picked()); finish(rows.filter(r=>!dupes.includes(r)||kp.has(r)),[...kp]); };
   noteEl.querySelector('[data-dupall]').onclick=()=>finish(rows,dupes);
-  noteEl.querySelector('[data-dupcancel]').onclick=()=>{ noteEl.textContent='Cancelled — nothing added. The paste is still in the box.'; };
+  noteEl.querySelector('[data-dupcancel]').onclick=()=>{ noteEl.textContent=opts.cancelMsg||'Cancelled — nothing added.'; };
+}
+
+/* ---------- Type an order (manual entry) ----------
+   One party at a time: tab, date, party (suggests saved parties; a saved party fills its routes
+   and tab), routes, then item lines. Total wt = qty × unit wt unless typed over; a qty like
+   "25kg" with no unit wt counts as 25 kg. Adding goes through addOrderRows, so the duplicate
+   check and Upload log ("typed") work exactly as for a paste. */
+const manRoutes=new Set(); let manListKey='';
+function manWeight(qty,unit){
+  const q=parseQty(qty), u=parseNum(unit);
+  if(!(q.n>0)) return '';
+  if(!isNaN(u)&&String(unit).trim()!=='') return String(+(q.n*u).toFixed(3));
+  if(/^kgs?$/.test(q.u)) return String(q.n);
+  return '';
+}
+function manKnownUnits(){ // item (spaces/case ignored) -> {name, unit} from the latest line that had a unit wt
+  const m=new Map();
+  const take=o=>{ if(!o||!o.item) return; const k=String(o.item).toLowerCase().replace(/\s+/g,''); const u=String(o.unit??'').trim();
+    if(u||!m.has(k)) m.set(k,{name:o.item,unit:u||(m.get(k)||{}).unit||''}); };
+  S.log.forEach(g=>(Array.isArray(g.snapshot)?g.snapshot:[]).forEach(take));
+  S.orders.forEach(take);
+  return m;
+}
+function manRowHtml(){
+  return `<div class="manrow" data-manrow>
+    <input data-mf="item" list="manItemList" autocomplete="off" placeholder="item">
+    <input data-mf="qty" class="n" inputmode="decimal" placeholder="qty">
+    <input data-mf="unit" class="n" inputmode="decimal" placeholder="unit wt">
+    <input data-mf="weight" class="n auto" inputmode="decimal" placeholder="total">
+    <input data-mf="remark" placeholder="remark (optional)">
+    <button class="ghost tiny" data-mdel title="Remove this line">✕</button></div>`;
+}
+function manAddRow(focus){
+  const box=$('#manItems'); box.insertAdjacentHTML('beforeend',manRowHtml());
+  const row=box.lastElementChild; wireManRow(row); if(focus) row.querySelector('[data-mf="item"]').focus(); return row;
+}
+function manRecalc(row){
+  const w=row.querySelector('[data-mf="weight"]');
+  if(!w.dataset.typed){ w.value=manWeight(row.querySelector('[data-mf="qty"]').value,row.querySelector('[data-mf="unit"]').value); }
+  w.classList.toggle('auto',!w.dataset.typed);
+  manPaintTotal();
+}
+function manPaintTotal(){
+  const rows=$$('#manItems [data-manrow]'); let kg=0, n=0;
+  rows.forEach(r=>{ if(r.querySelector('[data-mf="item"]').value.trim()){ n++; kg+=wtNum(r.querySelector('[data-mf="weight"]').value)||0; } });
+  $('#manTotal').textContent=n?`${n} item line${n>1?'s':''} · ${num(+kg.toFixed(3))} kg`:'';
+}
+function wireManRow(row){
+  const f=k=>row.querySelector(`[data-mf="${k}"]`);
+  f('qty').oninput=()=>manRecalc(row);
+  f('unit').oninput=()=>manRecalc(row);
+  f('weight').oninput=()=>{ const w=f('weight'); if(w.value.trim()) w.dataset.typed='1'; else delete w.dataset.typed; manRecalc(row); };
+  f('item').onchange=()=>{ // a known item fills its usual unit wt if none is typed yet
+    const k=f('item').value.toLowerCase().replace(/\s+/g,''); const hit=manKnownUnits().get(k);
+    if(hit&&hit.unit&&!f('unit').value.trim()){ f('unit').value=hit.unit; manRecalc(row); }
+    manPaintTotal();
+  };
+  f('item').oninput=manPaintTotal;
+  row.querySelector('[data-mdel]').onclick=()=>{ row.remove(); if(!$$('#manItems [data-manrow]').length) manAddRow(); manPaintTotal(); };
+  // Enter on the last line starts a new one
+  row.querySelectorAll('input').forEach(inp=>inp.onkeydown=e=>{
+    if(e.key!=='Enter') return; e.preventDefault();
+    const rows=$$('#manItems [data-manrow]');
+    if(row===rows[rows.length-1]) manAddRow(true); else rows[rows.indexOf(row)+1].querySelector('[data-mf="item"]').focus();
+  });
+}
+function manPaintRoutes(){
+  const box=$('#manRoutes'); if(!box) return;
+  box.innerHTML=S.routes.length?S.routes.map(r=>`<span class="pill click${manRoutes.has(r)?' on':''}" data-mr="${esc(r)}">${esc(r)}</span>`).join('')
+    :'<span class="hint">No routes yet — add them in Setup → Route library.</span>';
+  box.querySelectorAll('[data-mr]').forEach(el=>el.onclick=()=>{ const r=el.dataset.mr; manRoutes.has(r)?manRoutes.delete(r):manRoutes.add(r); manPaintRoutes(); });
+}
+function manPartyName(v){ return String(v||'').toUpperCase().replace(/\s+/g,' ').trim(); }
+let manLastParty='';
+function manPartyChanged(){
+  const p=manPartyName($('#manParty').value), note=$('#manPartyNote');
+  // a change event also fires when the box loses focus - only react to a different name, so
+  // tapping a route pill right after typing isn't swallowed by a redraw
+  if(p===manLastParty) return; manLastParty=p;
+  manRoutes.clear();
+  if(!p){ note.textContent=''; manPaintRoutes(); return; }
+  const rec=S.parties[p];
+  if(rec){
+    (rec.routes||[]).forEach(r=>manRoutes.add(r));
+    const t=partyTab(p); if(t&&sheetTabs().includes(t)) $('#manTab').value=t;
+    note.textContent=`Saved party${(rec.routes||[]).length?' — routes filled in':' — no routes saved yet, pick them below'}${t?' · usually '+t:''}.`;
+  } else note.textContent='New party — check the name matches Tally, then pick its routes.';
+  manPaintRoutes();
+}
+function paintManual(){
+  const tabSel=$('#manTab'); if(!tabSel) return;
+  { const cur=tabSel.value, tabs=sheetTabs();
+    tabSel.innerHTML=tabs.length?tabs.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join(''):'<option value="">No tab (add tabs in Setup)</option>';
+    tabSel.value=tabs.includes(cur)?cur:(tabs.includes($('#pasteTab').value)?$('#pasteTab').value:(tabs[0]||'')); }
+  const d=$('#manDate'); maskDateInput(d); if(!d.value) d.value=today10();
+  const key=Object.keys(S.parties).length+'|'+S.orders.length+'|'+S.log.length;
+  if(key!==manListKey){ manListKey=key;
+    $('#manPartyList').innerHTML=Object.keys(S.parties).sort().map(p=>`<option value="${esc(p)}">`).join('');
+    $('#manItemList').innerHTML=[...manKnownUnits().values()].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}))
+      .map(x=>`<option value="${esc(x.name)}"${x.unit?` label="unit wt ${esc(x.unit)}"`:''}>`).join('');
+  }
+  if(!$$('#manItems [data-manrow]').length){ manAddRow(); manAddRow(); manAddRow(); }
+  manPaintRoutes(); manPaintTotal();
+}
+function manClear(keep){
+  $('#manParty').value=''; $('#manPartyNote').textContent=''; manRoutes.clear(); manLastParty='';
+  $('#manItems').innerHTML=''; manAddRow(); manAddRow(); manAddRow();
+  if(!keep) $('#manNote').textContent='';
+  manPaintRoutes(); manPaintTotal();
+}
+$('#manParty').onchange=manPartyChanged;
+$('#manAddLine').onclick=()=>manAddRow(true);
+$('#manClear').onclick=()=>manClear();
+$('#manSave').onclick=async()=>{
+  const note=$('#manNote'), tab=$('#manTab').value, party=manPartyName($('#manParty').value);
+  const dRaw=$('#manDate').value.trim(), iso=parseDMY(dRaw);
+  if(sheetTabs().length&&!tab){ note.textContent='Pick the sheet tab first.'; return; }
+  if(!iso){ note.textContent='Enter the order date as dd-mm-yyyy.'; $('#manDate').focus(); return; }
+  if(!party){ note.textContent='Type the party name.'; $('#manParty').focus(); return; }
+  const rows=[]; let bad='';
+  $$('#manItems [data-manrow]').forEach(r=>{
+    const v=k=>r.querySelector(`[data-mf="${k}"]`).value.trim();
+    if(!v('item')&&!v('qty')&&!v('unit')&&!v('weight')) return;
+    if(!v('item')){ bad='An item line has a qty but no item name.'; return; }
+    if(!v('qty')){ bad=`"${v('item')}" has no qty.`; return; }
+    rows.push({party,item:v('item'),qty:v('qty'),unit:v('unit'),weight:v('weight'),date:isoToDMY(iso),
+      route:[...manRoutes].join(', '),tab,...(v('remark')?{remark:v('remark')}:{})});
+  });
+  if(bad){ note.textContent=bad; return; }
+  if(!rows.length){ note.textContent='Add at least one item with its qty.'; return; }
+  await addOrderRows(rows,tab,`${party}:`,note,{src:'typed',
+    onAdded:()=>manClear(true), cancelMsg:'Cancelled — nothing added. The order is still in the form.'});
 };
 
 /* full-state backup: everything in S, as opposed to the party-only map from the Order Entry tool */
@@ -4691,10 +4824,6 @@ $('#sumSend').onclick=()=>{
 };
 $('#sumCopy').onclick=()=>copy(daySummaryText(sumDay()),'Day summary copied');
 $('#dlXlsx').onclick=()=>exportPlanXlsx();
-$('#dlCsv').onclick=async()=>{
-  const csv=toTsv().split('\n').map(l=>l.split('\t').map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  await saveFile('loading-plan-'+today10()+'.csv',csv,'text/csv');
-};
 /* Sends an open (not yet applied) log entry back to Build Plan as a vehicle again, then deletes
    the entry. If that same vehicle is still sitting on the plan with the same parties (logging
    doesn't clear it), nothing is rebuilt - it's just opened. Otherwise the vehicle is recreated
