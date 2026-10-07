@@ -56,7 +56,15 @@ header{background:var(--green);border-bottom:2px solid var(--green-dk);position:
 .logibtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:var(--amber);color:#211500;border:1px solid var(--amber);font-weight:700;padding:4px 10px;font-size:13px}
 .logibtn svg{width:18px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
 .logibtn:hover{background:#fff;border-color:#fff}
-.logibtn.on{background:transparent;color:#fff;border-color:rgba(255,255,255,.45)}
+.logibtn[hidden]{display:none}
+/* Prev / Next sit in the header, in the Logistics button's place, while in a Logistics step */
+.hwrap .stepnav{border:none;background:transparent;padding:0;gap:5px}
+.hwrap .stepnav button{padding:4px 10px;font-size:13px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
+.hwrap .stepnav button:hover{background:#fff;color:var(--green-dk)}
+.hwrap .stepnav button.nx{background:var(--amber);border-color:var(--amber);color:#211500}
+.hwrap .stepnav button.nx:hover{background:#fff;border-color:#fff}
+.hwrap .stepnav .sn{color:rgba(255,255,255,.75)}
+@media (max-width:1180px){ .hwrap .stepnav .snl{display:none} }
 .menubtn:hover,.menubtn[aria-expanded="true"]{background:#fff;color:var(--green-dk);border-color:#fff}
 .curview::before{content:'›';margin-right:8px;color:rgba(255,255,255,.5)}
 .curview{color:#fff;font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -452,6 +460,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
     </span>
     <button id="logiBtn" class="logibtn" title="Logistics — back to the step you were on"><svg viewBox="0 0 20 16"><path d="M1.5 3.5h10v8h-10z"/><path d="M11.5 6.5h4l3 3v2h-7"/><circle cx="5" cy="12.5" r="1.6"/><circle cx="15" cy="12.5" r="1.6"/></svg><span class="lbl">Logistics</span></button>
+    <div class="stepnav" id="stepNav" hidden></div>
     <div class="brand"><span class="co">JAIN WIRE NETTING CORPORATION</span><small class="loc">EKM</small><span class="tool">Logistics Desk</span></div>
     <div id="curView" class="curview"></div>
     <div class="hbadges">
@@ -488,7 +497,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
 </header>
 <div class="navshade" id="navShade"></div>
 
-<div class="guardbar"><div class="guard" id="guard"></div><div class="stepnav" id="stepNav" hidden></div></div>
+<div class="guardbar"><div class="guard" id="guard"></div></div>
 
 <main>
 
@@ -583,6 +592,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <div><label>Web app URL</label><input id="syncUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
       <div style="flex:0 0 240px"><label>Secret key</label><input id="syncKey" type="password" autocomplete="off"></div>
       <div style="flex:0 0 auto"><button class="primary" id="syncConnect">Connect</button></div>
+      <div style="flex:0 0 auto"><button class="ghost" id="syncReport" title="Copies what the last sheet calls did, to paste to Claude when sync goes wrong">Copy sync report</button></div>
     </div>
     <div id="syncStatus" class="hint" style="margin-top:8px"></div>
     <div id="syncChoice"></div>
@@ -1074,7 +1084,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.8', APP_BUILD='06-10-2026';
+const APP_VERSION='1.9.2', APP_BUILD='07-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -4142,7 +4152,7 @@ function lastLogiStep(){ try{ const v=localStorage.getItem('ld:lastlogi'); retur
 function gotoView(v){
   if(currentView==='admin'&&v!=='admin') adminOpenUntil=0; // leaving Admin locks it again
   if(LOGI_STEPS.includes(v)) try{ localStorage.setItem('ld:lastlogi',v); }catch(_){}
-  $('#logiBtn').classList.toggle('on',LOGI_STEPS.includes(v));
+  $('#logiBtn').hidden=LOGI_STEPS.includes(v); // inside Logistics the header shows ‹ Prev / Next › instead
   if(v==='admin') stale.add('admin');
   if(v==='log') setTimeout(paintSumFields,0);
   currentView=v;
@@ -5102,6 +5112,9 @@ function mergeModels(b,l,r){
     else if(k==='partyExtra') data[k]=m3recs(bd[k],ld[k],rd[k]);
     else if(k==='orderMeta'||k==='dupOk'||k==='finalNotes'||k==='stock'||k==='stockOut'||k==='stockMeta') data[k]=m3map(bd[k],ld[k],rd[k]);
     else if(k==='seq'||k==='upSeq') data[k]=Math.max(+ld[k]||0,+rd[k]||0);
+    // a device on an older version doesn't know the sheet link and leaves the field out
+    // altogether (a real removal sends ''), so a missing link never wipes this one - it goes back
+    else if(k==='sheetLink'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||'';
     else { const v=m3(bd[k],ld[k],rd[k]); if(v!==undefined) data[k]=v; }
   });
   return {model:{orders,parties:m3recs(b.parties,l.parties,r.parties),masters,data},fromSheet};
@@ -5145,18 +5158,44 @@ function applyModel(m,fromSheet){
   Object.entries(byTab).forEach(([tab,os])=>recordUpload(tab,os.length,os,[],'sheet'));
 }
 
+/* syncFull is on while a device does its first full sync (no base yet): the whole sheet comes
+   down in one answer, which can take Apps Script well over 30 s with a cold cache. It gets
+   2 minutes, and switching tabs/windows doesn't cancel it. */
+let syncFull=false;
+const syncLog=[]; // last 40 sheet calls, for "Copy sync report"
+function logSync(e){ syncLog.push({at:new Date().toLocaleTimeString(),...e}); if(syncLog.length>40) syncLog.shift(); }
 async function syncCall(action,payload){
   // a request that never answers (phone went to sleep, weak signal) must not keep the app "syncing" forever
   const ac=new AbortController(); syncAbort=ac; let timedOut=false;
-  const tm=setTimeout(()=>{ timedOut=true; ac.abort(); },action==='push'?60000:30000);
-  let res, txt;
+  const limit=syncFull?120000:action==='push'?60000:30000;
+  const tm=setTimeout(()=>{ timedOut=true; ac.abort(); },limit);
+  const t0=Date.now(); let res, txt;
   try{ res=await fetch(syncCfg.url,{method:'POST',redirect:'follow',signal:ac.signal,body:JSON.stringify({key:syncCfg.key,action,...(payload||{})})}); txt=await res.text(); }
-  catch(e){ throw new Error(timedOut||ac.signal.aborted?'The sheet is slow to answer — will retry shortly.':'Can\'t reach the sheet — offline? Will retry.'); }
+  catch(e){
+    const why=timedOut?`no answer in ${limit/1000} s`:ac.signal.aborted?'cancelled (page left or went offline)':'network error: '+(e&&e.message||e);
+    logSync({action,full:syncFull,ms:Date.now()-t0,err:why});
+    throw new Error(timedOut||ac.signal.aborted?'The sheet is slow to answer — will retry shortly.':'Can\'t reach the sheet — offline? Will retry.'); }
   finally{ clearTimeout(tm); if(syncAbort===ac) syncAbort=null; }
   let j;
-  try{ j=JSON.parse(txt); }catch(e){ throw new Error('That URL did not answer like the Logistics Desk script. Check it ends in /exec and is deployed for "Anyone".'); }
+  try{ j=JSON.parse(txt); }catch(e){
+    logSync({action,full:syncFull,ms:Date.now()-t0,http:res&&res.status,err:'not JSON: '+String(txt).slice(0,160).replace(/\s+/g,' ')});
+    throw new Error('That URL did not answer like the Logistics Desk script. Check it ends in /exec and is deployed for "Anyone".'); }
+  logSync({action,full:syncFull,ms:Date.now()-t0,kb:Math.round(txt.length/1024),ok:!!j.ok,...(j.conflict?{conflict:true}:{}),...(j.same?{same:true}:{}),...(j.empty?{empty:true}:{}),...(j.ok||j.conflict?{}:{err:j.error||'failed'}),...(j.version&&action==='ping'?{script:j.version}:{})});
   if(!j.ok&&!j.conflict) throw new Error(j.error||'Sync failed');
   return j;
+}
+function syncReport(){
+  const st=syncState, L=[];
+  L.push('Logistics Desk sync report — '+new Date().toLocaleString());
+  L.push(`App ${APP_VERSION} (${APP_BUILD}) · device "${deviceName()}" · ${navigator.onLine?'online':'OFFLINE'}`);
+  L.push('Browser: '+navigator.userAgent);
+  L.push(syncCfg?`URL …${syncCfg.url.slice(-24)} · key ${syncCfg.key?syncCfg.key.length+' characters':'MISSING'} · sheet "${syncCfg.name||'?'}"`:'Not connected');
+  L.push(`State: ${st.s}${st.msg?' — '+st.msg:''} · last ok ${st.at?hhmm(st.at):'never'} · first sync done: ${syncBase?'yes':'NO'}${syncFirst?' · waiting for "choose data"':''} · busy: ${syncBusy}`);
+  L.push(`This device: ${S.orders.length} order lines, ${Object.keys(S.parties).length} parties, ${S.log.length} log entries`);
+  L.push('Calls (oldest first):');
+  syncLog.forEach(e=>L.push(`  ${e.at} ${e.action}${e.full?' (first sync)':''} ${e.ms} ms${e.kb!=null?' '+e.kb+' KB':''}${e.ok?' ok':''}${e.same?' same':''}${e.empty?' empty':''}${e.conflict?' conflict':''}${e.script?' script '+e.script:''}${e.http?' http '+e.http:''}${e.err?' ERROR '+e.err:''}`));
+  if(!syncLog.length) L.push('  (none since the page was opened)');
+  return L.join('\n');
 }
 function setSyncState(s,msg){ syncState={s,at:s==='ok'?Date.now():syncState.at,msg:msg||''}; updateSyncBadge(); paintSync(); }
 function hhmm(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
@@ -5178,7 +5217,7 @@ function isEditingNow(){ return Date.now()-lastKeyAt<4000 || !!document.querySel
 async function syncNow(why){
   if(!syncCfg||syncFirst) return;
   if(syncBusy){
-    if(Date.now()-syncStarted>90000){ if(syncAbort) syncAbort.abort(); syncBusy=false; } // stuck: let go and start over
+    if(Date.now()-syncStarted>(syncFull?150000:90000)){ if(syncAbort) syncAbort.abort(); syncBusy=false; } // stuck: let go and start over
     else{ syncAgain=true; return; }
   }
   if(why!=='manual'&&isEditingNow()){ scheduleSync(3000,why); return; }
@@ -5190,7 +5229,7 @@ async function syncNow(why){
     if(why==='timer'&&syncBase&&!syncFirst&&same(local,syncBase.model)){ if(syncState.s==='busy') setSyncState('ok'); return; }
     // the 30-second background check stays silent unless something changes (no spinning badge all day)
     if(!(why==='poll'&&syncBase&&same(local,syncBase.model))) setSyncState('busy');
-    if(!syncBase) await firstSync(local);
+    if(!syncBase){ syncFull=true; paintSync(); try{ await firstSync(local); } finally{ syncFull=false; } }
     else if(!same(local,syncBase.model)) await pushMerging(local);
     else{
       const r=await syncCall('pull',{known:syncBase.version});
@@ -5238,7 +5277,7 @@ function paintSync(){
   else if(!$('#syncUrl').value) $('#syncUrl').value=DEFAULT_SYNC_URL;
   $('#syncConnect').textContent=syncCfg?'Save & reconnect':'Connect';
   st.innerHTML=!syncCfg?'Not connected. Data stays on this device only.'
-    :syncState.s==='busy'?'Syncing…'
+    :syncState.s==='busy'?(syncFull?'First sync — fetching everything from the sheet. This can take up to 2 minutes; keep this page open.':'Syncing…')
     :syncState.s==='err'?`<span style="color:var(--alert);font-weight:700">${esc(syncState.msg)}</span>`
     :syncState.at?`Connected${syncCfg.name?' to <b>'+esc(syncCfg.name)+'</b>':''} — last synced ${hhmm(syncState.at)}.`
     :`Connected${syncCfg.name?' to <b>'+esc(syncCfg.name)+'</b>':''}.`;
@@ -5281,6 +5320,7 @@ $('#syncConnect').onclick=async()=>{
   }catch(e){ syncCfg=prev; $('#syncStatus').innerHTML=`<span style="color:var(--alert);font-weight:700">${esc(e.message)}</span>`; }
 };
 $('#syncNowBtn').onclick=()=>syncNow('manual');
+$('#syncReport').onclick=()=>copy(syncReport(),'Sync report copied — paste it into the chat');
 $('#forcePush').onclick=()=>{
   if(!syncCfg){ flash('This device is not connected to a sheet'); return; }
   armConfirm($('#forcePush'),'Yes, overwrite the sheet',async()=>{
@@ -5301,7 +5341,7 @@ $('#syncOff').onclick=()=>armConfirm($('#syncOff'),'Yes, disconnect',async()=>{
 $('#syncBadge').onclick=()=>{ if(syncCfg){ if(syncFirst) gotoView('routes'); else syncNow('manual'); } };
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&syncCfg){
   // coming back to the app: a request that was running while the phone slept is dead - drop it and sync afresh
-  if(syncBusy&&syncAbort&&Date.now()-syncStarted>12000) syncAbort.abort();
+  if(syncBusy&&syncAbort&&!syncFull&&Date.now()-syncStarted>12000) syncAbort.abort();
   syncNow('focus'); } });
 window.addEventListener('online',()=>{ if(syncCfg){ if(syncBusy&&syncAbort) syncAbort.abort(); syncNow('online'); } });
 setInterval(()=>{ if(syncCfg&&document.visibilityState==='visible'&&!syncBusy) syncNow('poll'); },30000); // a check that finds nothing new is quick (the sheet answers from memory)
