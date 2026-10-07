@@ -243,6 +243,13 @@ th.n,td.n{text-align:right}
 .mantoggle .mcar{display:inline-block;transition:transform .15s;font-size:11px}
 .mantoggle[aria-expanded="true"] .mcar{transform:rotate(90deg)}
 #manBody[hidden]{display:none}
+.tag.added{background:#e8f0fe;color:#1a4b9c;border-color:#9bb5e8}
+.tag.godown{background:#efe6f8;color:#5b3a8c;border-color:#c3a9e3}
+.laddbox,.gdform{margin-top:10px;padding:10px 12px;border:1px dashed var(--amber);border-radius:var(--r);background:#fffaf0}
+.lpick{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.lprow{display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0;cursor:pointer}
+.lprow .lpi{flex:1 1 auto}
+.lprow input[data-lpq]{width:80px;text-align:right}
 .manroutes .pill{font-size:12px;padding:3px 9px;margin:0 5px 5px 0}
 .manlines{margin-top:12px}
 .manrow{display:grid;grid-template-columns:minmax(170px,3fr) 80px 80px 95px minmax(110px,2fr) 30px;gap:6px;align-items:center;margin-bottom:6px}
@@ -1084,7 +1091,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.9.2', APP_BUILD='07-10-2026';
+const APP_VERSION='1.9.5', APP_BUILD='07-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1609,12 +1616,14 @@ function daySummaryText(day){
   const trips=tripsOf(reportLines().filter(l=>l.date===day));
   const L=[`*${day} Loading Plan*`];
   if(!trips.length){ L.push('No vehicles logged for this day.'); return L.join('\n'); }
-  trips.forEach(t=>{
+  trips.filter(t=>!t.g.godown).forEach(t=>{
     const g=t.g;
     L.push('');
     L.push(`*${g.vehicleNo||g.vehicle||'Vehicle'}*${g.driver?' · Driver: '+g.driver:''}`);
     tripParties(t).forEach(p=>L.push(p));
   });
+  const gd=[...new Set(trips.filter(t=>t.g.godown).flatMap(t=>tripParties(t)))];
+  if(gd.length){ L.push(''); L.push('*Godown collection*'); gd.forEach(p=>L.push(p)); }
   return L.join('\n');
 }
 // a log entry's parties in delivery order: the vehicle as it was arranged on screen, else the
@@ -2337,9 +2346,15 @@ function paintOrders(){
               <button class="tiny ${held?'primary':'ghost'}" data-hold="${esc(p)}" data-holdtab="${esc(blockTab)}" data-holddate="${esc(d)}" title="${held?'Tap to take this batch off hold':'Hold just this '+esc(d||'undated')+' batch — with a reason and an until date'}">${held?'On hold ✕':'Hold'}</button>
               <input data-due="${esc(p)}" data-duetab="${esc(blockTab)}" data-duedate="${esc(d)}" value="${esc(isoToDMY(dueOf(p,blockTab,d)))}" placeholder="dd-mm-yyyy" title="Due date for just this ${esc(d||'undated')} batch" style="width:100px">
               <button class="tiny ${editing?'primary':'ghost'}" data-eedit="${esc(p)}" title="${editing?'Done editing':'Edit this order'}">${editing?'✓ Done':'✎'}</button>
+              <button class="tiny ghost" data-godown="${esc(p)}" data-gdkey="${esc(p+'|'+batchKey(blockTab,d))}" title="The party collected from the godown — recorded in the Plan log and Reports, not deleted">Godown collected</button>
               <button class="tiny ghost" data-odel="${esc(p)}" data-odeldate="${esc(d)}" data-odeltab="${esc(blockTab)}">Remove</button>
             </span>
           </div>
+          ${godownForm===p+'|'+batchKey(blockTab,d)?(()=>{ const ls=freeLinesOf(p), mine=new Set(its.map(o=>o.id));
+            return `<div class="gdform" data-gdform="${esc(p)}"><b>Collected from the godown</b>
+              <span class="hint" style="margin:0 0 0 6px">tick what was taken; change a qty if only part went. Recorded as delivered today.</span>
+              ${ls.length?linePickHtml(ls,mine):'<p class="hint">All of this party\'s lines are already on a vehicle in the Plan log.</p>'}
+              <div style="display:flex;gap:6px;margin-top:6px">${ls.length?`<button class="tiny primary" data-gdsave="${esc(p)}">Record godown collection</button>`:''}<button class="tiny ghost" data-gdcancel>Cancel</button></div></div>`; })():''}
           ${(()=>{ const hi=held?holdInfo(p,blockTab,d):null; const k=p+'|'+batchKey(blockTab,d);
             if(holdForm===k) return `<div class="holdform" data-hfk="${esc(k)}">
               <b>Hold this batch</b>
@@ -2362,6 +2377,17 @@ function paintOrders(){
 }
 
 function wireOrderBox(box){
+  box.querySelectorAll('[data-godown]').forEach(b=>b.onclick=()=>{ godownForm=godownForm===b.dataset.gdkey?null:b.dataset.gdkey; renderOrders(); renderDash(); });
+  box.querySelectorAll('[data-gdcancel]').forEach(b=>b.onclick=()=>{ godownForm=null; renderOrders(); renderDash(); });
+  box.querySelectorAll('[data-gdsave]').forEach(b=>b.onclick=()=>{
+    const p=b.dataset.gdsave, form=b.closest('[data-gdform]'), pick=readLinePick(form);
+    if(pick.err){ flash(pick.err); return; }
+    armConfirm(b,`Yes, ${pick.ids.length} line${pick.ids.length>1?'s':''} collected`,async()=>{
+      godownCollect(p,pick); godownForm=null;
+      S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>stopItems(s).length));
+      await save(); renderAll(); flash(`Godown collection recorded for ${p} — see Plan log`);
+    });
+  });
   box.querySelectorAll('[data-odel]').forEach(b=>b.onclick=()=>armConfirm(b,'Remove this batch',async()=>{
     const p=b.dataset.odel, d=b.dataset.odeldate, t=b.dataset.odeltab;
     S.orders=S.orders.filter(o=>!(o.party===p && (o.date||'')===d && (o.tab||'')===t));
@@ -3253,6 +3279,151 @@ function lineChanges(g,id){
   const n=noteOf(g,id);
   return !!n && !isNaN(parseNum(o.qty)) && withTag(o.item,n)!==o.item;
 }
+/* ---------- single deliveries (v1.9.5) ----------
+   + Add a party: puts a party (all or some of its lines, any qty) on a vehicle already in the
+   Plan log and not yet confirmed - at the first stop, after any stop, or the last stop.
+   Godown collected: a party collecting from the godown is recorded as its own Plan log entry,
+   confirmed straight away, so it shows in the log and Reports instead of being deleted. */
+let logAdd=null;      // {g: entry id, party} while the + Add a party panel is open
+let godownForm=null;  // party whose Godown collected panel is open
+function linesInOpenLogs(){ return new Set(S.log.filter(g=>!g.resolved).flatMap(g=>g.stops.flatMap(s=>s.orderIds))); }
+function freeLinesOf(p){ const used=linesInOpenLogs(); return itemsOf(p).filter(o=>!used.has(o.id)&&str(o.item)); }
+function linePickHtml(lines,ticked){
+  return `<div class="lpick">${lines.map(o=>`<label class="lprow">
+    <input type="checkbox" class="chk" data-lpk="${o.id}"${!ticked||ticked.has(o.id)?' checked':''}>
+    <span class="lpi">${esc(o.item)}${remHtml(o)} <span class="g">· ${esc(o.date||'no date')}${o.tab?' · '+esc(o.tab):''}</span></span>
+    <span class="g">ordered ${esc(o.qty)}</span>
+    <input data-lpq="${o.id}" value="${esc(o.qty)}" inputmode="decimal" title="Change if only part of it goes">
+  </label>`).join('')}</div>`;
+}
+// ticked lines and any changed qty, or {err}
+function readLinePick(box){
+  const ids=[], loadQty={};
+  for(const cb of box.querySelectorAll('[data-lpk]')){
+    if(!cb.checked) continue;
+    const id=cb.dataset.lpk, o=S.orders.find(x=>x.id===id); if(!o) continue;
+    const v=box.querySelector(`[data-lpq="${id}"]`).value.trim();
+    if(v!==String(o.qty).trim()){
+      const n=parseNum(v); if(!(n>0)) return {err:`Enter a qty for ${o.item}, or untick it`};
+      if(n!==parseNum(o.qty)) loadQty[id]=n;
+    }
+    ids.push(id);
+  }
+  if(!ids.length) return {err:'Tick at least one line'};
+  return {ids,loadQty};
+}
+function addPartyToLog(g,party,pick,pos){
+  const D=[...g.stops].reverse(); // delivery order
+  const have=g.stops.find(st=>st.party===party);
+  if(have){ // more lines for a party already on this vehicle
+    have.orderIds.push(...pick.ids.filter(id=>!have.orderIds.includes(id)));
+    have.loadQty={...(have.loadQty||{}),...pick.loadQty};
+  } else {
+    const k=pos==null||pos<0||pos>D.length?D.length:pos;
+    D.splice(k,0,{party,orderIds:[...pick.ids],loadQty:{...pick.loadQty},added:today10()});
+    g.stops=D.reverse();
+  }
+  if(g.laneSnap&&Array.isArray(g.laneSnap.stops)){
+    const ls=g.laneSnap.stops, hs=ls.find(st=>st.party===party);
+    if(hs) hs.loadQty={...(hs.loadQty||{}),...pick.loadQty};
+    else ls.splice(Math.min(pos==null||pos<0?ls.length:pos,ls.length),0,{party,urgent:false,loadQty:{...pick.loadQty}});
+  }
+}
+function godownCollect(party,pick){
+  const g={id:uid('g'),title:`Godown collection — ${party} ${today10()}`,vehicle:'Godown collection',godown:true,
+    createdAt:today10(),vehicleNo:'',driver:'',stops:[{party,orderIds:[...pick.ids],loadQty:{...pick.loadQty}}],
+    qtyGone:{},notes:{},resolved:false,open:false,snapshot:null,stockDelta:null};
+  S.log.push(g); applyLogEntry(g); return g;
+}
+/* Apply delivery: every line of the entry shrinks by what went (or leaves Orders), with a
+   snapshot kept on the entry so Reopen can undo it. Used by the Plan log button and by a
+   godown collection, which is applied the moment it is recorded. */
+function applyLogEntry(g){
+  normalizeGone(g);
+  const allIds=g.stops.flatMap(s=>s.orderIds).filter(id=>S.orders.some(o=>o.id===id));
+      // snapshot every affected order exactly as it stands now, so this can be undone
+      g.snapshot=allIds.map(id=>({...S.orders.find(x=>x.id===id)}));
+      const delta={}; // {itemKey:{unit:deliveredQty}} — recorded on the entry so Reopen can undo it exactly
+      allIds.forEach(id=>{
+        const o=S.orders.find(x=>x.id===id); if(!o)return;
+        const orig=parseNum(o.qty); const origW=parseNum(o.weight);
+        const gone=goneOf(g,id);
+        const qtyStr=String(o.qty??''); const suffix=(qtyStr.match(/^[\d.,]+(.*)$/)||['',''])[1]; // e.g. "ft","kg" — preserved on shrink below
+        const base=logBase(g,id,orig), inc=base!==orig; // loaded more than ordered: balance counts from the loaded qty
+        let keep=orig; // balance remaining on the truck, derived from how much has gone
+        if(!isNaN(orig)){
+          const clampedGone=Math.max(0,Math.min(gone,base));
+          keep=+(base-clampedGone).toFixed(3);
+          if(inc&&(g.incKeep||{})[id]==='drop') keep=0;
+          if(clampedGone>0){
+            const {u}=parseQty(o.qty); const key=stockKey(o.item);
+            delta[key]=delta[key]||{}; delta[key][u]=(delta[key][u]||0)+clampedGone;
+          }
+        }
+        if(isNaN(orig)||keep<=0){ S.orders=S.orders.filter(x=>x.id!==id); return; }
+        // whatever stays behind carries the typed note in brackets, e.g. "MS Wire (already billed)",
+        // so it's in plain sight next time this party is planned. The snapshot above holds the
+        // untagged name, so Reopen puts it back exactly as it was.
+        const note=noteOf(g,id);
+        if(note) o.item=withTag(o.item,note);
+        if(keep===orig) return; // qty unchanged (the note, if any, is already on)
+        // partial: shrink the line to the balance that's left, weight scaled to match
+        // (keep the original qty's unit suffix — "90ft" must shrink to "30ft", not bare "30")
+        o.qty=String(keep)+suffix;
+        const perUnit=parseNum(o.unit);
+        if(!isNaN(perUnit)) o.weight=(keep*perUnit).toFixed(3).replace(/\.0+$|(\.\d*?)0+$/,'$1');
+        else if(!isNaN(origW)&&orig>0) o.weight=(origW*(keep/orig)).toFixed(3).replace(/\.?0+$/,'');
+      });
+      Object.entries(delta).forEach(([key,units])=>{
+        S.stockOut[key]=S.stockOut[key]||{};
+        Object.entries(units).forEach(([u,n])=>{ S.stockOut[key][u]=(S.stockOut[key][u]||0)+n; });
+      });
+      g.stockDelta=delta; g.appliedAt=Date.now();
+      refreshZero(Object.keys(delta));
+      // the loaded-qty edits for these lines are used up - whatever balance is left plans as ordered
+      S.plan.lanes.forEach(l=>l.stops.forEach(st=>{ if(st.loadQty) allIds.forEach(id=>delete st.loadQty[id]); }));
+      S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>stopItems(s).length));
+      g.resolved=true; g.open=false; // done with it - fold it away until someone opens it again
+}
+function logAddHtml(g){
+  if(!logAdd||logAdd.g!==g.id) return `<div style="margin-top:8px"><button class="tiny" data-laddp="${g.id}">+ Add a party to this vehicle</button>
+    <span class="hint" style="margin-left:6px">a late addition, or more items for a party already on it</span></div>`;
+  const parties=[...new Set(S.orders.filter(o=>str(o.item)).map(o=>o.party))].filter(p=>freeLinesOf(p).length).sort();
+  const p=logAdd.party||'', lines=p?freeLinesOf(p):[], onIt=g.stops.some(st=>st.party===p);
+  const D=[...g.stops].reverse().map(st=>st.party);
+  return `<div class="laddbox" data-laddbox="${g.id}">
+    <b>Add a party to this vehicle</b>
+    <div class="row" style="margin-top:6px">
+      <div style="flex:1 1 320px"><label>Party</label><input data-laddparty="${g.id}" list="laddParties" value="${esc(p)}" placeholder="type or pick a party with lines on hand" autocomplete="off">
+        <datalist id="laddParties">${parties.map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+      ${p&&lines.length&&!onIt?`<div style="flex:0 0 340px"><label>Delivery order</label><select data-laddpos="${g.id}">
+        <option value="0">First delivery (loaded last)</option>
+        ${D.map((x,i)=>`<option value="${i+1}"${i===D.length-1?' selected':''}>After ${esc(x)}${i===D.length-1?' — last delivery (loaded first)':''}</option>`).join('')}
+      </select></div>`:''}
+    </div>
+    ${!p?'':!lines.length?`<p class="hint">${S.orders.some(o=>o.party===p)?'All of this party\'s lines are already on a vehicle in the log.':'No lines on hand for this party — add the order first (Add orders).'}</p>`
+      :`${onIt?'<p class="hint">Already on this vehicle — the ticked lines are added to its stop.</p>':''}${linePickHtml(lines)}`}
+    <div class="row" style="margin-top:8px">
+      ${p&&lines.length?`<div style="flex:0 0 auto"><button class="tiny primary" data-laddsave="${g.id}">Add to this vehicle</button></div>`:''}
+      <div style="flex:0 0 auto"><button class="tiny ghost" data-laddcancel>Cancel</button></div>
+    </div></div>`;
+}
+function wireLogAdd(box){
+  box.querySelectorAll('[data-laddp]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); logAdd={g:b.dataset.laddp,party:''}; renderLog(); });
+  box.querySelectorAll('[data-laddcancel]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); logAdd=null; renderLog(); });
+  box.querySelectorAll('[data-laddparty]').forEach(i=>{ i.onclick=e=>e.stopPropagation();
+    i.onchange=()=>{ const v=i.value.trim().toUpperCase(); const hit=Object.keys(S.parties).find(x=>x.toUpperCase()===v)||v; logAdd={g:i.dataset.laddparty,party:hit}; renderLog(); }; });
+  box.querySelectorAll('[data-laddsave]').forEach(b=>b.onclick=async e=>{
+    e.stopPropagation();
+    const g=S.log.find(x=>x.id===b.dataset.laddsave); if(!g||g.resolved||!logAdd) return;
+    const panel=box.querySelector(`[data-laddbox="${g.id}"]`), pick=readLinePick(panel);
+    if(pick.err){ flash(pick.err); return; }
+    const posEl=panel.querySelector('[data-laddpos]'), party=logAdd.party;
+    addPartyToLog(g,party,pick,posEl?+posEl.value:null);
+    logAdd=null; await save(); renderAll();
+    flash(`${party} added to ${g.vehicle} — ${pick.ids.length} line${pick.ids.length>1?'s':''}`);
+  });
+}
 function paintLog(){
   const box=$('#logBody');
   if(!S.log.length){ box.innerHTML='<div class="card"><p class="hint">Nothing logged yet. Build a plan in step 3, then press "Add this plan to the log" in step 4.</p></div>'; return; }
@@ -3305,7 +3476,7 @@ function paintLog(){
           </div>`;
       }).join('');
       return `<div class="lparty">
-        <div class="lphead"><span>${esc(s.party)}</span>
+        <div class="lphead"><span>${esc(s.party)}${s.added?` <span class="tag added" title="Added to this vehicle after it was logged">ADDED ${esc(shortDate(s.added))}</span>`:''}</span>
           <span style="margin-left:auto;display:flex;gap:5px">
             <button class="tiny ghost" data-pfull="${esc(s.party)}" data-g="${g.id}">Whole party stayed</button>
             <button class="tiny ghost" data-pzero="${esc(s.party)}" data-g="${g.id}">Whole party delivered</button>
@@ -3313,13 +3484,13 @@ function paintLog(){
     }).join('');
     return `<div class="logent ${g.open?'open':''}" data-ent="${g.id}">
       <div class="loghead" data-toggle="${g.id}">
-        <b>${esc(g.title)}</b>
-        <span class="hint" style="margin:0">${esc(g.vehicle)}${g.vehicleNo?' · '+esc(g.vehicleNo):''}${g.driver?' · '+esc(g.driver):''} · ${g.stops.length} stops · logged ${esc(g.createdAt)}</span>
-        ${(!g.vehicleNo||!g.driver)?'<span class="badge open" style="background:var(--edge2);color:#fff">vehicle / driver not set</span>':''}
+        <b>${esc(g.title)}</b>${g.godown?' <span class="tag godown">GODOWN</span>':''}
+        <span class="hint" style="margin:0">${g.godown?'Collected from the godown':esc(g.vehicle)+(g.vehicleNo?' · '+esc(g.vehicleNo):'')+(g.driver?' · '+esc(g.driver):'')+' · '+g.stops.length+' stops'} · logged ${esc(g.createdAt)}</span>
+        ${(!g.godown&&(!g.vehicleNo||!g.driver))?'<span class="badge open" style="background:var(--edge2);color:#fff">vehicle / driver not set</span>':''}
         <span class="badge ${g.resolved?'done':'open'}">${g.resolved?'cleared':(changing.length+' line(s) to update')}</span>
       </div>
       <div class="logbody">
-        <div class="lgfleet">
+        ${g.godown?'':`<div class="lgfleet">
           <span class="lgf">
             <label>Vehicle number</label>
             <input list="fleetVehicles" data-lveh="${g.id}" value="${esc(g.vehicleNo||'')}" placeholder="KL 07 AB 1234">
@@ -3332,7 +3503,7 @@ function paintLog(){
           <button class="tiny wabtn" data-lwa="${g.id}" title="Opens WhatsApp with the stops, items and shop locations for the driver">WhatsApp to driver</button>
           <button class="tiny ghost" data-lwacopy="${g.id}" title="Copy the same text">Copy text</button>
           <span class="hint" style="margin:0">Anything new here is added to the master lists.${g.driver&&!driverPhone(g.driver)?` No WhatsApp number saved for ${esc(g.driver)} — add it in Setup.`:''}</span>
-        </div>
+        </div>`}
         <p class="hint" style="margin-top:0">
           Each line starts assumed <b>fully gone</b> — only touch the ones that came back whole or in
           part. Set how much of each item has gone out (been delivered): 0 if none of the line left the
@@ -3341,6 +3512,7 @@ function paintLog(){
           to an item is added to the name of whatever balance stays behind, e.g. "MS Wire (already billed)".
         </p>
         ${body}
+        ${g.resolved||g.godown?'':logAddHtml(g)}
         <div class="row" style="margin-top:10px">
           <div style="flex:0 0 auto" id="delwrap-${g.id}">
             ${g.resolved
@@ -3348,12 +3520,13 @@ function paintLog(){
               : (incPending(g).length?`<button class="danger" disabled>Choose keep or remove for ${incPending(g).length} increased line${incPending(g).length===1?'':'s'} first</button>`
                 : `<button class="danger" data-cleardel="${g.id}" ${changing.length?'':'disabled'}>Apply delivery — updates ${changing.length} line${changing.length===1?'':'s'}</button>`)}
           </div>
-          ${g.resolved?'':`<div style="flex:0 0 auto"><button class="primary" data-logback="${g.id}" title="Deletes this log entry and puts the vehicle back on Build Plan to edit">Delete &amp; edit again in Build Plan</button></div>`}
+          ${g.resolved||g.godown?'':`<div style="flex:0 0 auto"><button class="primary" data-logback="${g.id}" title="Deletes this log entry and puts the vehicle back on Build Plan to edit">Delete &amp; edit again in Build Plan</button></div>`}
           <div style="flex:0 0 auto"><button class="ghost" data-logdel="${g.id}">Delete this log entry</button></div>
         </div>
       </div></div>`;
   }).join('');
 
+  wireLogAdd(box);
   box.querySelectorAll('[data-toggle]').forEach(el=>el.onclick=async()=>{
     const g=S.log.find(x=>x.id===el.dataset.toggle); if(!g)return;
     // accordion: only one entry open at a time, so opening this one closes whichever was open
@@ -3450,49 +3623,7 @@ function paintLog(){
     const allIds=g.stops.flatMap(s=>s.orderIds).filter(id=>S.orders.some(o=>o.id===id));
     const changing=allIds.filter(id=>lineChanges(g,id));
     armConfirm(el,`Yes, update ${changing.length} lines`,async()=>{
-      // snapshot every affected order exactly as it stands now, so this can be undone
-      g.snapshot=allIds.map(id=>({...S.orders.find(x=>x.id===id)}));
-      const delta={}; // {itemKey:{unit:deliveredQty}} — recorded on the entry so Reopen can undo it exactly
-      allIds.forEach(id=>{
-        const o=S.orders.find(x=>x.id===id); if(!o)return;
-        const orig=parseNum(o.qty); const origW=parseNum(o.weight);
-        const gone=goneOf(g,id);
-        const qtyStr=String(o.qty??''); const suffix=(qtyStr.match(/^[\d.,]+(.*)$/)||['',''])[1]; // e.g. "ft","kg" — preserved on shrink below
-        const base=logBase(g,id,orig), inc=base!==orig; // loaded more than ordered: balance counts from the loaded qty
-        let keep=orig; // balance remaining on the truck, derived from how much has gone
-        if(!isNaN(orig)){
-          const clampedGone=Math.max(0,Math.min(gone,base));
-          keep=+(base-clampedGone).toFixed(3);
-          if(inc&&(g.incKeep||{})[id]==='drop') keep=0;
-          if(clampedGone>0){
-            const {u}=parseQty(o.qty); const key=stockKey(o.item);
-            delta[key]=delta[key]||{}; delta[key][u]=(delta[key][u]||0)+clampedGone;
-          }
-        }
-        if(isNaN(orig)||keep<=0){ S.orders=S.orders.filter(x=>x.id!==id); return; }
-        // whatever stays behind carries the typed note in brackets, e.g. "MS Wire (already billed)",
-        // so it's in plain sight next time this party is planned. The snapshot above holds the
-        // untagged name, so Reopen puts it back exactly as it was.
-        const note=noteOf(g,id);
-        if(note) o.item=withTag(o.item,note);
-        if(keep===orig) return; // qty unchanged (the note, if any, is already on)
-        // partial: shrink the line to the balance that's left, weight scaled to match
-        // (keep the original qty's unit suffix — "90ft" must shrink to "30ft", not bare "30")
-        o.qty=String(keep)+suffix;
-        const perUnit=parseNum(o.unit);
-        if(!isNaN(perUnit)) o.weight=(keep*perUnit).toFixed(3).replace(/\.0+$|(\.\d*?)0+$/,'$1');
-        else if(!isNaN(origW)&&orig>0) o.weight=(origW*(keep/orig)).toFixed(3).replace(/\.?0+$/,'');
-      });
-      Object.entries(delta).forEach(([key,units])=>{
-        S.stockOut[key]=S.stockOut[key]||{};
-        Object.entries(units).forEach(([u,n])=>{ S.stockOut[key][u]=(S.stockOut[key][u]||0)+n; });
-      });
-      g.stockDelta=delta; g.appliedAt=Date.now();
-      refreshZero(Object.keys(delta));
-      // the loaded-qty edits for these lines are used up - whatever balance is left plans as ordered
-      S.plan.lanes.forEach(l=>l.stops.forEach(st=>{ if(st.loadQty) allIds.forEach(id=>delete st.loadQty[id]); }));
-      S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>stopItems(s).length));
-      g.resolved=true; g.open=false; // done with it - fold it away until someone opens it again
+      applyLogEntry(g);
       await save(); renderAll(); flash(`Updated ${changing.length} line(s)`);});
   });
   box.querySelectorAll('[data-reopen]').forEach(el=>el.onclick=e=>{
@@ -3984,7 +4115,7 @@ function repFiltered(mode){
     return true;
   });
 }
-const vehLabel=l=>l.vehicleNo||(l.vehicle?l.vehicle+' (no number)':'(no vehicle)');
+const vehLabel=l=>l.g&&l.g.godown?'Godown collection':l.vehicleNo||(l.vehicle?l.vehicle+' (no number)':'(no vehicle)');
 function tripsOf(lines){
   const m=new Map();
   lines.forEach(l=>{ let t=m.get(l.g.id); if(!t){ t={g:l.g,date:l.date,dk:l.dk,lines:[],kg:0,parties:new Set(),conf:l.conf,cap:l.cap}; m.set(l.g.id,t); }
@@ -3995,6 +4126,8 @@ function tripsOf(lines){
 function tripHtml(t,showParty,noDate){
   const g=t.g, pct=t.cap?Math.round(t.kg/t.cap*100):null;
   const byP=new Map(); tripParties(t).forEach(p=>byP.set(p,[])); t.lines.forEach(l=>byP.get(l.party).push(l));
+  if(g.godown) return `<div class="rtrip"><div class="rh">${noDate?'':esc(t.date||'no date')+' · '}<b>Godown collection</b> · ${num(+t.kg.toFixed(1))} kg</div>
+    ${[...byP].filter(([p,ls])=>ls.length).map(([p,ls])=>`<div class="ri">${showParty?`<b>${esc(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
   return `<div class="rtrip"><div class="rh">${noDate?'':esc(t.date||'no date')+' · '}<b>${esc(g.vehicleNo||g.vehicle||'vehicle')}</b>${g.vehicleNo&&g.vehicle?` <span class="hint">(${esc(g.vehicle)})</span>`:!g.vehicleNo?' <span class="hint">(no number)</span>':''}
     · Driver: ${g.driver?esc(g.driver):'<span class="hint">not set</span>'}
     · ${num(+t.kg.toFixed(1))} kg${pct!=null?` <span class="hint">(${pct}% of ${num(t.cap)})</span>`:''}${t.conf?'':' <span class="tag unconf">NOT CONFIRMED</span>'}</div>
