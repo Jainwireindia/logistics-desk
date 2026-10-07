@@ -623,7 +623,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
     <div class="row" style="margin-top:10px">
       <div style="flex:1 1 420px"><label>Google Sheet link</label><input id="sheetLink" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></div>
     </div>
-    <p class="hint" style="margin:2px 0 0">For the "Open the Google Sheet" link on Add orders. Paste it once — it is kept in the sheet and reaches every device, never in the website file.</p>
+    <p class="hint" style="margin:2px 0 0" id="sheetLinkNote"></p>
   </div>
 
   <div class="card">
@@ -1107,7 +1107,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='2.1', APP_BUILD='07-10-2026';
+const APP_VERSION='2.1.1', APP_BUILD='08-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -2241,7 +2241,7 @@ function paintOrders(){
       :'<option value="">No tab (add tabs in Setup)</option>';
     if(tabs.includes(cur)) sel.value=cur; }
   if(currentView==='orders') paintManual();
-  { const h=$('#sheetLinkHint'), u=S.sheetLink||'';
+  { const h=$('#sheetLinkHint'), u=sheetUrl();
     h.innerHTML=u?`<a href="${esc(u)}" target="_blank" rel="noopener" id="openSheet">Open the Google Sheet ↗</a>`
       :'<a href="#" data-goto="routes">Add the Google Sheet link in Setup</a> to open it from here.'; }
   { const i=$('#sheetLink'); if(i&&document.activeElement!==i) i.value=S.sheetLink||''; }
@@ -2499,8 +2499,17 @@ function wireOrderBox(box){
 
 
 /* ---------- 2 routes ---------- */
+// v2.1.1: the "Open the Google Sheet" link. The script (2.1.1+) tells each device its own sheet's
+// address on the ping, so normally nothing has to be typed; a link typed in Setup still wins.
+function sheetUrl(){ return S.sheetLink||(syncCfg&&syncCfg.sheetUrl)||''; }
+function paintSheetLinkNote(){
+  const n=$('#sheetLinkNote'); if(!n) return; const auto=syncCfg&&syncCfg.sheetUrl;
+  n.innerHTML=auto?`Found automatically from the connected sheet: <a href="${esc(auto)}" target="_blank" rel="noopener">open it ↗</a>. Leave this box empty unless you want the link to go somewhere else.`
+    :'For the "Open the Google Sheet" link on Add orders. Filled in automatically once the sheet script is 2.1.1 or newer; or paste the link here.';
+}
 function paintRoutes(){
   { const i=$('#sheetLink'); if(i&&document.activeElement!==i) i.value=S.sheetLink||''; }
+  paintSheetLinkNote();
   const fleetList=(arr,attr)=>arr.length
     ? arr.map(v=>`<span class="pill on" style="margin-right:6px">${esc(v)}
         <button class="tiny ghost" style="margin-left:5px;padding:0 4px" data-${attr}="${esc(v)}">×</button></span>`).join('')
@@ -5470,6 +5479,7 @@ async function syncCall(action,payload){
     if(syncBase&&action!=='ping'){ const er=new Error('Google is busy — trying again in a few seconds.'); er.busy=true; throw er; }
     throw new Error('That URL did not answer like the Logistics Desk script. Check it ends in /exec and is deployed for "Anyone".'); }
   if(j.sv) syncSV=String(j.sv); if(action==='ping'&&'trigger' in j) syncTrig=!!j.trigger;
+  if(action==='ping'&&j.url&&syncCfg&&syncCfg.sheetUrl!==j.url){ syncCfg.sheetUrl=String(j.url); kvSet(SYNC_CFG_KEY,syncCfg); }
   logSync({action,full:syncFull,ms:Date.now()-t0,kb:Math.round(txt.length/1024),ok:!!j.ok,...(j.conflict?{conflict:true}:{}),...(j.same?{same:true}:{}),...(j.empty?{empty:true}:{}),...(j.ok||j.conflict?{}:{err:j.error||'failed'}),...(j.version&&action==='ping'?{script:j.version}:{})});
   if(!j.ok&&!j.conflict){ const er=new Error(j.busy?'The sheet is busy with another device — trying again in a few seconds.':(j.error||'Sync failed')); er.busy=!!j.busy; throw er; }
   return j;
@@ -5659,6 +5669,7 @@ async function firstSync(start,wasEmpty){
 }
 function paintSync(){
   const st=$('#syncStatus'); if(!st) return;
+  paintSheetLinkNote();
   $('#syncBtns').style.display=syncCfg?'':'none';
   if(syncCfg){ $('#syncUrl').value=syncCfg.url; $('#syncKey').value=syncCfg.key; }
   else if(!$('#syncUrl').value) $('#syncUrl').value=DEFAULT_SYNC_URL;
@@ -5750,7 +5761,7 @@ async function initSync(){
   paintSync(); updateSyncBadge();
   // after the opening sync, a quick lock-free ping tells which script version and whether the
   // change trigger is installed (shown in Setup and in the sync report)
-  if(syncCfg){ syncNow('open').then(()=>syncCfg&&syncCall('ping')).then(r=>{ if(r&&r.name&&syncCfg) syncCfg.name=r.name; paintSync(); }).catch(()=>{}); }
+  if(syncCfg){ syncNow('open').then(()=>syncCfg&&syncCall('ping')).then(r=>{ if(r&&r.name&&syncCfg) syncCfg.name=r.name; paintSync(); stale.add('orders'); stale.add('routes'); refresh(); }).catch(()=>{}); }
 }
 
 $('#appVer').textContent=`Logistics Desk v${APP_VERSION} · ${APP_BUILD}`;
