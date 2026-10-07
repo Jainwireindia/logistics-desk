@@ -783,6 +783,13 @@ tr.grp td{background:var(--panel2);font-weight:600}
   </div>
 
   <div class="card">
+    <h2>Restore points</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Each time this device takes in changes from the sheet, a copy of what it had just before is kept here (the last 12).
+      If something you entered went missing after a sync, download a copy to check it, or put it back — it is sent to the sheet on the next sync.</p>
+    <div id="rpList"></div>
+  </div>
+
+  <div class="card">
     <h2>Replace the sheet with this device</h2>
     <p class="hint" style="margin-top:0;margin-bottom:10px">Only for repairs — e.g. when sync says the hidden _DATA tab is damaged.
       Sends everything on this device to the sheet and overwrites what is there. A damaged _DATA is first kept in a hidden tab "_DATA damaged …".</p>
@@ -1100,7 +1107,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.9.7', APP_BUILD='07-10-2026';
+const APP_VERSION='2.0', APP_BUILD='07-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -4632,6 +4639,7 @@ function pinHash(p){ let h=2166136261; for(const ch of 'ld-admin|'+p){ h^=ch.cha
 function pinOk(p){ return pinHash(p)===(S.adminPin||pinHash(DEFAULT_PIN)); }
 const adminUnlocked=()=>Date.now()<adminOpenUntil;
 function paintAdmin(){
+  paintRestorePoints();
   const ok=adminUnlocked();
   $('#adminLock').hidden=ok; $('#adminBody').hidden=!ok;
   if(ok) paintClear(); else { $('#adminPin').value=''; }
@@ -4997,6 +5005,14 @@ $('#backupFile').onchange=async e=>{
     `Replace everything currently in the tool with this backup (${incoming.orders.length} order lines, ${Object.keys(incoming.parties||{}).length} parties, ${(incoming.log||[]).length} log entries)?`;
   $('#backupNote').appendChild(btn);
   btn.onclick=()=>armConfirm(btn,'Yes, replace everything',async()=>{
+    await keepRestorePoint('before restoring a backup file',true);
+    await restoreState(incoming);
+    $('#backupNote').textContent='Backup restored.';
+    e.target.value='';
+  });
+};
+// puts a whole saved state back (backup file or restore point); the next sync sends it to the sheet
+async function restoreState(incoming){
     S=Object.assign({orders:[],parties:{},routes:[],plan:{route:'',lanes:[]},log:[],seq:1,combos:[],stock:{},stockOut:{}},incoming);
     normMasters(true);
     S.combos=S.combos||[];   // backups taken before combinations existed
@@ -5009,10 +5025,23 @@ $('#backupFile').onchange=async e=>{
     S.log.forEach(g=>{ if(!('stockDelta' in g)) g.stockDelta=null; });
     S.orders.forEach(o=>{ if(!o.id)o.id=uid('o'); if(!o.tab)o.tab=''; });
     markDirty(); await flushSave(); renderAll();
-    $('#backupNote').textContent='Backup restored.';
-    e.target.value='';
-  });
-};
+}
+async function paintRestorePoints(){
+  const box=$('#rpList'); if(!box) return;
+  const list=((await kvGet(RESTORE_KEY))||[]).slice().reverse();
+  if(!list.length){ box.innerHTML='<p class="hint">None yet — one is kept each time sheet changes are applied on this device.</p>'; return; }
+  box.innerHTML=`<table><tr><th>When</th><th>Kept</th><th class="n">Order lines</th><th class="n">Parties</th><th class="n">Log</th><th></th></tr>${list.map((r,i)=>{
+    const d=new Date(r.at), when=`${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()} ${hhmm(r.at)}`;
+    return `<tr><td class="mono">${when}</td><td class="hint">${esc(r.why||'')}</td><td class="n">${r.orders}</td><td class="n">${r.parties}</td><td class="n">${r.log}</td>
+      <td style="white-space:nowrap"><span><button class="tiny ghost" data-rpdl="${i}">Download</button></span> <span><button class="tiny" data-rpgo="${i}">Restore this</button></span></td></tr>`; }).join('')}</table>`;
+  box.querySelectorAll('[data-rpdl]').forEach(b=>b.onclick=async()=>{ const r=list[+b.dataset.rpdl];
+    const payload={source:'loading-plan-builder',app:'Logistics Desk',version:APP_VERSION,exportedAt:new Date(r.at).toISOString(),data:JSON.parse(r.snap)};
+    await saveFile('logistics-desk-restore-point-'+new Date(r.at).toISOString().slice(0,16).replace(/[^0-9]/g,'-')+'.json',JSON.stringify(payload,null,2),'application/json'); });
+  box.querySelectorAll('[data-rpgo]').forEach(b=>b.onclick=()=>armConfirm(b,'Yes, put this back',async()=>{
+    const r=list[+b.dataset.rpgo]; await keepRestorePoint('before putting back a restore point',true);
+    await restoreState(JSON.parse(r.snap)); paintRestorePoints(); flash('Restore point put back — it goes to the sheet on the next sync');
+  }));
+}
 let searchTimer=null;
 $$('.ordSearch').forEach(el=>el.oninput=()=>{
   ordQuery=el.value;
@@ -5473,11 +5502,11 @@ async function syncNow(why){
     if(why==='timer'&&syncBase&&!syncFirst&&same(local,syncBase.model)){ if(syncState.s==='busy') setSyncState('ok'); return; }
     // the 30-second background check stays silent unless something changes (no spinning badge all day)
     if(!(why==='poll'&&syncBase&&same(local,syncBase.model))) setSyncState('busy');
-    if(!syncBase){ syncFull=true; paintSync(); try{ await firstSync(local); } finally{ syncFull=false; } }
+    if(!syncBase){ syncFull=true; paintSync(); try{ await firstSync(local,!localHasData()); } finally{ syncFull=false; } }
     else if(!same(local,syncBase.model)) await pushMerging(local);
     else{
       const r=await syncCall('pull',{known:syncBase.version});
-      if(!r.same) await adopt(r.version,r.model,local);
+      if(!r.same) await adopt(r.version,r.model);
     }
     setSyncState('ok');
   }catch(e){ setSyncState('err',e.message); scheduleSync(15000,'retry'); }
@@ -5487,30 +5516,97 @@ async function pushMerging(local){
   for(let i=0;i<3;i++){
     const r=await syncCall('push',{baseVersion:syncBase.version,model:local});
     if(r.ok){ syncBase={version:r.version,model:local}; await kvSet(SYNC_BASE_KEY,syncBase); return; }
-    await adopt(r.version,r.model,local);                // someone else changed things - merge them in
+    await adopt(r.version,r.model);                      // someone else changed things - merge them in (with what's on screen now)
     local=toModel();
     if(same(local,syncBase.model)) return;               // nothing of ours left to send
   }
   throw new Error('The sheet kept changing — will try again shortly');
 }
-async function adopt(version,remote,local){
+/* ---------- v2.0: nothing typed during a sync is lost ----------
+   1. A sync's answer is merged with this device's data as it is NOW, not the copy taken when the
+      sync started - anything saved while the sheet was answering is kept and sent next.
+   2. Sheet changes are not applied while someone is typing: the sync waits until the keyboard has
+      been quiet for TYPE_QUIET ms, saves the box the cursor is in, applies, then puts the cursor back.
+   3. Before sheet data is applied, a copy of this device's data is kept as a restore point
+      (Admin → Restore points, last RESTORE_MAX). */
+const TYPE_QUIET=2500, TYPE_WAIT_MAX=120000, RESTORE_KEY='lpb:restore', RESTORE_MAX=12;
+function typingField(){
+  const a=document.activeElement;
+  if(!a||!a.matches) return null;
+  if(a.matches('textarea')||a.matches('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=file])')) return a;
+  return null;
+}
+async function waitForTyping(){
+  const t0=Date.now();
+  while(Date.now()-t0<TYPE_WAIT_MAX && (Date.now()-lastKeyAt<TYPE_QUIET || document.querySelector('.qin'))){
+    syncStarted=Date.now(); // waiting on the person, not a stuck call
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
+// where the cursor is, so it can be put back after the screen is redrawn
+function focusMark(el){
+  if(!el) return null;
+  if(el.id) return {sel:'#'+CSS.escape(el.id)};
+  const at=[...el.attributes].find(a=>a.name.startsWith('data-'));
+  return at?{sel:`${el.tagName.toLowerCase()}[${at.name}="${CSS.escape(at.value)}"]`}:null;
+}
+function focusBack(m,caret){
+  if(!m) return; const v=$('.view.on')||document;
+  const el=v.querySelector(m.sel)||document.querySelector(m.sel); if(!el||el===document.activeElement) return;
+  try{ el.focus({preventScroll:true}); if(caret&&el.setSelectionRange&&/^(text|search|tel|url|)$/.test(el.type||'')) el.setSelectionRange(el.value.length,el.value.length); }catch(_){}
+}
+// the box being typed in is saved first (its own change handler) so the merge sees it
+function commitTyping(){
+  const el=typingField(); if(!el) return null;
+  const m=focusMark(el);
+  if(el.value!==el.defaultValue) el.dispatchEvent(new Event('change',{bubbles:true}));
+  return m;
+}
+async function keepRestorePoint(why,force){
+  try{
+    let list=(await kvGet(RESTORE_KEY))||[]; if(!Array.isArray(list)) list=[];
+    const last=list[list.length-1], snap=JSON.stringify(S);
+    if(!force&&last&&(Date.now()-last.at<180000)&&last.snap===snap) return; // nothing new to keep
+    list.push({at:Date.now(),why,orders:S.orders.length,parties:Object.keys(S.parties).length,log:S.log.length,snap});
+    while(list.length>RESTORE_MAX) list.shift();
+    await kvSet(RESTORE_KEY,list);
+  }catch(_){}
+}
+async function adopt(version,remote){
+  await waitForTyping();
+  const mark=commitTyping();
+  if(dirty&&!saving) await flushSave();
+  const local=toModel(); // fresh - includes whatever was saved while the sheet was answering
+  await keepRestorePoint('before sheet changes were applied');
   const merged=mergeModels(syncBase&&syncBase.model,local,remote);
   applyModel(merged.model,merged.fromSheet);
   syncBase={version,model:bare(remote)};
   await kvSet(SYNC_BASE_KEY,syncBase);
   undoMute=true; try{ await save(); } finally{ undoMute=false; }
   flushSave(); renderAll(); showPlanNotice();
+  focusBack(mark,true);
 }
 function localHasData(){ return S.orders.length||Object.keys(S.parties).length||S.log.length||S.routes.length||(S.vehTypes||[]).length; }
-async function firstSync(local){
+// start = this device's data when the first sync began; wasEmpty = it had nothing then
+async function firstSync(start,wasEmpty){
   const r=await syncCall('pull',{});
   if(r.empty){                                           // brand-new sheet: this device fills it
+    const local=toModel();
     const p=await syncCall('push',{baseVersion:'',model:local,force:true});
     syncBase={version:p.version,model:local}; await kvSet(SYNC_BASE_KEY,syncBase); return;
   }
-  if(!localHasData()){                                   // empty device: take the sheet
-    applyModel(r.model,[]); syncBase={version:r.version,model:bare(r.model)};
-    await kvSet(SYNC_BASE_KEY,syncBase); await save(); flushSave(); renderAll(); return;
+  if(wasEmpty){                                          // empty device: take the sheet...
+    await waitForTyping();
+    const mark=commitTyping();
+    if(dirty&&!saving) await flushSave();
+    const now=toModel();
+    if(same(now,start)) applyModel(r.model,[]);
+    else{                                                // ...plus anything added while it was coming down
+      await keepRestorePoint('before the first sync');
+      const merged=mergeModels(start,now,r.model); applyModel(merged.model,[]);
+    }
+    syncBase={version:r.version,model:bare(r.model)};    // what we added differs from this, so it is sent next
+    await kvSet(SYNC_BASE_KEY,syncBase); await save(); flushSave(); renderAll(); focusBack(mark,true); return;
   }
   syncFirst={remote:r}; paintSync(); updateSyncBadge();  // both have data - you choose
 }
@@ -5542,7 +5638,7 @@ function paintSync(){
     const r=syncFirst.remote; syncFirst=null;
     try{
       setSyncState('busy');
-      if(b.dataset.sfirst==='sheet'){ applyModel(r.model,[]); syncBase={version:r.version,model:bare(r.model)}; await save(); flushSave(); renderAll(); }
+      if(b.dataset.sfirst==='sheet'){ await keepRestorePoint('before "Use the sheet\'s data"',true); applyModel(r.model,[]); syncBase={version:r.version,model:bare(r.model)}; await save(); flushSave(); renderAll(); }
       else{ const local=toModel(); const p=await syncCall('push',{baseVersion:r.version,model:local,force:true}); syncBase={version:p.version,model:local}; }
       await kvSet(SYNC_BASE_KEY,syncBase); setSyncState('ok'); flash('Connected — syncing with the sheet from now on');
     }catch(e){ setSyncState('err',e.message); }
