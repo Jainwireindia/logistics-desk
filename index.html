@@ -250,6 +250,9 @@ th.n,td.n{text-align:right}
 .lprow{display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0;cursor:pointer}
 .lprow .lpi{flex:1 1 auto}
 .lprow input[data-lpq]{width:80px;text-align:right}
+.logsum{margin:0 0 10px;padding:8px 12px;border:1px solid var(--edge);border-radius:var(--r);background:var(--panel);font-size:13px}
+.lkg{font-size:12px;color:var(--mute);white-space:nowrap}
+.lkg b{color:var(--ink)}
 .manroutes .pill{font-size:12px;padding:3px 9px;margin:0 5px 5px 0}
 .manlines{margin-top:12px}
 .manrow{display:grid;grid-template-columns:minmax(170px,3fr) 80px 80px 95px minmax(110px,2fr) 30px;gap:6px;align-items:center;margin-bottom:6px}
@@ -1091,7 +1094,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.9.5', APP_BUILD='07-10-2026';
+const APP_VERSION='1.9.6', APP_BUILD='07-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -3424,6 +3427,31 @@ function wireLogAdd(box){
     flash(`${party} added to ${g.vehicle} — ${pick.ids.length} line${pick.ids.length>1?'s':''}`);
   });
 }
+/* Weight on a log entry (v1.9.6): loaded = each line's loaded qty, gone = what is set as gone
+   (open entry) or what was applied (cleared entry, from its snapshot). Qty × unit wt, or the
+   line's weight scaled by qty when there is no unit wt. Changes as the gone qty is edited. */
+function lineKg(o,q){
+  const orig=parseNum(o.qty), u=parseNum(o.unit), w=wtNum(o.weight);
+  if(isNaN(q)) return isNaN(w)?0:w;
+  if(!isNaN(u)) return q*u;
+  if(!isNaN(w)&&orig>0) return w*q/orig;
+  return 0;
+}
+function logKg(g){
+  const snap=new Map((Array.isArray(g.snapshot)?g.snapshot:[]).map(o=>[o.id,o]));
+  let loaded=0, gone=0; const byParty={};
+  (g.stops||[]).forEach(st=>{ let pk=0;
+    (st.orderIds||[]).forEach(id=>{
+      const o=g.resolved?snap.get(id):S.orders.find(x=>x.id===id); if(!o) return;
+      const orig=parseNum(o.qty), L=logLoad(g,id);
+      loaded+=lineKg(o,L!=null?L:orig);
+      const q=g.resolved?lineQtyOut(g,id,o):(isNaN(orig)?NaN:Math.max(0,Math.min(goneOf(g,id),logBase(g,id,orig))));
+      const k=lineKg(o,q); gone+=k; pk+=k;
+    });
+    byParty[st.party]=(byParty[st.party]||0)+pk; });
+  return {loaded:+loaded.toFixed(1),gone:+gone.toFixed(1),byParty};
+}
+const kgT=kg=>kg>=1000?`${num(Math.round(kg))} kg (${(kg/1000).toFixed(2)} t)`:`${num(Math.round(kg))} kg`;
 function paintLog(){
   const box=$('#logBody');
   if(!S.log.length){ box.innerHTML='<div class="card"><p class="hint">Nothing logged yet. Build a plan in step 3, then press "Add this plan to the log" in step 4.</p></div>'; return; }
@@ -3438,10 +3466,15 @@ function paintLog(){
     [g.title,g.vehicle,g.vehicleNo,g.driver,g.createdAt].some(v=>(v||'').toLowerCase().includes(q)) ||
     g.stops.some(st=>(st.party||'').toLowerCase().includes(q)));
   if(!list.length){ box.innerHTML='<div class="card"><p class="hint">No log entries match.</p></div>'; return; }
+  const kgs=new Map(list.map(g=>[g.id,logKg(g)]));
+  const totGone=list.reduce((a,g)=>a+kgs.get(g.id).gone,0), totLoaded=list.reduce((a,g)=>a+kgs.get(g.id).loaded,0);
+  const nOpen=list.filter(g=>!g.resolved).length;
+  const sumHtml=`<div class="logsum"><b>${list.length}</b> entr${list.length===1?'y':'ies'} shown · loaded <b>${kgT(totLoaded)}</b> · gone <b>${kgT(totGone)}</b>${nOpen?` <span class="hint" style="margin:0">(${nOpen} not confirmed yet — their gone weight counts what is set so far)</span>`:''}</div>`;
 
   const dl=`<datalist id="fleetVehicles">${S.fleet.vehicles.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
     <datalist id="fleetDrivers">${S.fleet.drivers.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
-  box.innerHTML=dl+list.map(g=>{
+  box.innerHTML=dl+sumHtml+list.map(g=>{
+    const kw=kgs.get(g.id);
     const allIds=g.stops.flatMap(s=>s.orderIds);
     const live=allIds.filter(id=>S.orders.some(o=>o.id===id));
     const changing=live.filter(id=>lineChanges(g,id)); // some qty gone, or a note to stamp on the balance
@@ -3476,7 +3509,7 @@ function paintLog(){
           </div>`;
       }).join('');
       return `<div class="lparty">
-        <div class="lphead"><span>${esc(s.party)}${s.added?` <span class="tag added" title="Added to this vehicle after it was logged">ADDED ${esc(shortDate(s.added))}</span>`:''}</span>
+        <div class="lphead"><span>${esc(s.party)} <span class="g" style="font-weight:400">· ${num(Math.round(kw.byParty[s.party]||0))} kg gone</span>${s.added?` <span class="tag added" title="Added to this vehicle after it was logged">ADDED ${esc(shortDate(s.added))}</span>`:''}</span>
           <span style="margin-left:auto;display:flex;gap:5px">
             <button class="tiny ghost" data-pfull="${esc(s.party)}" data-g="${g.id}">Whole party stayed</button>
             <button class="tiny ghost" data-pzero="${esc(s.party)}" data-g="${g.id}">Whole party delivered</button>
@@ -3487,6 +3520,7 @@ function paintLog(){
         <b>${esc(g.title)}</b>${g.godown?' <span class="tag godown">GODOWN</span>':''}
         <span class="hint" style="margin:0">${g.godown?'Collected from the godown':esc(g.vehicle)+(g.vehicleNo?' · '+esc(g.vehicleNo):'')+(g.driver?' · '+esc(g.driver):'')+' · '+g.stops.length+' stops'} · logged ${esc(g.createdAt)}</span>
         ${(!g.godown&&(!g.vehicleNo||!g.driver))?'<span class="badge open" style="background:var(--edge2);color:#fff">vehicle / driver not set</span>':''}
+        <span class="lkg" data-lkg="${g.id}">loaded <b>${kgT(kw.loaded)}</b> · gone <b>${kgT(kw.gone)}</b></span>
         <span class="badge ${g.resolved?'done':'open'}">${g.resolved?'cleared':(changing.length+' line(s) to update')}</span>
       </div>
       <div class="logbody">
