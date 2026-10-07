@@ -619,7 +619,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
     <div class="row" style="margin-top:8px">
       <div style="flex:0 0 220px"><label>This device's name</label><input id="devName" maxlength="24" placeholder="e.g. Paul phone, Office PC"></div>
     </div>
-    <p class="hint" style="margin:2px 0 0">Shown on a published plan ("Published 21:30 · Paul phone"), so everyone knows where it came from.</p>
+    <p class="hint" style="margin:2px 0 0">Shown on a published plan ("Published 21:30 · Paul phone") and in the sheet's <b>ACCESS LOG</b> tab, so you can see which device opened the tool and saved.</p>
     <div class="row" style="margin-top:10px">
       <div style="flex:1 1 420px"><label>Google Sheet link</label><input id="sheetLink" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></div>
     </div>
@@ -1107,7 +1107,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='2.1.1', APP_BUILD='08-10-2026';
+const APP_VERSION='2.2', APP_BUILD='08-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -5463,7 +5463,8 @@ async function syncCall(action,payload){
   const limit=syncFull?LIMIT_FULL:action==='push'?LIMIT_PUSH:LIMIT_PULL;
   const tm=setTimeout(()=>{ timedOut=true; ac.abort(); },limit);
   const t0=Date.now(); if(main){ syncCallAt=t0; syncCallLimit=limit; } let res, txt;
-  try{ res=await fetch(syncCfg.url,{method:'POST',redirect:'follow',signal:ac.signal,body:JSON.stringify({key:syncCfg.key,action,...(payload||{})})}); txt=await res.text(); }
+  // dev / app / ua go into the sheet's ACCESS LOG (script 2.2+): who opened, saved, or used a wrong key
+  try{ res=await fetch(syncCfg.url,{method:'POST',redirect:'follow',signal:ac.signal,body:JSON.stringify({key:syncCfg.key,action,dev:deviceName(),app:APP_VERSION,ua:shortUA(),...(payload||{})})}); txt=await res.text(); }
   catch(e){
     const why=timedOut?`no answer in ${limit/1000} s`:ac.signal.aborted?'cancelled (page left or went offline)':'network error: '+(e&&e.message||e);
     logSync({action,full:syncFull,ms:Date.now()-t0,err:why});
@@ -5483,6 +5484,12 @@ async function syncCall(action,payload){
   logSync({action,full:syncFull,ms:Date.now()-t0,kb:Math.round(txt.length/1024),ok:!!j.ok,...(j.conflict?{conflict:true}:{}),...(j.same?{same:true}:{}),...(j.empty?{empty:true}:{}),...(j.ok||j.conflict?{}:{err:j.error||'failed'}),...(j.version&&action==='ping'?{script:j.version}:{})});
   if(!j.ok&&!j.conflict){ const er=new Error(j.busy?'The sheet is busy with another device — trying again in a few seconds.':(j.error||'Sync failed')); er.busy=!!j.busy; throw er; }
   return j;
+}
+function shortUA(){
+  const u=navigator.userAgent;
+  const b=/Edg\//.test(u)?'Edge':/OPR\//.test(u)?'Opera':/SamsungBrowser/.test(u)?'Samsung':/Firefox\//.test(u)?'Firefox':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':'Browser';
+  const o=/Android/.test(u)?'Android':/iPhone|iPad/.test(u)?'iPhone/iPad':/Windows/.test(u)?'Windows':/Mac OS/.test(u)?'Mac':/Linux/.test(u)?'Linux':'';
+  return b+(o?' · '+o:'');
 }
 function syncReport(){
   const st=syncState, L=[];
@@ -5715,7 +5722,7 @@ $('#syncConnect').onclick=async()=>{
     // before saying the URL is wrong
     let r=null, lastErr=null;
     for(let i=0;i<3&&!r;i++){
-      try{ r=await syncCall('ping'); }
+      try{ r=await syncCall('ping',{connect:true}); }
       catch(err){ lastErr=err; if(!/did not answer like/.test(err.message)) throw err;
         if(i<2){ $('#syncStatus').textContent='Google did not answer properly — trying again…'; await new Promise(x=>setTimeout(x,2500)); } }
     }
