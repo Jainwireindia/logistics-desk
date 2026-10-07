@@ -253,6 +253,12 @@ th.n,td.n{text-align:right}
 .logsum{margin:0 0 10px;padding:8px 12px;border:1px solid var(--edge);border-radius:var(--r);background:var(--panel);font-size:13px}
 .lkg{font-size:12px;color:var(--mute);white-space:nowrap}
 .lkg b{color:var(--ink)}
+.cxform{margin-top:10px;padding:10px 12px;border:1px dashed var(--alert);border-radius:var(--r);background:#fdf3f2}
+.cxreason{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.cxreason .pill{font-size:11px}
+.cxtag{color:var(--alert);font-weight:700;font-size:12px;white-space:nowrap}
+.rtrip.cx{border-left-color:var(--alert)}
+.cxw{color:var(--alert)}
 .manroutes .pill{font-size:12px;padding:3px 9px;margin:0 5px 5px 0}
 .manlines{margin-top:12px}
 .manrow{display:grid;grid-template-columns:minmax(170px,3fr) 80px 80px 95px minmax(110px,2fr) 30px;gap:6px;align-items:center;margin-bottom:6px}
@@ -1094,7 +1100,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='1.9.6', APP_BUILD='07-10-2026';
+const APP_VERSION='1.9.7', APP_BUILD='07-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1409,6 +1415,7 @@ function toggleHold(p,tab,date){
 // HOLD tag for a specific set of lines (one card, one stop): full hold, part hold, or nothing
 let holdForm=null; // which batch's "put on hold" form is open in Orders
 const HOLD_REASONS=['Payment pending','Party asked to wait','Site not ready','No stock'];
+const CANCEL_REASONS=['Party cancelled','Bought elsewhere','Price issue','No stock','Duplicate order'];
 function holdTag(items){
   const held=items.filter(lineHeld), h=held.length;
   if(!h) return '';
@@ -2350,9 +2357,18 @@ function paintOrders(){
               <input data-due="${esc(p)}" data-duetab="${esc(blockTab)}" data-duedate="${esc(d)}" value="${esc(isoToDMY(dueOf(p,blockTab,d)))}" placeholder="dd-mm-yyyy" title="Due date for just this ${esc(d||'undated')} batch" style="width:100px">
               <button class="tiny ${editing?'primary':'ghost'}" data-eedit="${esc(p)}" title="${editing?'Done editing':'Edit this order'}">${editing?'✓ Done':'✎'}</button>
               <button class="tiny ghost" data-godown="${esc(p)}" data-gdkey="${esc(p+'|'+batchKey(blockTab,d))}" title="The party collected from the godown — recorded in the Plan log and Reports, not deleted">Godown collected</button>
-              <button class="tiny ghost" data-odel="${esc(p)}" data-odeldate="${esc(d)}" data-odeltab="${esc(blockTab)}">Remove</button>
+              <button class="tiny ghost" data-ocancel="${esc(p)}" data-ockey="${esc(p+'|'+batchKey(blockTab,d))}" title="The party cancelled all or part of this order — reduced or removed here, and recorded in Reports → Party history">Cancel order</button>
+              <button class="tiny ghost" data-odel="${esc(p)}" data-odeldate="${esc(d)}" data-odeltab="${esc(blockTab)}" title="For a mistake (wrong paste, typed twice) — not recorded anywhere. Use Cancel order when the party cancels.">Remove</button>
             </span>
           </div>
+          ${cancelForm===p+'|'+batchKey(blockTab,d)?(()=>{ const used=linesInOpenLogs(), ls=its.filter(o=>!used.has(o.id)&&str(o.item)), skip=its.length-ls.length;
+            return `<div class="cxform" data-cxform="${esc(p)}"><b>Cancel order</b>
+              <span class="hint" style="margin:0 0 0 6px">tick what the party cancelled; change the qty if only part is cancelled — the rest stays in Orders.</span>
+              ${ls.length?linePickHtml(ls).replace(/title="Change if only part of it goes"/g,'title="Qty cancelled — change if only part is cancelled"'):''}
+              ${skip?`<p class="hint">${skip} line${skip>1?'s are':' is'} on a vehicle in the Plan log — set those as not gone there instead.</p>`:''}
+              ${ls.length?`<div class="cxreason"><label style="margin:0">Reason</label><input data-cxreason placeholder="optional, e.g. party cancelled" style="flex:1 1 200px">
+                <span class="hchips">${CANCEL_REASONS.map(r=>`<span class="pill click" data-cxchip="${esc(r)}">${esc(r)}</span>`).join('')}</span></div>`:''}
+              <div style="display:flex;gap:6px;margin-top:6px">${ls.length?`<button class="tiny danger" data-cxsave="${esc(p)}">Cancel the ticked qty</button>`:''}<button class="tiny ghost" data-cxclose>Close</button></div></div>`; })():''}
           ${godownForm===p+'|'+batchKey(blockTab,d)?(()=>{ const ls=freeLinesOf(p), mine=new Set(its.map(o=>o.id));
             return `<div class="gdform" data-gdform="${esc(p)}"><b>Collected from the godown</b>
               <span class="hint" style="margin:0 0 0 6px">tick what was taken; change a qty if only part went. Recorded as delivered today.</span>
@@ -2380,6 +2396,18 @@ function paintOrders(){
 }
 
 function wireOrderBox(box){
+  box.querySelectorAll('[data-ocancel]').forEach(b=>b.onclick=()=>{ cancelForm=cancelForm===b.dataset.ockey?null:b.dataset.ockey; godownForm=null; renderOrders(); renderDash(); });
+  box.querySelectorAll('[data-cxclose]').forEach(b=>b.onclick=()=>{ cancelForm=null; renderOrders(); renderDash(); });
+  box.querySelectorAll('[data-cxchip]').forEach(c=>c.onclick=()=>{ const i=c.closest('[data-cxform]').querySelector('[data-cxreason]'); i.value=c.dataset.cxchip; });
+  box.querySelectorAll('[data-cxsave]').forEach(b=>b.onclick=()=>{
+    const p=b.dataset.cxsave, form=b.closest('[data-cxform]'), pick=readLinePick(form);
+    if(pick.err){ flash(pick.err.replace('goes','is cancelled')); return; }
+    const reason=form.querySelector('[data-cxreason]').value.trim();
+    armConfirm(b,`Yes, cancel ${pick.ids.length} line${pick.ids.length>1?'s':''}`,async()=>{
+      const n=cancelLines(p,pick,reason); cancelForm=null;
+      await save(); renderAll(); flash(`Cancelled for ${p} — ${n} line${n>1?'s':''}. See Reports → Party history`);
+    });
+  });
   box.querySelectorAll('[data-godown]').forEach(b=>b.onclick=()=>{ godownForm=godownForm===b.dataset.gdkey?null:b.dataset.gdkey; renderOrders(); renderDash(); });
   box.querySelectorAll('[data-gdcancel]').forEach(b=>b.onclick=()=>{ godownForm=null; renderOrders(); renderDash(); });
   box.querySelectorAll('[data-gdsave]').forEach(b=>b.onclick=()=>{
@@ -3289,6 +3317,32 @@ function lineChanges(g,id){
    confirmed straight away, so it shows in the log and Reports instead of being deleted. */
 let logAdd=null;      // {g: entry id, party} while the + Add a party panel is open
 let godownForm=null;  // party whose Godown collected panel is open
+let cancelForm=null;  // party|batch whose Cancel order panel is open
+/* Cancel order (v1.9.7): a line the party cancels is reduced by the cancelled qty, or removed if
+   it is all cancelled, and a record goes into S.cancels (synced via _DATA) for Party history:
+   {id, at (dd-mm-yyyy), time, party, item, qty, unit, kg, origQty, date, tab, reason, full}. */
+function cancelLines(party,pick,reason){
+  const d=new Date(), time=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  S.cancels=S.cancels||[]; let n=0;
+  pick.ids.forEach(id=>{
+    const o=S.orders.find(x=>x.id===id); if(!o) return;
+    const orig=parseNum(o.qty), suf=(String(o.qty??'').match(/^[\d.,]+(.*)$/)||['',''])[1];
+    let q=pick.loadQty[id]!=null?+pick.loadQty[id]:orig;
+    const full=isNaN(orig)||q>=orig; if(full) q=isNaN(orig)?NaN:orig;
+    S.cancels.push({id:uid('x'),at:today10(),time,party,item:o.item,qty:isNaN(q)?String(o.qty):(fmtN(q)+suf),unit:o.unit||'',
+      kg:+lineKg(o,q).toFixed(3),origQty:String(o.qty),date:o.date||'',tab:o.tab||'',reason:reason||'',full});
+    if(full) S.orders=S.orders.filter(x=>x.id!==id);
+    else{
+      const keep=+(orig-q).toFixed(3), u=parseNum(o.unit), w=wtNum(o.weight);
+      o.qty=fmtN(keep)+suf;
+      if(!isNaN(u)) o.weight=String(+(keep*u).toFixed(3)); else if(!isNaN(w)&&orig>0) o.weight=String(+(w*keep/orig).toFixed(3));
+    }
+    S.plan.lanes.forEach(l=>l.stops.forEach(st=>{ if(st.loadQty) delete st.loadQty[id]; }));
+    n++;
+  });
+  S.plan.lanes.forEach(l=>l.stops=l.stops.filter(st=>stopItems(st).length));
+  return n;
+}
 function linesInOpenLogs(){ return new Set(S.log.filter(g=>!g.resolved).flatMap(g=>g.stops.flatMap(s=>s.orderIds))); }
 function freeLinesOf(p){ const used=linesInOpenLogs(); return itemsOf(p).filter(o=>!used.has(o.id)&&str(o.item)); }
 function linePickHtml(lines,ticked){
@@ -4178,18 +4232,20 @@ function paintReports(){
     vehicle:['Vehicle & driver trips','Trips per vehicle number, with load against capacity.','Find vehicle'],
     driver:['Vehicle & driver trips','Trips per driver, with the vehicles they took.','Find driver'],
     day:['Day-wise','What went out each day.','Find party / vehicle / driver']}[mode];
-  $('#repTitle').textContent=T[0]; $('#repHint').textContent=T[1]+' Built from the Plan log — clearing the log clears this history.'; $('#repFindLbl').textContent=T[2];
+  $('#repTitle').textContent=T[0]; $('#repHint').textContent=T[1]+' Built from the Plan log — clearing the log clears this history.'+(mode==='party'?' Cancelled orders are listed too (Orders → Cancel order).':''); $('#repFindLbl').textContent=T[2];
   const lines=repFiltered(mode); repLast=lines;
-  const trips=tripsOf(lines), kg=lines.reduce((a,l)=>a+l.weight,0);
+  const cx=mode==='party'?repCancels():[]; repLastCx=cx;
+  const trips=tripsOf(lines), kg=lines.reduce((a,l)=>a+l.weight,0), cxKg=cx.reduce((a,c)=>a+(+c.kg||0),0);
   const stat=(v,l)=>`<div class="dstat"><b>${v}</b><small>${l}</small></div>`;
-  $('#repSum').innerHTML=lines.length?`<div class="dstats" style="width:100%">${stat(trips.length,'trips')}${stat(new Set(lines.map(l=>l.party)).size,'parties')}${stat(lines.length,'item lines')}${stat(num(Math.round(kg))+' kg','delivered')}</div>`:'';
+  $('#repSum').innerHTML=lines.length||cx.length?`<div class="dstats" style="width:100%">${stat(trips.length,'trips')}${stat(new Set([...lines.map(l=>l.party),...cx.map(c=>c.party)]).size,'parties')}${stat(lines.length,'item lines')}${stat(num(Math.round(kg))+' kg','delivered')}${cx.length?stat(num(Math.round(cxKg))+' kg',cx.length+' cancelled line'+(cx.length>1?'s':'')):''}</div>`:'';
   const body=$('#repBody');
-  if(!lines.length){ body.innerHTML=`<div class="card"><p class="hint">${S.log.length?'Nothing in the Plan log matches this period and filter.':'No trips yet — reports fill in as vehicles are added to the Plan log.'}</p></div>`; return; }
+  if(!lines.length&&!cx.length){ body.innerHTML=`<div class="card"><p class="hint">${S.log.length?'Nothing in the Plan log matches this period and filter.':'No trips yet — reports fill in as vehicles are added to the Plan log.'}</p></div>`; return; }
   const keyOf={party:l=>l.party,vehicle:vehLabel,driver:l=>l.driver||'(no driver set)',day:l=>l.date||'no date'}[mode];
   const groups=new Map(); lines.forEach(l=>{ const k=keyOf(l); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(l); });
-  let list=[...groups].map(([k,ls])=>{ const tr=tripsOf(ls); return {k,ls,tr,kg:ls.reduce((a,l)=>a+l.weight,0),last:tr[0]?tr[0].dk:'',lastDate:tr[0]?tr[0].date:''}; });
+  cx.forEach(c=>{ if(!groups.has(c.party)) groups.set(c.party,[]); });
+  let list=[...groups].map(([k,ls])=>{ const tr=tripsOf(ls); const cs=cx.filter(c=>c.party===k); return {k,ls,tr,cs,kg:ls.reduce((a,l)=>a+l.weight,0),last:tr[0]?tr[0].dk:'',lastDate:tr[0]?tr[0].date:''}; });
   if(mode==='day') list.sort((a,b)=>b.last.localeCompare(a.last)); else list.sort((a,b)=>b.kg-a.kg||a.k.localeCompare(b.k));
-  const head={party:'<th>Party</th><th class="n">Trips</th><th class="n">Item lines</th><th class="n">Delivered kg</th><th>Last delivery</th><th>On hand now</th>',
+  const head={party:'<th>Party</th><th class="n">Trips</th><th class="n">Item lines</th><th class="n">Delivered kg</th><th>Last delivery</th><th>Cancelled</th><th>On hand now</th>',
     vehicle:'<th>Vehicle</th><th class="n">Trips</th><th class="n">Parties</th><th class="n">Delivered kg</th><th class="n">Avg load</th><th>Last trip</th>',
     driver:'<th>Driver</th><th class="n">Trips</th><th class="n">Parties</th><th class="n">Delivered kg</th><th>Vehicles</th><th>Last trip</th>',
     day:'<th>Date</th><th class="n">Trips</th><th class="n">Parties</th><th class="n">Delivered kg</th><th>Vehicles</th><th>Drivers</th>'}[mode];
@@ -4198,24 +4254,43 @@ function paintReports(){
     const open=repOpen.has(rk(r.k)), ps=new Set(r.ls.map(l=>l.party)).size;
     let cells;
     if(mode==='party'){ const oh=itemsOf(r.k); const ohKg=oh.reduce((a,o)=>a+(wtNum(o.weight)||0),0);
-      cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${r.ls.length}</td><td class="n">${num(Math.round(r.kg))}</td><td class="mono">${esc(r.lastDate)}</td><td class="hint">${oh.length?`${oh.length} line${oh.length>1?'s':''} · ${num(Math.round(ohKg))} kg`:'—'}</td>`; }
+      cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${r.ls.length}</td><td class="n">${num(Math.round(r.kg))}</td><td class="mono">${esc(r.lastDate)||'—'}</td><td>${r.cs.length?`<span class="cxtag">${r.cs.length} line${r.cs.length>1?'s':''} · ${num(Math.round(r.cs.reduce((a,c)=>a+(+c.kg||0),0)))} kg</span>`:'<span class="hint">—</span>'}</td><td class="hint">${oh.length?`${oh.length} line${oh.length>1?'s':''} · ${num(Math.round(ohKg))} kg`:'—'}</td>`; }
     else if(mode==='vehicle'){ const w=r.tr.filter(t=>t.cap); const avg=w.length?Math.round(w.reduce((a,t)=>a+t.kg/t.cap,0)/w.length*100):null;
       cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="n">${avg==null?'—':avg+'%'}</td><td class="mono">${esc(r.lastDate)}</td>`; }
     else if(mode==='driver'){ cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="mono">${esc(r.lastDate)}</td>`; }
     else cells=`<td><b>${esc(r.k)}</b> <button class="tiny wabtn" data-dsum="${esc(r.k)}" title="WhatsApp this day's summary">WA</button></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="hint">${esc([...new Set(r.ls.map(l=>l.driver).filter(Boolean))].join(', ')||'—')}</td>`;
     return `<tr class="rg" data-rk="${esc(rk(r.k))}"><td><span style="display:inline-block;${open?'transform:rotate(90deg)':''}">►</span></td>${cells}</tr>`
-      +(open?`<tr class="rdet"><td colspan="7">${r.tr.map(t=>tripHtml(t,mode!=='party',mode==='day')).join('')}</td></tr>`:'');
+      +(open?`<tr class="rdet"><td colspan="8">${r.tr.map(t=>tripHtml(t,mode!=='party',mode==='day')).join('')}${mode==='party'&&r.cs.length?cancelHtml(r.cs):''}</td></tr>`:'');
   }).join('')}</table></div></div>`;
   body.querySelectorAll('[data-dsum]').forEach(b=>b.onclick=e=>{ e.stopPropagation();
     window.open('https://wa.me/'+waNumber(S.summaryPhone)+'?text='+encodeURIComponent(daySummaryText(b.dataset.dsum)),'_blank','noopener'); });
   body.querySelectorAll('[data-rk]').forEach(tr=>tr.onclick=()=>{ const k=tr.dataset.rk; repOpen.has(k)?repOpen.delete(k):repOpen.add(k); paintReports(); });
 }
+// cancellations for Party history, filtered like the trips (period, find party, item contains)
+let repLastCx=[];
+function repCancels(){
+  const [a,b]=repPeriodRange($('#repPeriod').value);
+  const f=$('#repFind').value.trim().toLowerCase(), it=$('#repItem').value.trim().toLowerCase().replace(/\s+/g,'');
+  return (S.cancels||[]).filter(c=>{ const dk=repDayKey(c.at);
+    if(dk&&(dk<a||dk>b)) return false;
+    if(f&&!String(c.party).toLowerCase().includes(f)) return false;
+    if(it&&!String(c.item).toLowerCase().replace(/\s+/g,'').includes(it)) return false;
+    return true; });
+}
+function cancelHtml(cs){
+  const byDay=new Map(); [...cs].sort((x,y)=>repDayKey(y.at).localeCompare(repDayKey(x.at))||String(y.time).localeCompare(String(x.time))).forEach(c=>{ if(!byDay.has(c.at)) byDay.set(c.at,[]); byDay.get(c.at).push(c); });
+  return [...byDay].map(([day,ls])=>`<div class="rtrip cx"><div class="rh">${esc(day)} · <b class="cxw">CANCELLED</b> · ${num(Math.round(ls.reduce((a,c)=>a+(+c.kg||0),0)))} kg</div>
+    ${ls.map(c=>`<div class="ri">${esc(c.item)} ×${esc(c.qty)}${c.full?'':` <span class="hint">(of ${esc(c.origQty)} — rest kept)</span>`}${c.reason?` — <i>${esc(c.reason)}</i>`:''} <span class="hint">· order of ${esc(c.date||'no date')}</span></div>`).join('')}</div>`).join('');
+}
 ['repPeriod','repUnconf'].forEach(id=>$('#'+id).onchange=paintReports);
 ['repFind','repItem'].forEach(id=>$('#'+id).oninput=paintReports);
 $('#repCopy').onclick=()=>{
   const ls=[...repLast].sort((a,b)=>a.dk.localeCompare(b.dk)||a.party.localeCompare(b.party));
-  const txt=['DATE\tPARTY\tITEM\tQTY\tKG\tVEHICLE\tDRIVER\tSTATUS'].concat(ls.map(l=>[l.date,l.party,l.item,l.qty,l.weight,vehLabel(l),l.driver,l.conf?'delivered':'not confirmed'].join('\t'))).join('\n');
-  copy(txt,`Copied ${ls.length} lines`);
+  const rows=ls.map(l=>({dk:l.dk,party:l.party,r:[l.date,l.party,l.item,l.qty,l.weight,vehLabel(l),l.driver,l.conf?'delivered':'not confirmed']}));
+  if(REPORT_VIEWS[currentView]==='party') repLastCx.forEach(c=>rows.push({dk:repDayKey(c.at),party:c.party,r:[c.at,c.party,c.item,c.qty,c.kg,'','','cancelled'+(c.reason?' — '+c.reason:'')]}));
+  rows.sort((a,b)=>a.dk.localeCompare(b.dk)||a.party.localeCompare(b.party));
+  const txt=['DATE\tPARTY\tITEM\tQTY\tKG\tVEHICLE\tDRIVER\tSTATUS'].concat(rows.map(x=>x.r.join('\t'))).join('\n');
+  copy(txt,`Copied ${rows.length} lines`);
 };
 function stockText(){
   let list=stockGroups().sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true,sensitivity:'base'}));
@@ -5229,7 +5304,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:S.log,plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',
+  const data={log:S.log,plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -5272,7 +5347,8 @@ function mergeModels(b,l,r){
   const bd=b.data||{}, ld=l.data||{}, rd=r.data||{};
   const data={};
   new Set([...Object.keys(ld),...Object.keys(rd)]).forEach(k=>{
-    if(k==='log'||k==='uploads') data[k]=m3ids(bd[k],ld[k],rd[k]);
+    if(k==='cancels'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||[]; // older versions leave it out - never a wipe
+    else if(k==='log'||k==='uploads'||k==='cancels') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[]);
     else if(k==='plan'){ // the published plan moves as one piece; if both published, the newer one wins
       const bp=bd.plan, lp=ld.plan, rp=rd.plan;
       data.plan=same(lp,bp)?rp:same(rp,bp)?lp:(((rp&&rp.at)||0)>((lp&&lp.at)||0)?rp:lp); }
@@ -5310,6 +5386,7 @@ function applyModel(m,fromSheet){
   takePublishedPlan(d.plan); // Build Plan is this device's own draft - see publishPlan()
   S.summaryPhone=d.summaryPhone||'';
   S.sheetLink=d.sheetLink||'';
+  if(Array.isArray(d.cancels)) S.cancels=d.cancels; else if(!S.cancels) S.cancels=[]; // older versions don't send it
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
   S.plan=S.plan||{poolFilter:[],lanes:[]}; S.plan.lanes=S.plan.lanes||[]; S.plan.poolFilter=S.plan.poolFilter||[];
