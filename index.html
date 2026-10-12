@@ -417,6 +417,24 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .incq{flex-basis:100%;margin-top:4px;padding:5px 8px;background:#fff7ed;border:1px solid #fdba74;border-radius:4px;font-size:12px;color:#7c2d12;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .chk{width:auto;margin:0;cursor:pointer}
 .badge{font-size:10.5px;padding:1px 7px;border-radius:99px;font-weight:700}
+/* v2.5 Order to Sheet tray */
+.traycard{border-color:#1f5fa8}
+.traycard h2{color:#1f5fa8}
+.traybatch{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px}
+.traybatch.on{border-color:#1f5fa8;box-shadow:0 0 0 2px rgba(31,95,168,.15)}
+.trayhead{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.traytabs{display:flex;flex-wrap:wrap;gap:4px}
+.traytabs .uptab{background:#1f5fa8}
+.traybtns{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.traytbl{margin-top:8px}
+.trayerr{margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(179,38,30,.08);color:var(--alert);font-weight:600}
+.trayq{margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(214,153,0,.10)}
+.trayqrow{margin-top:6px}
+.traychoice{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+.traychoice label{display:flex;gap:5px;align-items:center;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:inherit;margin:0}
+.traychoice input{width:auto}
+.trayalert{border-color:#1f5fa8;background:rgba(31,95,168,.06)}
+.traylast{margin:4px 0 0}
 .badge.open{background:var(--amber);color:#211500}
 .badge.done{background:var(--ok);color:#fff}
 .lgfleet{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:9px 11px;margin-bottom:10px;
@@ -519,6 +537,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
 
 <!-- 1 DASHBOARD -->
 <section class="view on" id="v-dash">
+  <div id="trayDash"></div>
   <div id="dashStats"></div>
   <div class="card">
     <h2>Orders on hand <span id="ordCountDash" class="mono"></span></h2>
@@ -532,6 +551,10 @@ tr.grp td{background:var(--panel2);font-weight:600}
 
 <!-- 2 ADD ORDERS -->
 <section class="view" id="v-orders">
+  <div class="card traycard" id="trayCard" hidden>
+    <h2>From Order to Sheet <span id="trayCount" class="mono"></span></h2>
+    <div id="trayBody"></div>
+  </div>
   <div class="card">
     <h2>Paste orders from Google Sheet</h2>
     <div class="row" style="margin-bottom:10px;align-items:flex-end">
@@ -625,6 +648,13 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <div style="flex:1 1 420px"><label>Google Sheet link</label><input id="sheetLink" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></div>
     </div>
     <p class="hint" style="margin:2px 0 0" id="sheetLinkNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>Order to Sheet on this computer</h2>
+    <p class="hint" style="margin-top:0">Order to Sheet (5.6+) opened in this same browser puts finished readings in a tray; they show up at the top of
+      <a href="#" data-goto="orders">Add orders</a> to check and add. Nothing is added without you.</p>
+    <p class="hint" id="otsSeen" style="margin:4px 0 0"></p>
   </div>
 
   <div class="card">
@@ -1120,7 +1150,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='2.4', APP_BUILD='12-10-2026';
+const APP_VERSION='2.5', APP_BUILD='12-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -4332,7 +4362,7 @@ function stockText(){
    you switch to it, so one edit no longer rebuilds five screens you can't see. */
 const PAINT={
   dash:()=>{ paintDash(); paintOrders(); },
-  orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); }, parties:()=>{ paintRoutes(); paintMasters(); }, admin:paintAdmin, plan:paintPlan, out:paintOut, log:paintLog, stock:paintStock,
+  orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); const os=$('#otsSeen'); if(os) os.innerHTML=otsSeenText(); }, parties:()=>{ paintRoutes(); paintMasters(); }, admin:paintAdmin, plan:paintPlan, out:paintOut, log:paintLog, stock:paintStock,
   uploads:paintUploads, rparty:paintReports, rveh:paintReports, rdrv:paintReports, rday:paintReports
 };
 let currentView='dash';
@@ -4359,6 +4389,7 @@ function refresh(){
   try{ reindex(); }catch(e){ showError('reindex: '+(e.stack||e.message)); }
   _shortKeys=null; // shortage flags depend on orders/stock/log, all of which invalidate a repaint
   try{ renderGuard(); }catch(e){ showError('renderGuard: '+(e.stack||e.message)); }
+  try{ paintTray(); }catch(e){ showError('paintTray: '+(e.stack||e.message)); }
   if(REPORT_VIEWS[currentView]) stale.add(currentView);
   if(stale.has(currentView)){
     try{ PAINT[currentView](); stale.delete(currentView); }
@@ -4464,12 +4495,12 @@ function normUploads(backfill){
   }
 }
 function upLine(o){ return {id:o.id,party:o.party,item:o.item,qty:o.qty,unit:o.unit,weight:o.weight,date:o.date}; }
-function recordUpload(tab,pasted,added,skipped,src){
+function recordUpload(tab,pasted,added,skipped,src,extra){
   const d=new Date();
   S.uploads.push({id:uid('u'), no:++S.upSeq, day:today10(),
     time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),
     tab, pasted, lines:added.map(upLine),
-    skipped:skipped.map(r=>({party:r.party,item:r.item,qty:r.qty,date:r.date,why:r.why||''})),...(src?{src}:{})});
+    skipped:skipped.map(r=>({party:r.party,item:r.item,qty:r.qty,date:r.date,why:r.why||''})),...(src?{src}:{}),...(extra||{})});
   let total=S.uploads.reduce((a,u)=>a+u.lines.length+u.skipped.length,0);
   while(total>UPLOAD_LINE_CAP && S.uploads.length>1){ const u=S.uploads.shift(); total-=u.lines.length+u.skipped.length; }
 }
@@ -4525,7 +4556,7 @@ function paintUploads(){
         <span class="caret">▸</span>
         <span class="upno">#${u.no}</span>
         <span class="upwhen">${esc(u.day||'—')}${u.time?' '+esc(u.time):''}</span>
-        <span class="uptab">${esc(u.tab||'no tab')}</span>${u.src==='sheet'?'<span class="uptab" style="background:#0d6e6e" title="Typed straight into the Google Sheet">from sheet</span>':u.src==='file'?'<span class="uptab" style="background:#6b4fa0" title="Imported from the old sheet file">old sheet</span>':u.src==='typed'?'<span class="uptab" style="background:#8a5a00" title="Typed in the Type an order form">typed</span>':''}
+        <span class="uptab">${esc(u.tab||'no tab')}</span>${u.src==='sheet'?'<span class="uptab" style="background:#0d6e6e" title="Typed straight into the Google Sheet">from sheet</span>':u.src==='file'?'<span class="uptab" style="background:#6b4fa0" title="Imported from the old sheet file">old sheet</span>':u.src==='typed'?'<span class="uptab" style="background:#8a5a00" title="Typed in the Type an order form">typed</span>':u.src==='ots'?'<span class="uptab" style="background:#1f5fa8" title="Taken in from Order to Sheet on this computer">Order to Sheet</span>':''}
         <span class="upsum"><b>${parties.length}</b> part${parties.length===1?'y':'ies'} · <b>${u.lines.length}</b> line${u.lines.length===1?'':'s'} · <b>${num(Math.round(wt))}</b> kg
           · ${stillHere.length} still in Orders${u.skipped.length?` · <span style="color:var(--alert)">${u.skipped.length} skipped as duplicate</span>`:''}
           ${u.approx?' · <i>from before the upload log — grouped by day and tab</i>':''}</span>
@@ -4737,6 +4768,14 @@ function commitPasteRows(rows){
 }
 // sorts a parsed paste into lines that are new and lines that repeat something - already in
 // Orders, repeated inside this same paste, or matching a line a cleared Plan Log entry delivered
+/* v2.4.1: "possible repeat" - the same party, item and qty already in Orders (any tab) or
+   delivered, under a DIFFERENT date up to REPEAT_DAYS days apart (covers Saturday → Monday).
+   The exact duplicate check above needs the date to match too, so an order added on the 8th and
+   again on the 9th slipped through. Flagged lines are skipped unless ticked, like duplicates. */
+const REPEAT_DAYS=3;
+function repKey(o){ return dupKey({...o,date:''}); }
+function dayNo(dmy){ const iso=parseDMY(dmy); return iso?Math.round(Date.parse(iso+'T00:00:00Z')/864e5):null; }
+function nearDays(a,b){ return a!=null&&b!=null&&Math.abs(a-b)<=REPEAT_DAYS; }
 function classifyPaste(rows){
   const have=new Map();
   S.orders.forEach(o=>{ const k=dupKey(o); have.set(k,(have.get(k)||0)+1); });
@@ -4745,13 +4784,31 @@ function classifyPaste(rows){
     if(!g.resolved||!Array.isArray(g.snapshot)) return;
     g.snapshot.forEach(o=>{ if(o&&o.party&&o.item){ const k=dupKey(o); if(!delivered.has(k)) delivered.set(k,g); } });
   });
+  // same party + item + qty with any date, for the possible-repeat check
+  const haveRep=new Map(), delRep=new Map();
+  S.orders.forEach(o=>{ if(!o.item) return; const k=repKey(o); if(!haveRep.has(k)) haveRep.set(k,[]); haveRep.get(k).push(o); });
+  S.log.forEach(g=>{
+    if(!g.resolved||!Array.isArray(g.snapshot)) return;
+    g.snapshot.forEach(o=>{ if(o&&o.party&&o.item){ const k=repKey(o); if(!delRep.has(k)) delRep.set(k,[]); delRep.get(k).push({o,g}); } });
+  });
+  const today=dayNo(today10()), seenRep=new Map();
   const seen=new Map(), fresh=[], dupes=[];
   rows.forEach(r=>{
     const k=dupKey(r), inBatch=seen.get(k)||0; seen.set(k,inBatch+1);
+    const rk=repKey(r), rd=dayNo(r.date)??today, before=seenRep.get(rk)||[];
+    seenRep.set(rk,[...before,r]);
     let why='';
     if(have.get(k)) why='Already in Orders';
     else if(inBatch) why='Repeated in this paste';
     else if(delivered.has(k)){ const g=delivered.get(k); why=`Already delivered — ${g.vehicle||g.title||'log'} ${shortDate(g.createdAt)}`; }
+    else{
+      const o=(haveRep.get(rk)||[]).find(x=>nearDays(dayNo(x.date)??today,rd));
+      const dl=!o&&(delRep.get(rk)||[]).find(x=>nearDays(dayNo(x.o.date)??today,rd)||nearDays(dayNo(x.g.createdAt),rd));
+      const pb=!o&&!dl&&before.find(x=>nearDays(dayNo(x.date)??today,rd));
+      if(o) why=`Possible repeat — same line in Orders${o.tab?' ('+o.tab+')':''} dated ${shortDate(o.date)||'—'}`;
+      else if(dl) why=`Possible repeat — same line delivered ${shortDate(dl.g.createdAt)} (${dl.g.vehicle||dl.g.title||'log'}), ordered ${shortDate(dl.o.date)||'—'}`;
+      else if(pb) why=`Possible repeat — same line earlier in this paste dated ${shortDate(pb.date)||'—'}`;
+    }
     // same object as in rows (not a copy), so the picker can keep lines in their pasted order
     if(why) dupes.push(Object.assign(r,{why,key:k})); else fresh.push(r);
   });
@@ -4776,25 +4833,29 @@ async function addOrderRows(rows,tab,note,noteEl,opts){
   const finish=async(toAdd,keptDupes)=>{
     const added=commitPasteRows(toAdd);
     const skippedRows=rows.filter(r=>!toAdd.includes(r));
-    if(added.length||skippedRows.length) recordUpload(tab,rows.length,added,skippedRows,opts.src);
+    if(tab!=null){ if(added.length||skippedRows.length) recordUpload(tab,rows.length,added,skippedRows,opts.src,opts.extra); }
+    else{ // v2.5: an Order to Sheet batch holds several tabs - one Upload log entry per tab
+      [...new Set(rows.map(r=>r.tab||''))].forEach(t=>{
+        const a=added.filter(o=>(o.tab||'')===t), sk=skippedRows.filter(r=>(r.tab||'')===t);
+        if(a.length||sk.length) recordUpload(t,rows.filter(r=>(r.tab||'')===t).length,a,sk,opts.src,opts.extra); }); }
     // a duplicate the person chose to add is genuine - remember how many copies are expected
     // so it isn't flagged as a duplicate afterwards
     if(keptDupes&&keptDupes.length){
       const c=new Map(); S.orders.forEach(o=>{ const k=dupKey(o); c.set(k,(c.get(k)||0)+1); });
       keptDupes.forEach(d=>{ const n=c.get(d.key)||0; if(n>1) S.dupOk[d.key]=n; });
     }
-    if(opts.onAdded) opts.onAdded(toAdd);
+    if(opts.onAdded) opts.onAdded(toAdd,added,skippedRows);
     const skipped=rows.length-toAdd.length;
     noteEl.textContent=`${note} Added ${toAdd.length} line${toAdd.length===1?'':'s'}${skipped?`, skipped ${skipped} duplicate${skipped===1?'':'s'}`:''}.`;
     await save();renderAll();
-    flash(toAdd.length?`Added ${toAdd.length} item line${toAdd.length===1?'':'s'} to ${tab}${skipped?` — ${skipped} duplicates skipped`:''}`:'Nothing added — all lines were duplicates');
+    flash(toAdd.length?`Added ${toAdd.length} item line${toAdd.length===1?'':'s'} to ${tab!=null?tab:'their tabs'}${skipped?` — ${skipped} duplicates skipped`:''}`:'Nothing added — all lines were duplicates');
   };
   if(!dupes.length){ await finish(rows,null); return; }
   // hold everything back until the person decides - nothing is added yet
   const byParty=new Map();
   dupes.forEach(d=>{ if(!byParty.has(d.party)) byParty.set(d.party,[]); byParty.get(d.party).push(d); });
   noteEl.innerHTML=`<div class="duppanel">
-    <div class="duphead">⚠ ${dupes.length} of ${rows.length} line${rows.length===1?'':'s'} look like duplicates — nothing has been added yet</div>
+    <div class="duphead">⚠ ${dupes.length} of ${rows.length} line${rows.length===1?'':'s'} look like duplicates or repeats — nothing has been added yet</div>
     <table>
       <tr><th style="width:34px"><input type="checkbox" class="chk" data-dupall-tick title="Tick / untick all"></th>
         <th>Party</th><th>Item</th><th class="n">Qty</th><th>Date</th><th>Why</th></tr>
@@ -4834,8 +4895,155 @@ async function addOrderRows(rows,tab,note,noteEl,opts){
   // keep the original paste order: new lines and ticked duplicates, in the sequence they were pasted
   mainBtn.onclick=()=>{ const kp=new Set(picked()); finish(rows.filter(r=>!dupes.includes(r)||kp.has(r)),[...kp]); };
   noteEl.querySelector('[data-dupall]').onclick=()=>finish(rows,dupes);
-  noteEl.querySelector('[data-dupcancel]').onclick=()=>{ noteEl.textContent=opts.cancelMsg||'Cancelled — nothing added.'; };
+  noteEl.querySelector('[data-dupcancel]').onclick=()=>{ noteEl.textContent=opts.cancelMsg||'Cancelled — nothing added.'; if(opts.onCancel) opts.onCancel(); };
 }
+
+/* ---------- v2.5: the Order to Sheet tray (same computer, same browser) ----------
+   Order to Sheet (jainwireindia.github.io/whatsapp-order-reader/) and this tool share the
+   browser's storage on this computer. Order to Sheet puts a finished reading - every tab of it,
+   in exactly the text its "Copy this block" gives, with a line count and kg per tab - into its
+   own tray (TRAY_KEY). This tool only READS the tray; nothing is added until "Add all".
+   What happened to each batch goes into this tool's own receipt list (RECEIPT_KEY), which
+   Order to Sheet reads to show "Taken in". Each tool writes only its own keys. */
+const TRAY_KEY='jw-tray-v1', RECEIPT_KEY='jw-tray-receipts-v1', OTS_SEEN='jw-ots-seen', LD_SEEN='jw-ld-seen';
+const lsJSON=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
+function trayBatches(){ const t=lsJSON(TRAY_KEY); return t&&Array.isArray(t.batches)?t.batches.filter(b=>b&&b.id&&Array.isArray(b.tabs)):[]; }
+function trayReceipts(){ const r=lsJSON(RECEIPT_KEY); return r&&r.receipts&&typeof r.receipts==='object'?r.receipts:{}; }
+function batchTaken(id){ return !!trayReceipts()[id]||(S.uploads||[]).some(u=>u.batch===id); }
+function trayWaiting(){ return trayBatches().filter(b=>!batchTaken(b.id)); }
+function writeReceipt(id,rec){
+  const r=lsJSON(RECEIPT_KEY)||{}; r.receipts=r.receipts&&typeof r.receipts==='object'?r.receipts:{};
+  r.receipts[id]={...rec,at:Date.now(),by:deviceName(),app:APP_VERSION};
+  // receipts of batches Order to Sheet has let go of, older than 14 days, are tidied away
+  const live=new Set(trayBatches().map(b=>b.id));
+  Object.keys(r.receipts).forEach(k=>{ if(!live.has(k)&&Date.now()-(r.receipts[k].at||0)>14*864e5) delete r.receipts[k]; });
+  try{ localStorage.setItem(RECEIPT_KEY,JSON.stringify(r)); return true; }catch(e){ return false; }
+}
+function ldSeen(){ try{ localStorage.setItem(LD_SEEN,JSON.stringify({v:APP_VERSION,at:Date.now()})); }catch(e){} }
+const fmtKg=n=>num(Math.round(n||0))+' kg';
+const trayTime=t=>{ const d=new Date(t); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')} ${hhmm(t)}`; };
+let trayOpen=null;  // the batch being checked {id, answers, tabFor}
+let trayLast='';    // what happened to the last batch, shown until the next one
+
+// read a batch exactly like a paste of each tab, and check it against what Order to Sheet counted
+function trayCheck(b){
+  const tabs=sheetTabs(), res={rows:[],tabs:[],problems:[],unknown:[]};
+  b.tabs.forEach(t=>{
+    const known=tabs.find(x=>x.toUpperCase()===String(t.tab||'').trim().toUpperCase());
+    const {rows}=parsePaste(String(t.text||''),known||t.tab);
+    const kg=rows.reduce((a,r)=>a+(wtNum(r.weight)||0),0);
+    const one={tab:t.tab,known:known||'',lines:rows.length,sent:+t.lines||0,kg,sentKg:+t.kg||0,rows};
+    if(rows.length!==one.sent) res.problems.push(`${t.tab}: Order to Sheet sent ${one.sent} line${one.sent===1?'':'s'}, ${rows.length} read here`);
+    else if(Math.abs(kg-one.sentKg)>1) res.problems.push(`${t.tab}: weights don't add up (sent ${fmtKg(one.sentKg)}, read ${fmtKg(kg)})`);
+    if(!known) res.unknown.push(t.tab);
+    res.tabs.push(one); res.rows.push(...rows);
+  });
+  const total=b.tabs.reduce((a,t)=>a+(+t.lines||0),0);
+  if(+b.lines&&+b.lines!==total) res.problems.push(`the batch says ${b.lines} lines but its tabs add up to ${total}`);
+  return res;
+}
+// parties this batch files under one tab while this tool has them on hand under another
+function trayTabQuestions(rows){
+  const qs=[];
+  [...new Set(rows.map(r=>r.party))].forEach(p=>{
+    const here=[...new Set(itemsOf(p).map(o=>o.tab||'').filter(Boolean))];
+    const theirs=[...new Set(rows.filter(r=>r.party===p).map(r=>r.tab||''))];
+    theirs.forEach(t=>{
+      if(!here.length||here.some(h=>h.toUpperCase()===String(t).toUpperCase())) return;
+      qs.push({key:p+'|'+t,party:p,tab:t,here,lines:itemsOf(p).length});
+    });
+  });
+  return qs;
+}
+function paintTray(){
+  const card=$('#trayCard'), dash=$('#trayDash'), menu=document.querySelector('#mainMenu [data-v="orders"]');
+  const wait=trayWaiting();
+  if(menu){ let bd=menu.querySelector('.traybadge'); if(wait.length){ if(!bd){ bd=document.createElement('span'); bd.className='badge open traybadge'; bd.style.marginLeft='6px'; menu.appendChild(bd); } bd.textContent=wait.length; } else if(bd) bd.remove(); }
+  if(dash) dash.innerHTML=wait.length?`<div class="card trayalert"><b>📥 ${wait.length} batch${wait.length>1?'es':''} from Order to Sheet waiting</b> —
+      ${wait.reduce((a,b)=>a+(+b.lines||0),0)} lines. <button class="tiny primary" data-goto="orders">Open Add orders</button></div>`:'';
+  if(!card) return;
+  // the duplicate picker of a batch is open - don't redraw it under the person
+  if(trayOpen&&card.querySelector('.traybatch.on .duppanel')) return;
+  if(trayOpen&&!wait.some(b=>b.id===trayOpen.id)) trayOpen=null;
+  card.hidden=!wait.length&&!trayOpen&&!trayLast;
+  $('#trayCount').textContent=wait.length?`· ${wait.length} waiting`:'';
+  const body=$('#trayBody');
+  const last=trayLast?`<p class="hint traylast">${trayLast}</p>`:'';
+  if(!wait.length){ body.innerHTML=last; return; }
+  body.innerHTML=last+wait.map(b=>{
+    const open=trayOpen&&trayOpen.id===b.id;
+    return `<div class="traybatch${open?' on':''}" data-tb="${esc(b.id)}">
+      <div class="trayhead"><b>Sent ${esc(trayTime(b.at))}</b>${b.dev?` · ${esc(b.dev)}`:''} · ${num(+b.lines||0)} lines · ${b.tabs.length} tab${b.tabs.length>1?'s':''} · ${fmtKg(+b.kg||0)}
+        <span class="traytabs">${b.tabs.map(t=>`<span class="uptab">${esc(t.tab)} · ${num(+t.lines||0)}</span>`).join(' ')}</span></div>
+      ${open?'<div class="traycheck"></div>':`<div class="traybtns"><button class="tiny primary" data-trayopen="${esc(b.id)}">Check &amp; add</button>
+        <button class="tiny ghost" data-trayrej="${esc(b.id)}">Reject…</button></div>`}
+    </div>`; }).join('');
+  body.querySelectorAll('[data-trayopen]').forEach(x=>x.onclick=()=>{ trayOpen={id:x.dataset.trayopen,answers:{},tabFor:{}}; paintTray(); });
+  body.querySelectorAll('[data-trayrej]').forEach(x=>x.onclick=()=>trayReject(x.dataset.trayrej,x));
+  if(trayOpen) paintTrayCheck(wait.find(b=>b.id===trayOpen.id));
+}
+function trayReject(id,btn){
+  const box=btn.closest('.traybatch'), wrap=document.createElement('div'); wrap.className='trayrej';
+  wrap.innerHTML=`<label>Why reject this batch? (Order to Sheet shows this)</label><input class="trayreason" placeholder="e.g. sent twice, wrong date">
+    <div style="margin-top:6px;display:flex;gap:6px"><button class="tiny danger" data-rejgo>Reject — add nothing</button><button class="tiny ghost" data-rejno>Back</button></div>`;
+  box.querySelector('.traybtns').replaceWith(wrap);
+  wrap.querySelector('[data-rejno]').onclick=()=>paintTray();
+  wrap.querySelector('[data-rejgo]').onclick=()=>{ const why=wrap.querySelector('.trayreason').value.trim();
+    if(!why){ flash('Type a reason first'); return; }
+    if(batchTaken(id)){ flash('That batch was already dealt with'); paintTray(); return; }
+    writeReceipt(id,{status:'rejected',reason:why,added:0,skipped:0}); trayLast=`✗ Batch rejected — nothing added (${esc(why)}).`; flash('Batch rejected — nothing added'); paintTray(); };
+}
+function paintTrayCheck(b){
+  const box=document.querySelector('.traybatch.on .traycheck'); if(!b||!box) return;
+  const ck=trayCheck(b), st=trayOpen;
+  // tab for each sent tab: as sent when this tool has it, otherwise the one picked here
+  ck.rows.forEach(r=>{ const sentTab=ck.tabs.find(t=>t.rows.includes(r)).tab; r._sentTab=sentTab; r.tab=st.tabFor[sentTab]||r.tab; });
+  const unknownLeft=ck.unknown.filter(t=>!st.tabFor[t]);
+  const qs=unknownLeft.length?[]:trayTabQuestions(ck.rows);
+  const unanswered=qs.filter(q=>!st.answers[q.key]);
+  const tabRows=ck.tabs.map(t=>`<tr><td><b>${esc(t.tab)}</b>${t.known?'':' <span class="badge open">not a tab here</span>'}</td><td class="n">${t.sent}</td><td class="n">${t.lines}</td><td class="n">${fmtKg(t.kg)}</td>
+      <td>${t.lines===t.sent&&Math.abs(t.kg-t.sentKg)<=1?'<span style="color:var(--ok);font-weight:700">✓ matches</span>':'<span style="color:var(--alert);font-weight:700">✗ does not match</span>'}</td></tr>`).join('');
+  box.innerHTML=`<table class="traytbl"><tr><th>Tab</th><th class="n">Sent</th><th class="n">Read here</th><th class="n">Weight</th><th></th></tr>${tabRows}
+      <tr><td><b>Total</b></td><td class="n"><b>${num(+b.lines||0)}</b></td><td class="n"><b>${ck.rows.length}</b></td><td class="n"><b>${fmtKg(ck.rows.reduce((a,r)=>a+(wtNum(r.weight)||0),0))}</b></td><td></td></tr></table>
+    ${ck.problems.length?`<div class="trayerr">✗ This batch does not add up, so nothing can be added from it:<br>${ck.problems.map(esc).join('<br>')}<br>
+      Reject it and send it again from Order to Sheet, or use the copy-paste for these tabs.</div>`:''}
+    ${!ck.problems.length&&unknownLeft.length?`<div class="trayq"><b>Pick a tab of this tool for:</b> ${unknownLeft.map(t=>`<div style="margin-top:4px">${esc(t)} →
+      <select data-traytab="${esc(t)}"><option value="">— choose —</option>${sheetTabs().map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>`).join('')}</div>`:''}
+    ${!ck.problems.length&&qs.length?`<div class="trayq"><b>Check the tab before adding:</b>${qs.map(q=>`<div class="trayqrow">
+      <b>${esc(q.party)}</b> is on hand here under <b>${esc(q.here.join(', '))}</b> (${q.lines} line${q.lines>1?'s':''}); this batch files it under <b>${esc(q.tab)}</b>.
+      <div class="traychoice">${q.here.map(h=>`<label><input type="radio" name="tq_${esc(q.key)}" data-tq="${esc(q.key)}" value="${esc(h)}" ${st.answers[q.key]===h?'checked':''}> File under ${esc(h)}</label>`).join('')}
+        <label><input type="radio" name="tq_${esc(q.key)}" data-tq="${esc(q.key)}" value="${esc(q.tab)}" ${st.answers[q.key]===q.tab?'checked':''}> Keep under ${esc(q.tab)}</label></div></div>`).join('')}</div>`:''}
+    <div class="traybtns" style="margin-top:8px">
+      <button class="primary" data-trayadd ${ck.problems.length||unknownLeft.length||unanswered.length?'disabled':''}>Add all ${ck.rows.length} lines</button>
+      <button class="ghost" data-trayback>Not now</button>
+      ${ck.problems.length||unknownLeft.length||unanswered.length?`<span class="hint">${ck.problems.length?'Nothing can be added from this batch.':unknownLeft.length?'Pick the missing tab first.':`Answer the ${unanswered.length} tab question${unanswered.length>1?'s':''} first.`}</span>`:''}
+    </div>
+    <div class="hint trayresult"></div>`;
+  box.querySelectorAll('[data-traytab]').forEach(sel=>sel.onchange=()=>{ if(sel.value) st.tabFor[sel.dataset.traytab]=sel.value; else delete st.tabFor[sel.dataset.traytab]; paintTray(); });
+  box.querySelectorAll('[data-tq]').forEach(r=>r.onchange=()=>{ st.answers[r.dataset.tq]=r.value; paintTray(); });
+  box.querySelector('[data-trayback]').onclick=()=>{ trayOpen=null; paintTray(); };
+  box.querySelector('[data-trayadd]').onclick=async()=>{
+    if(batchTaken(b.id)){ flash('That batch was already taken in'); trayOpen=null; paintTray(); return; }
+    const rows=ck.rows.map(r=>{ const q=qs.find(x=>x.party===r.party&&x.tab===r.tab); const t=q?st.answers[q.key]:r.tab;
+      const o={...r,tab:t}; delete o._sentTab; return o; });
+    const out=box.querySelector('.trayresult');
+    const n=rows.length, tabCount={}; rows.forEach(r=>{ tabCount[r.tab]=(tabCount[r.tab]||0)+1; });
+    await addOrderRows(rows,null,`Order to Sheet batch of ${trayTime(b.at)}: ${n} lines.`,out,{src:'ots',extra:{batch:b.id},
+      cancelMsg:'Cancelled — nothing added. The batch is still waiting.',
+      onAdded:(toAdd,added,skipped)=>{
+        writeReceipt(b.id,{status:'added',added:added.length,skipped:skipped.length,tabs:tabCount,
+          skippedLines:skipped.slice(0,40).map(r=>({party:r.party,item:r.item,qty:r.qty,why:r.why||''}))});
+        trayLast=`✓ Batch sent ${esc(trayTime(b.at))} taken in: <b>${added.length} added</b>${skipped.length?`, ${skipped.length} skipped (duplicates / repeats — listed in Upload log)`:''}.`;
+        trayOpen=null; setTimeout(paintTray,50);
+      },onCancel:()=>{ trayOpen=null; paintTray(); }});
+  };
+}
+// Order to Sheet seen on this computer (for Setup)
+function otsSeenText(){ const o=lsJSON(OTS_SEEN); if(!o||!o.at) return 'Order to Sheet has not been opened in this browser yet (it needs version 5.6 or newer).';
+  return `Order to Sheet ${esc(o.v||'')} seen in this browser — last open ${esc(trayTime(o.at))}.`; }
+window.addEventListener('storage',e=>{ if(e.key===TRAY_KEY||e.key===RECEIPT_KEY) paintTray(); if(e.key===OTS_SEEN){ const el=$('#otsSeen'); if(el) el.innerHTML=otsSeenText(); } });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ ldSeen(); paintTray(); } });
+setInterval(ldSeen,60000);
 
 /* ---------- Type an order (manual entry) ----------
    One party at a time: tab, date, party (suggests saved parties; a saved party fills its routes
@@ -6009,7 +6217,7 @@ gotoView(currentView); // header label before the saved data arrives
 // home-screen app: the small helper file sw.js lets the phone install this as an app and open
 // it without a connection (it always tries the live site first, so a new version shows at once)
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
-load().then(()=>{ const slim=slimOldLog(); renderAll(); undoReset(); if(slim) save(); updateSaveBadge(); updateSyncBadge(); initSync(); });
+load().then(()=>{ ldSeen(); const slim=slimOldLog(); renderAll(); undoReset(); if(slim) save(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit
 window.addEventListener('beforeunload',e=>{ if(dirty||saving){ e.preventDefault(); e.returnValue=''; } });
