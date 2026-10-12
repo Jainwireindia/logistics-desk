@@ -612,6 +612,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
     </div>
     <div id="syncStatus" class="hint" style="margin-top:8px"></div>
     <div id="syncChoice"></div>
+    <div id="syncHold"></div>
     <div class="row" style="margin-top:8px" id="syncBtns">
       <div style="flex:0 0 auto"><button class="tiny" id="syncNowBtn">Sync now</button></div>
       <div style="flex:0 0 auto"><button class="tiny ghost" id="syncOff">Disconnect this device</button></div>
@@ -780,6 +781,18 @@ tr.grp td{background:var(--panel2);font-weight:600}
       </div>
     </div>
     <p class="hint" id="backupNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>Sync clashes</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">When this device and another device (or the sheet) changed the <b>same field</b> of the same thing,
+      this device's value is kept and the other one is listed here, so nothing goes without a trace. Changes to different fields are all kept and are not listed.
+      Each clash is also noted in the sheet's ACCESS LOG tab (WHAT = CLASH). The value you need back is also in the other device's own copy, or in a restore point.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      <span><button class="tiny" id="clashCopy">Copy the list</button></span>
+      <span><button class="tiny ghost" id="clashClear">Clear the list</button></span>
+    </div>
+    <div id="clashList"></div>
   </div>
 
   <div class="card">
@@ -1107,7 +1120,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='2.2', APP_BUILD='08-10-2026';
+const APP_VERSION='2.4', APP_BUILD='12-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -4628,11 +4641,11 @@ function paintClear(){
   box.querySelectorAll('[data-clr]').forEach(b=>b.onclick=()=>{
     const k=b.dataset.clr;
     if(k==='__all__') return armConfirm(b,'Yes, erase EVERYTHING',async()=>{
-      CLEARS.forEach(c=>c.run()); S.parties={}; S.routes=[]; S.tabs=[]; S.vehTypes=[]; S.settings={}; normMasters(false); S.plan.poolFilter=[];
+      bigOk=Date.now(); CLEARS.forEach(c=>c.run()); S.parties={}; S.routes=[]; S.tabs=[]; S.vehTypes=[]; S.settings={}; normMasters(false); S.plan.poolFilter=[];
       await save(); renderAll(); flash('Everything erased');});
     const c=CLEARS.find(x=>x.k===k); if(!c) return;
     armConfirm(b,`Yes, clear ${num(c.n())} ${c.unit[c.n()===1?0:1]}`,async()=>{
-      c.run(); await save(); renderAll(); flash(`${c.name} cleared — nothing else touched`);});
+      bigOk=Date.now(); c.run(); await save(); renderAll(); flash(`${c.name} cleared — nothing else touched`);});
   });
 }
 $('#clrBackup').onclick=()=>$('#backupExport').click();
@@ -4648,7 +4661,7 @@ function pinHash(p){ let h=2166136261; for(const ch of 'ld-admin|'+p){ h^=ch.cha
 function pinOk(p){ return pinHash(p)===(S.adminPin||pinHash(DEFAULT_PIN)); }
 const adminUnlocked=()=>Date.now()<adminOpenUntil;
 function paintAdmin(){
-  paintRestorePoints();
+  paintRestorePoints(); paintClashes();
   const ok=adminUnlocked();
   $('#adminLock').hidden=ok; $('#adminBody').hidden=!ok;
   if(ok) paintClear(); else { $('#adminPin').value=''; }
@@ -5022,6 +5035,7 @@ $('#backupFile').onchange=async e=>{
 };
 // puts a whole saved state back (backup file or restore point); the next sync sends it to the sheet
 async function restoreState(incoming){
+    bigOk=Date.now(); // putting back a backup / restore point may take things out of the sheet - on purpose
     S=Object.assign({orders:[],parties:{},routes:[],plan:{route:'',lanes:[]},log:[],seq:1,combos:[],stock:{},stockOut:{}},incoming);
     normMasters(true);
     S.combos=S.combos||[];   // backups taken before combinations existed
@@ -5035,6 +5049,19 @@ async function restoreState(incoming){
     S.orders.forEach(o=>{ if(!o.id)o.id=uid('o'); if(!o.tab)o.tab=''; });
     markDirty(); await flushSave(); renderAll();
 }
+// v2.3: the clash list kept on this device (newest first)
+const tsText=t=>{ const d=new Date(t); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()} ${hhmm(t)}`; };
+async function paintClashes(){
+  const box=$('#clashList'); if(!box) return;
+  let list=(await kvGet(CLASH_KEY))||[]; if(!Array.isArray(list)) list=[];
+  list=list.slice().reverse();
+  if(!list.length){ box.innerHTML='<p class="hint">No clashes on this device.</p>'; return; }
+  box.innerHTML=`<table><tr><th>When</th><th>What</th><th>Kept (this device)</th><th>Dropped (other side)</th></tr>${list.map(c=>
+    `<tr><td class="mono" style="white-space:nowrap">${tsText(c.at)}</td><td>${esc(c.where)}</td><td>${esc(c.kept)}</td><td style="color:var(--alert)">${esc(c.lost)}</td></tr>`).join('')}</table>`;
+}
+$('#clashCopy').onclick=async()=>{ const list=(await kvGet(CLASH_KEY))||[];
+  copy(['WHEN\tWHAT\tKEPT (this device)\tDROPPED (other side)',...list.slice().reverse().map(c=>[tsText(c.at),c.where,c.kept,c.lost].join('\t'))].join('\n'),list.length?'Clash list copied':'No clashes to copy'); };
+$('#clashClear').onclick=()=>armConfirm($('#clashClear'),'Yes, clear the list',async()=>{ await kvSet(CLASH_KEY,[]); paintClashes(); flash('Clash list cleared'); });
 async function paintRestorePoints(){
   const box=$('#rpList'); if(!box) return;
   const list=((await kvGet(RESTORE_KEY))||[]).slice().reverse();
@@ -5139,6 +5166,17 @@ $('#dlXlsx').onclick=()=>exportPlanXlsx();
    doesn't clear it), nothing is rebuilt - it's just opened. Otherwise the vehicle is recreated
    with its routes, stop order and urgent flags, carrying only the order lines the entry held
    that are still in Orders and not already placed on another vehicle. */
+/* v2.4: an entry applied SLIM_DAYS+ days ago keeps only what reports and messages use from its
+   Build Plan copy - vehicle name, capacity and the parties in delivery order. Routes, urgent flags
+   and loaded-qty edits there are only needed to send an open entry back to Build Plan. */
+const SLIM_DAYS=7;
+function slimOldLog(){
+  const cutoff=Date.now()-SLIM_DAYS*864e5; let n=0;
+  (S.log||[]).forEach(g=>{ const ls=g.laneSnap;
+    if(!g.resolved||!g.appliedAt||g.appliedAt>cutoff||!ls||ls.slim) return;
+    g.laneSnap={name:ls.name,cap:ls.cap,slim:true,stops:(ls.stops||[]).map(st=>({party:st.party}))}; n++; });
+  return n;
+}
 function logBackToPlan(g){
   const snap=g.laneSnap||null;
   const name=snap?snap.name:g.vehicle;
@@ -5149,9 +5187,9 @@ function logBackToPlan(g){
   if(!lane){
     const type=vehTypes().find(t=>name===t.name||name.startsWith(t.name+' #'));
     lane={id:uid('L'),name:freeLaneName(snap?snap.name:(type?type.name:name),null),
-          cap:snap?snap.cap:(type?type.cap:6500),title:snap?snap.title:'',
-          routes:snap?[...snap.routes]:[...new Set(parties.flatMap(p=>S.parties[p]?.routes||[]))],
-          xroutes:snap?[...(snap.xroutes||[])]:[],stops:[]};
+          cap:snap&&snap.cap?snap.cap:(type?type.cap:6500),title:snap&&snap.title||'',
+          routes:snap&&Array.isArray(snap.routes)?[...snap.routes]:[...new Set(parties.flatMap(p=>S.parties[p]?.routes||[]))],
+          xroutes:snap&&Array.isArray(snap.xroutes)?[...snap.xroutes]:[],stops:[]};
     // delivery order on screen: the snapshot's own order, or the reverse of the loading order
     const order=snap?snap.stops:[...g.stops].reverse().map(st=>({party:st.party,urgent:false}));
     order.forEach(so=>{
@@ -5342,63 +5380,118 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:S.log,plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],
+  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
 // the sheet's copy carries each order's route text (column B) - only needed for brand-new lines
-function bare(m){ if(!m) return m; const c=JSON.parse(JSON.stringify(m)); (c.orders||[]).forEach(o=>delete o.route); return c; }
+// v2.3: also drops the open/closed state of Plan log entries - that is how this screen looks,
+// not data. When it travelled with the entry, just opening an entry on one device counted as
+// "changed here" and wiped what another device had set on it (driver, vehicle no, qty gone).
+function noOpen(log){ return Array.isArray(log)?log.map(g=>{ if(!g||typeof g!=='object'||!('open' in g)) return g; const c={...g}; delete c.open; return c; }):log; }
+function bare(m){ if(!m) return m; const c=JSON.parse(JSON.stringify(m)); (c.orders||[]).forEach(o=>delete o.route); if(c.data&&c.data.log) c.data.log=noOpen(c.data.log); return c; }
 
-/* 3-way merge helpers: b = base, l = this device, r = sheet */
-function m3(b,l,r){ if(same(l,b)) return r; if(same(r,b)) return l; return l; }
+/* 3-way merge helpers: b = base, l = this device, r = sheet.
+   v2.3: when both sides changed the same thing to different values, this device's value is kept
+   and the other one is written into the clash list (MC) with a readable "where" (p). */
+let MC=null;
+function m3(b,l,r,p){ if(same(l,b)) return r; if(same(r,b)) return l;
+  if(MC&&p&&!same(l,r)) MC.push({where:p,kept:l,lost:r});
+  return l; }
 const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
 // a record changed on both sides merges field by field (place here, route there - both kept)
-function m3rec(b,l,r){ if(isObj(l)&&isObj(r)&&!same(l,b)&&!same(r,b)) return m3map(isObj(b)?b:{},l,r); return m3(b,l,r); }
-function m3recs(b,l,r){ b=b||{}; l=l||{}; r=r||{}; const out={};
-  new Set([...Object.keys(r),...Object.keys(l),...Object.keys(b)]).forEach(k=>{ const v=m3rec(b[k],l[k],r[k]); if(v!==undefined) out[k]=v; });
+function m3rec(b,l,r,p){ if(isObj(l)&&isObj(r)&&!same(l,b)&&!same(r,b)) return m3map(isObj(b)?b:{},l,r,p); return m3(b,l,r,p); }
+function m3recs(b,l,r,p){ b=b||{}; l=l||{}; r=r||{}; const out={};
+  new Set([...Object.keys(r),...Object.keys(l),...Object.keys(b)]).forEach(k=>{ const v=m3rec(b[k],l[k],r[k],p&&p(k)); if(v!==undefined) out[k]=v; });
   return out; }
-function m3map(b,l,r){ b=b||{}; l=l||{}; r=r||{}; const out={};
-  new Set([...Object.keys(r),...Object.keys(l),...Object.keys(b)]).forEach(k=>{ const v=m3(b[k],l[k],r[k]); if(v!==undefined) out[k]=v; });
+// p: a name for the whole map (each key is added to it), or a function key → name
+function m3map(b,l,r,p){ b=b||{}; l=l||{}; r=r||{}; const out={};
+  new Set([...Object.keys(r),...Object.keys(l),...Object.keys(b)]).forEach(k=>{ const v=m3(b[k],l[k],r[k],typeof p==='function'?p(k):p?p+' · '+fieldName(k):null); if(v!==undefined) out[k]=v; });
   return out; }
 function m3list(b,l,r){ b=b||[]; l=l||[]; r=r||[];
   const add=l.filter(x=>!b.includes(x)), del=b.filter(x=>!l.includes(x));
   const out=r.filter(x=>!del.includes(x)); add.forEach(x=>{ if(!out.includes(x)) out.push(x); }); return out; }
-function m3ids(b,l,r,keyFn){ b=b||[]; l=l||[]; r=r||[]; keyFn=keyFn||stable;
+/* v2.3: a record (order line, Plan log entry, upload, cancel) changed on BOTH sides is merged
+   field by field: qty from one device and remark from the other are both kept. A field that is
+   itself a map (qty gone, loaded qty, notes) merges key by key. Only the very same field changed
+   to two different values is a clash (this device wins, the other value goes to the clash list).
+   Before 2.3 the whole record of this device won, wiping everything the other side did to it. */
+function m3fields(b,l,r,name){ b=isObj(b)?b:{}; const out={};
+  new Set([...Object.keys(r),...Object.keys(l),...Object.keys(b)]).forEach(f=>{
+    const bv=b[f], lv=l[f], rv=r[f];
+    const v=isObj(lv)&&isObj(rv)&&!same(lv,bv)&&!same(rv,bv)?m3map(isObj(bv)?bv:{},lv,rv,k=>name(f,k)):m3(bv,lv,rv,name(f));
+    if(v!==undefined) out[f]=v; });
+  return out; }
+function m3ids(b,l,r,keyFn,name){ b=b||[]; l=l||[]; r=r||[]; keyFn=keyFn||stable;
   const B=new Map(b.map(x=>[x.id,x])), L=new Map(l.map(x=>[x.id,x])), R=new Map(r.map(x=>[x.id,x]));
   const k=x=>x===undefined?'-':keyFn(x);
   const ids=[...r.map(x=>x.id),...l.map(x=>x.id).filter(id=>!R.has(id))];
   const out=[];
   ids.forEach(id=>{ const bo=B.get(id),lo=L.get(id),ro=R.get(id);
-    const v=k(lo)===k(bo)?ro:k(ro)===k(bo)?lo:(lo||ro); if(v) out.push(v); });
+    let v;
+    if(k(lo)===k(bo)) v=ro; else if(k(ro)===k(bo)) v=lo;
+    else if(lo&&ro) v=bo&&name?m3fields(bo,lo,ro,(f,s)=>name(lo,f,s)):lo; // both edited: field by field
+    else{ v=lo||ro;                                                          // removed on one side, edited on the other: kept
+      if(MC&&name&&bo) MC.push({where:name(v,null),kept:lo?'changed here':'changed on another device',lost:lo?'removed on another device — kept':'removed here — kept',note:true}); }
+    if(v) out.push(v); });
   return out; }
+// readable names for the clash list
+const FIELD_NAMES={qty:'qty',unit:'unit wt',weight:'total wt',remark:'remark',date:'date',tab:'sheet tab',item:'item',party:'party',
+  driver:'driver',vehicleNo:'vehicle no',vehicle:'vehicle',title:'title',qtyGone:'qty gone',notes:'line note',stops:'parties / lines on the vehicle',
+  resolved:'applied / reopened',snapshot:'applied lines',stockDelta:'stock taken off',appliedAt:'applied time',incKeep:'extra-qty choice',laneSnap:'Build Plan copy',
+  routes:'routes',place:'place',pincode:'pincode',loc:'location link',holdInfo:'hold',due:'due date',reason:'reason'};
+const fieldName=f=>FIELD_NAMES[f]||f;
 function mergeModels(b,l,r){
   b=b||{orders:[],parties:{},masters:{},data:{}};
-  const orders=m3ids(b.orders,l.orders,r.orders,ordKey);
+  MC=[];
+  // older devices (and older base copies) still carry the open/closed state of log entries
+  if(b.data&&b.data.log) b={...b,data:{...b.data,log:noOpen(b.data.log)}};
+  if(r.data&&r.data.log) r={...r,data:{...r.data,log:noOpen(r.data.log)}};
+  if(l.data&&l.data.log) l={...l,data:{...l.data,log:noOpen(l.data.log)}};
+  // order ids → "PARTY · item", for naming lines inside a log entry
+  const lineName=id=>{ const o=(l.orders||[]).find(x=>x.id===id)||(r.orders||[]).find(x=>x.id===id)||(b.orders||[]).find(x=>x.id===id); return o?o.party+' · '+o.item:'line '+id; };
+  const ordName=(o,f)=>`Order ${o.party} · ${o.item}${f?' · '+fieldName(f):' (whole line)'}`;
+  const logName=(g,f,s)=>`Plan log "${g.title||g.vehicle||g.id}"${f?' · '+fieldName(f):' (whole entry)'}${s?' · '+(f==='qtyGone'||f==='notes'||f==='loadQty'||f==='incKeep'?lineName(s):s):''}`;
+  const upName=(u,f)=>`Upload log #${u.no||u.id}${f?' · '+fieldName(f):''}`;
+  const cxName=(c,f)=>`Cancelled ${c.party||''} · ${c.item||''}${f?' · '+fieldName(f):''}`;
+  const orders=m3ids(b.orders,l.orders,r.orders,ordKey,(o,f)=>ordName(o,f));
   const B=new Set(b.orders.map(o=>o.id)), L=new Set(l.orders.map(o=>o.id));
-  const fromSheet=(r.orders||[]).filter(o=>!B.has(o.id)&&!L.has(o.id)); // typed straight into the sheet
+  // typed straight into the sheet - unless another device already put it in the Upload log
+  // (v2.4: before, every device that saw the line first added its own "from sheet" upload)
+  const logged=new Set(); (((r.data||{}).uploads)||[]).forEach(u=>(u.lines||[]).forEach(x=>logged.add(x.id)));
+  const fromSheet=(r.orders||[]).filter(o=>!B.has(o.id)&&!L.has(o.id)&&!logged.has(o.id));
   const bm=b.masters||{}, lm=l.masters, rm=r.masters||{};
   const byName=a=>Object.fromEntries((a||[]).map(v=>[v.name,v]));
   const masters={routes:m3list(bm.routes,lm.routes,rm.routes), tabs:m3list(bm.tabs,lm.tabs,rm.tabs),
-    vehTypes:Object.values(m3map(byName(bm.vehTypes),byName(lm.vehTypes),byName(rm.vehTypes))),
-    vehicles:m3list(bm.vehicles,lm.vehicles,rm.vehicles), drivers:m3list(bm.drivers,lm.drivers,rm.drivers), phones:m3map(bm.phones,lm.phones,rm.phones),
-    combos:m3(bm.combos,lm.combos,rm.combos)||[], settings:m3map(bm.settings,lm.settings,rm.settings)};
+    vehTypes:Object.values(m3map(byName(bm.vehTypes),byName(lm.vehTypes),byName(rm.vehTypes),'Vehicle type')),
+    vehicles:m3list(bm.vehicles,lm.vehicles,rm.vehicles), drivers:m3list(bm.drivers,lm.drivers,rm.drivers), phones:m3map(bm.phones,lm.phones,rm.phones,'Driver phone'),
+    combos:m3(bm.combos,lm.combos,rm.combos,'Route combinations')||[], settings:m3map(bm.settings,lm.settings,rm.settings,'Setting')};
   const bd=b.data||{}, ld=l.data||{}, rd=r.data||{};
   const data={};
+  const MAPS={dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date'};
   new Set([...Object.keys(ld),...Object.keys(rd)]).forEach(k=>{
     if(k==='cancels'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||[]; // older versions leave it out - never a wipe
-    else if(k==='log'||k==='uploads'||k==='cancels') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[]);
+    else if(k==='log') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable,logName);
+    else if(k==='uploads') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable,upName);
+    else if(k==='cancels') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable,cxName);
     else if(k==='plan'){ // the published plan moves as one piece; if both published, the newer one wins
       const bp=bd.plan, lp=ld.plan, rp=rd.plan;
-      data.plan=same(lp,bp)?rp:same(rp,bp)?lp:(((rp&&rp.at)||0)>((lp&&lp.at)||0)?rp:lp); }
-    else if(k==='partyExtra') data[k]=m3recs(bd[k],ld[k],rd[k]);
-    else if(k==='orderMeta'||k==='dupOk'||k==='finalNotes'||k==='stock'||k==='stockOut'||k==='stockMeta') data[k]=m3map(bd[k],ld[k],rd[k]);
+      data.plan=same(lp,bp)?rp:same(rp,bp)?lp:(((rp&&rp.at)||0)>((lp&&lp.at)||0)?rp:lp);
+      if(!same(lp,bp)&&!same(rp,bp)&&!same(lp,rp)){ const lost=data.plan===lp?rp:lp;
+        MC.push({where:'Published plan (the newer one is kept)',kept:'published by '+((data.plan&&data.plan.by)||'?')+(data.plan&&data.plan.at?' at '+hhmm(data.plan.at):''),lost:'published by '+((lost&&lost.by)||'?')+(lost&&lost.at?' at '+hhmm(lost.at):''),note:true}); } }
+    else if(k==='partyExtra') data[k]=m3recs(bd[k],ld[k],rd[k],n=>'Party '+n);
+    else if(k==='orderMeta') data[k]=m3map(bd[k],ld[k],rd[k]);
+    else if(MAPS[k]) data[k]=m3map(bd[k],ld[k],rd[k],MAPS[k]);
     else if(k==='seq'||k==='upSeq') data[k]=Math.max(+ld[k]||0,+rd[k]||0);
     // a device on an older version doesn't know the sheet link and leaves the field out
     // altogether (a real removal sends ''), so a missing link never wipes this one - it goes back
     else if(k==='sheetLink'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||'';
-    else { const v=m3(bd[k],ld[k],rd[k]); if(v!==undefined) data[k]=v; }
+    else if(k==='adminPin'){ const v=m3(bd[k],ld[k],rd[k]); if(!same(ld[k],bd[k])&&!same(rd[k],bd[k])&&!same(ld[k],rd[k])) MC.push({where:'Admin PIN',kept:'this device\'s PIN',lost:'the other PIN',note:true}); if(v!==undefined) data[k]=v; }
+    else { const v=m3(bd[k],ld[k],rd[k],k==='summaryPhone'?'Day summary phone':k==='sheetLink'?'Google Sheet link':k); if(v!==undefined) data[k]=v; }
   });
-  return {model:{orders,parties:m3recs(b.parties,l.parties,r.parties),masters,data},fromSheet};
+  const parties=m3recs(b.parties,l.parties,r.parties,n=>'Party '+n);
+  const clashes=MC; MC=null;
+  return {model:{orders,parties,masters,data},fromSheet,clashes};
 }
 
 // put a (merged or sheet) model into this device's data
@@ -5420,7 +5513,10 @@ function applyModel(m,fromSheet){
   S.combos=(ms.combos||[]).map(c=>{ const was=oldC.find(o=>(o.name||'')===(c.name||'')&&same(o.routes,c.routes));
     return {id:was?was.id:uid('c'),name:c.name||'',routes:[...c.routes],xroutes:[...(c.xroutes||[])]}; });
   S.settings={...(ms.settings||{})}; normMasters(true);
-  ['log','uploads','stock','stockOut','stockMeta','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
+  // the entry open on this screen stays open (open/closed is not synced - see noOpen)
+  const openId=((S.log||[]).find(g=>g&&g.open)||{}).id;
+  if(Array.isArray(d.log)) S.log=noOpen(d.log).map(g=>g.id===openId?{...g,open:true}:{...g,open:false});
+  ['uploads','stock','stockOut','stockMeta','finalNotes','dupOk'].forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; });
   takePublishedPlan(d.plan); // Build Plan is this device's own draft - see publishPlan()
   S.summaryPhone=d.summaryPhone||'';
   S.sheetLink=d.sheetLink||'';
@@ -5481,7 +5577,7 @@ async function syncCall(action,payload){
     throw new Error('That URL did not answer like the Logistics Desk script. Check it ends in /exec and is deployed for "Anyone".'); }
   if(j.sv) syncSV=String(j.sv); if(action==='ping'&&'trigger' in j) syncTrig=!!j.trigger;
   if(action==='ping'&&j.url&&syncCfg&&syncCfg.sheetUrl!==j.url){ syncCfg.sheetUrl=String(j.url); kvSet(SYNC_CFG_KEY,syncCfg); }
-  logSync({action,full:syncFull,ms:Date.now()-t0,kb:Math.round(txt.length/1024),ok:!!j.ok,...(j.conflict?{conflict:true}:{}),...(j.same?{same:true}:{}),...(j.empty?{empty:true}:{}),...(j.ok||j.conflict?{}:{err:j.error||'failed'}),...(j.version&&action==='ping'?{script:j.version}:{})});
+  logSync({action,full:syncFull,ms:Date.now()-t0,kb:Math.round(txt.length/1024),ok:!!j.ok,...(j.conflict?{conflict:true}:{}),...(j.same?{same:true}:{}),...(j.partial?{part:true}:{}),...(j.empty?{empty:true}:{}),...(j.ok||j.conflict?{}:{err:j.error||'failed'}),...(j.version&&action==='ping'?{script:j.version}:{})});
   if(!j.ok&&!j.conflict){ const er=new Error(j.busy?'The sheet is busy with another device — trying again in a few seconds.':(j.error||'Sync failed')); er.busy=!!j.busy; throw er; }
   return j;
 }
@@ -5499,8 +5595,10 @@ function syncReport(){
   L.push(syncCfg?`URL …${syncCfg.url.slice(-24)} · key ${syncCfg.key?syncCfg.key.length+' characters':'MISSING'} · sheet "${syncCfg.name||'?'}" · script ${syncSV||'?'}${syncTrig==null?'':syncTrig?' · change trigger on':' · change trigger NOT installed'}`:'Not connected');
   L.push(`State: ${st.s}${st.msg?' — '+st.msg:''} · last ok ${st.at?hhmm(st.at):'never'} · first sync done: ${syncBase?'yes':'NO'}${syncFirst?' · waiting for "choose data"':''} · busy: ${syncBusy}`);
   L.push(`This device: ${S.orders.length} order lines, ${Object.keys(S.parties).length} parties, ${S.log.length} log entries`);
+  try{ const sd=splitData(toModel().data), kb=v=>Math.round(JSON.stringify(v||null).length/1024);
+    L.push(`Data size: Plan log ${kb(sd.log)} KB · Upload log ${kb(sd.uploads)} KB · the rest ${kb(sd.rest)} KB`); }catch(_){}
   L.push('Calls (oldest first):');
-  syncLog.forEach(e=>L.push(`  ${e.at} ${e.action}${e.full?' (first sync)':''}${e.parts?' ['+e.parts+']':''} ${e.ms} ms${e.kb!=null?' '+e.kb+' KB':''}${e.ok?' ok':''}${e.same?' same':''}${e.empty?' empty':''}${e.conflict?' conflict':''}${e.script?' script '+e.script:''}${e.http?' http '+e.http:''}${e.err?' ERROR '+e.err:''}`));
+  syncLog.forEach(e=>L.push(`  ${e.at} ${e.action}${e.full?' (first sync)':''}${e.parts?' ['+e.parts+']':''} ${e.ms} ms${e.kb!=null?' '+e.kb+' KB':''}${e.ok?' ok':''}${e.same?' same':''}${e.part?' (changed parts only)':''}${e.empty?' empty':''}${e.conflict?' conflict':''}${e.script?' script '+e.script:''}${e.http?' http '+e.http:''}${e.err?' ERROR '+e.err:''}`));
   if(!syncLog.length) L.push('  (none since the page was opened)');
   return L.join('\n');
 }
@@ -5511,6 +5609,7 @@ function paintSyncBadge(el){
   const st=syncState;
   const was=el.dataset.k||'';
   if(syncFirst){ setBadge(el,'dirty','cloud','Sheet: choose data','Choose','Open Setup → Google Sheet sync'); return; }
+  if(syncHold){ setBadge(el,'failed','cloudx','Sync stopped — check Setup','Check','A save would delete a lot from the sheet — open Setup'); return; }
   if(st.s==='busy'){ setBadge(el,'saving busy','spin','Syncing with sheet…','Syncing','Syncing with the Google Sheet…'); return; }
   if(st.s==='err'){ setBadge(el,'failed','cloudx','Sheet not reached — retry','Retry',st.msg+' — tap to retry'); return; }
   const t=st.at?hhmm(st.at):'';
@@ -5539,12 +5638,18 @@ async function syncNow(why){
     if(!syncBase){ syncFull=true; paintSync(); try{ await firstSync(local,!localHasData()); } finally{ syncFull=false; } }
     else if(!same(local,syncBase.model)) await pushMerging(local);
     else{
-      const r=await syncCall('pull',{known:syncBase.version});
-      if(!r.same) await adopt(r.version,r.model);
+      const have=svAtLeast('2.4')&&syncBase.hashes?syncBase.hashes:null;
+      let r=await syncCall('pull',{known:syncBase.version,...(have?{have}:{})});
+      if(!r.same){
+        let remote=r.partial?assemble(syncBase.model,r):r.model;
+        if(!remote){ r=await syncCall('pull',{known:syncBase.version}); remote=r.model; } // couldn't piece it together - take it whole
+        if(!r.same&&remote) await adopt(r.version,remote,r.hashes);
+      }
     }
     setSyncState('ok'); syncFails=0;
   }catch(e){
     if(e.dropped){ setSyncState('busy'); scheduleSync(500,'again'); failed=true; }  // a dead call let go of: start afresh at once
+    else if(e.hold){ failed=true; setSyncState('err',e.message); }                   // waits for a yes / no in Setup
     else{ failed=true; setSyncState('err',e.message); scheduleSync(retryDelay(e),'retry'); } }
   // a sync asked for while this one ran goes next - unless this one failed: then the retry
   // (with its back-off wait) already covers it and must not be cut short
@@ -5555,6 +5660,9 @@ async function syncNow(why){
 function changedParts(b,l){
   const st=stable, P=(m,p)=>((m.parties||{})[p]||{}).routes||[];
   const out={masters:st(b.masters)!==st(l.masters),parties:st(b.parties)!==st(l.parties),data:st(b.data)!==st(l.data),tabs:[]};
+  // v2.4: which part of the data changed - Plan log, Upload log, or the rest (holds, stock, plan…)
+  if(out.data){ const bs=splitData(b.data), ls=splitData(l.data);
+    out.dataParts={rest:st(bs.rest)!==st(ls.rest),log:st(bs.log)!==st(ls.log),uploads:st(bs.uploads)!==st(ls.uploads)}; }
   const byTab=m=>{ const g=new Map(); (m.orders||[]).forEach(o=>{ const k=(o.tab||'').toUpperCase(); if(!g.has(k)) g.set(k,{name:o.tab||'',list:[]}); g.get(k).list.push(o); }); return g; };
   const bt=byTab(b), lt=byTab(l);
   const rt=new Set(Object.keys({...(b.parties||{}),...(l.parties||{})}).filter(p=>st(P(b,p))!==st(P(l,p))));
@@ -5567,20 +5675,113 @@ function changedParts(b,l){
 function slimModel(l,parts){
   const want=new Set(parts.tabs.map(t=>t.toUpperCase()));
   const m={masters:l.masters,parties:l.parties,orders:l.orders.filter(o=>want.has((o.tab||'').toUpperCase()))};
-  if(parts.data) m.data=l.data;
+  if(parts.data){
+    // v2.4 script: only the changed data parts travel; older scripts get all of it
+    if(parts.dataParts&&svAtLeast('2.4')){ const s=splitData(l.data), d={};
+      if(parts.dataParts.rest) Object.assign(d,s.rest);
+      if(parts.dataParts.log) d.log=s.log;
+      if(parts.dataParts.uploads) d.uploads=s.uploads;
+      m.data=d; }
+    else m.data=l.data;
+  }
   return m;
 }
+/* ---------- v2.4: the data in three parts ----------
+   The sheet keeps the Plan log, the Upload log and everything else in separate parts, each with
+   its own fingerprint. A save sends only the part that changed, and "what changed?" brings back
+   only the changed parts and order tabs; the rest is taken from this device's copy of the sheet
+   (syncBase), which the fingerprints say is still the same. */
+function splitData(d){ const rest={...(d||{})}, out={rest,log:rest.log,uploads:rest.uploads}; delete rest.log; delete rest.uploads; return out; }
+const SHEET_NO_TAB='NO TAB';
+function assemble(base,r){
+  try{
+    const p=r.parts||{}, b=base||{}, tabs=Object.keys((r.hashes||{}).t||{});
+    const keyOf=t=>(t===SHEET_NO_TAB?'':t).toUpperCase();
+    const known=new Set(tabs.map(keyOf));
+    // an order of this device's copy on a tab the sheet doesn't list - can't piece it together
+    if((b.orders||[]).some(o=>!known.has((o.tab||'').toUpperCase()))) return null;
+    const changed=new Set(Object.keys(p.tabs||{}).map(keyOf));
+    const orders=[];
+    tabs.forEach(t=>{ const k=keyOf(t);
+      if(changed.has(k)) orders.push(...(p.tabs[t]||[]));
+      else orders.push(...(b.orders||[]).filter(o=>(o.tab||'').toUpperCase()===k)); });
+    const bd=splitData(b.data||{}), pd=p.data||{};
+    const data={...('rest' in pd?pd.rest:bd.rest)};
+    const log='log' in pd?pd.log:bd.log, up='uploads' in pd?pd.uploads:bd.uploads;
+    if(log!=null) data.log=log; if(up!=null) data.uploads=up;
+    return JSON.parse(JSON.stringify({orders,parties:'parties' in p?p.parties:b.parties,masters:r.masters||b.masters,data}));
+  }catch(e){ return null; }
+}
 const svAtLeast=v=>{ const a=String(syncSV||'0').split('.').map(Number), b=v.split('.').map(Number); for(let i=0;i<2;i++){ if((a[i]||0)!==(b[i]||0)) return (a[i]||0)>(b[i]||0); } return true; };
+/* ---------- v2.3: clash list, removal notes, big-delete check ---------- */
+const CLASH_KEY='lpb:clashes', CLASH_MAX=300;
+let clashNote=[];        // clashes not yet reported to the sheet's ACCESS LOG (sent with the next save)
+let bigOk=0;             // when this device last cleared / restored data on purpose (big deletes allowed for 10 min)
+let syncHold=null;       // a save stopped by the big-delete check, waiting for a decision in Setup
+const cut=(s,n)=>{ s=String(s); return s.length>n?s.slice(0,n-1)+'…':s; };
+const clashVal=v=>v===undefined?'(removed)':v===null?'(none)':typeof v==='string'?(v===''?'(blank)':v):typeof v==='number'||typeof v==='boolean'?String(v):JSON.stringify(v);
+async function recordClashes(list,from){
+  if(!list||!list.length) return;
+  const at=Date.now(), rows=list.map(c=>({at,where:cut(c.where,160),kept:cut(clashVal(c.kept),120),lost:cut(clashVal(c.lost),120),note:!!c.note,from}));
+  try{ let all=(await kvGet(CLASH_KEY))||[]; if(!Array.isArray(all)) all=[];
+    all.push(...rows); while(all.length>CLASH_MAX) all.shift(); await kvSet(CLASH_KEY,all); }catch(_){}
+  rows.forEach(c=>clashNote.push(c.note?`${c.where}: ${c.lost}`:`${c.where}: kept ${cut(c.kept,40)}, dropped ${cut(c.lost,40)}`));
+  flash(`${rows.length} sync clash${rows.length>1?'es':''} — see Admin → Sync clashes`);
+  if(currentView==='admin') paintClashes();
+}
+// what this save takes out of the sheet, leaving aside lines that went in a delivery or were cancelled
+function removals(b,l){
+  const out={lines:[],log:[],parties:[],gone:0};
+  if(!b) return out;
+  const L=new Set((l.orders||[]).map(o=>o.id)), ld=l.data||{}, bdat=b.data||{};
+  const delivered=new Set(); (ld.log||[]).forEach(g=>(g.snapshot||[]).forEach(o=>o&&delivered.add(o.id)));
+  const oldCx=new Set((bdat.cancels||[]).map(c=>c.id));
+  const newCx=(ld.cancels||[]).filter(c=>!oldCx.has(c.id));
+  (b.orders||[]).forEach(o=>{ if(L.has(o.id)) return;
+    if(delivered.has(o.id)){ out.gone++; return; }
+    const ci=newCx.findIndex(c=>c.party===o.party&&c.item===o.item&&String(c.origQty)===String(o.qty));
+    if(ci>=0){ newCx.splice(ci,1); out.gone++; return; }
+    out.lines.push(o); });
+  const LG=new Set((ld.log||[]).map(g=>g.id)); (bdat.log||[]).forEach(g=>{ if(!LG.has(g.id)) out.log.push(g); });
+  const LP=l.parties||{}; Object.keys(b.parties||{}).forEach(n=>{ if(!LP[n]) out.parties.push(n); });
+  return out;
+}
+function removedText(x){
+  const parts=[];
+  if(x.lines.length) parts.push(`${x.lines.length} order line${x.lines.length>1?'s':''}: `+x.lines.slice(0,6).map(o=>`${o.party} · ${o.item} ×${o.qty}`).join('; ')+(x.lines.length>6?'; …':''));
+  if(x.log.length) parts.push(`${x.log.length} Plan log entr${x.log.length>1?'ies':'y'}: `+x.log.slice(0,4).map(g=>'"'+(g.title||g.vehicle||g.id)+'"').join(', ')+(x.log.length>4?', …':''));
+  if(x.parties.length) parts.push(`${x.parties.length} part${x.parties.length>1?'ies':'y'}: `+x.parties.slice(0,6).join(', ')+(x.parties.length>6?', …':''));
+  return parts.join(' · ');
+}
+// a save that would take a big part of the sheet away (and wasn't a Clear data / restore on this
+// device) is stopped until someone says yes - e.g. a phone whose saved data could not be read
+function bigDelete(x,b){
+  if(Date.now()-bigOk<600000) return '';
+  const nO=(b.orders||[]).length, nL=((b.data||{}).log||[]).length, nP=Object.keys(b.parties||{}).length;
+  const w=[];
+  if(x.lines.length>=10&&x.lines.length>=nO*0.5) w.push(`${x.lines.length} of ${nO} order lines`);
+  if(x.log.length>=3&&x.log.length>=nL*0.5) w.push(`${x.log.length} of ${nL} Plan log entries`);
+  if(x.parties.length>=10&&x.parties.length>=nP*0.5) w.push(`${x.parties.length} of ${nP} parties`);
+  return w.join(', ');
+}
 async function pushMerging(local){
+  // nothing big goes out of the sheet without a yes
+  const rx=removals(syncBase.model,local), big=bigDelete(rx,syncBase.model);
+  if(big){ syncHold={what:big,text:removedText(rx)}; const e=new Error('Not saved: this device would delete '+big+' from the sheet — see Setup'); e.hold=true; throw e; }
+  syncHold=null;
   for(let i=0;i<3;i++){
     // only the changed parts, once the script is known to be 2.1+; every 15th push sends everything
     // as a check that the sheet and this device really match
     pushCount++;
     const parts=svAtLeast('2.1')&&pushCount%15!==0?changedParts(syncBase.model,local):null;
-    const r=await syncCall('push',parts?{baseVersion:syncBase.version,model:slimModel(local,parts),parts}:{baseVersion:syncBase.version,model:local});
-    if(syncLog.length&&svAtLeast('2.1')){ const e=syncLog[syncLog.length-1]; e.parts=parts?[parts.masters&&'masters',parts.parties&&'parties',parts.data&&'data',...parts.tabs.map(t=>t||'no tab')].filter(Boolean).join(', ')||'nothing':'everything (check)'; }
-    if(r.ok){ syncBase={version:r.version,model:local}; await kvSet(SYNC_BASE_KEY,syncBase); return; }
-    await adopt(r.version,r.model);                      // someone else changed things - merge them in (with what's on screen now)
+    // short notes for the sheet's ACCESS LOG: clashes met, and lines taken out by hand
+    const events=[], rm=i===0?rx:removals(syncBase.model,local), rt=removedText(rm);
+    if(clashNote.length) events.push({what:'CLASH',details:`${clashNote.length} clash${clashNote.length>1?'es':''}: `+clashNote.slice(0,4).join(' ; ')+(clashNote.length>4?' ; …':'')});
+    if(rt) events.push({what:'REMOVED',details:rt});
+    const r=await syncCall('push',{...(parts?{baseVersion:syncBase.version,model:slimModel(local,parts),parts}:{baseVersion:syncBase.version,model:local}),...(events.length?{events}:{})});
+    if(syncLog.length&&svAtLeast('2.1')){ const e=syncLog[syncLog.length-1]; e.parts=parts?[parts.masters&&'masters',parts.parties&&'parties',...(parts.data?(parts.dataParts&&svAtLeast('2.4')?[parts.dataParts.log&&'Plan log',parts.dataParts.uploads&&'Upload log',parts.dataParts.rest&&'data']:['data']):[]),...parts.tabs.map(t=>t||'no tab')].filter(Boolean).join(', ')||'nothing':'everything (check)'; }
+    if(r.ok){ if(events.some(e=>e.what==='CLASH')) clashNote=[]; syncBase={version:r.version,model:local,hashes:r.hashes||null}; await kvSet(SYNC_BASE_KEY,syncBase); return; }
+    await adopt(r.version,r.model,r.hashes);             // someone else changed things - merge them in (with what's on screen now)
     local=toModel();
     if(same(local,syncBase.model)) return;               // nothing of ours left to send
   }
@@ -5636,7 +5837,7 @@ async function keepRestorePoint(why,force){
     await kvSet(RESTORE_KEY,list);
   }catch(_){}
 }
-async function adopt(version,remote){
+async function adopt(version,remote,hashes){
   await waitForTyping();
   const mark=commitTyping();
   if(dirty&&!saving) await flushSave();
@@ -5644,7 +5845,8 @@ async function adopt(version,remote){
   await keepRestorePoint('before sheet changes were applied');
   const merged=mergeModels(syncBase&&syncBase.model,local,remote);
   applyModel(merged.model,merged.fromSheet);
-  syncBase={version,model:bare(remote)};
+  await recordClashes(merged.clashes,'sheet changes');
+  syncBase={version,model:bare(remote),hashes:hashes||null};
   await kvSet(SYNC_BASE_KEY,syncBase);
   undoMute=true; try{ await save(); } finally{ undoMute=false; }
   flushSave(); renderAll(); showPlanNotice();
@@ -5657,7 +5859,7 @@ async function firstSync(start,wasEmpty){
   if(r.empty){                                           // brand-new sheet: this device fills it
     const local=toModel();
     const p=await syncCall('push',{baseVersion:'',model:local,force:true});
-    syncBase={version:p.version,model:local}; await kvSet(SYNC_BASE_KEY,syncBase); return;
+    syncBase={version:p.version,model:local,hashes:p.hashes||null}; await kvSet(SYNC_BASE_KEY,syncBase); return;
   }
   if(wasEmpty){                                          // empty device: take the sheet...
     await waitForTyping();
@@ -5667,9 +5869,9 @@ async function firstSync(start,wasEmpty){
     if(same(now,start)) applyModel(r.model,[]);
     else{                                                // ...plus anything added while it was coming down
       await keepRestorePoint('before the first sync');
-      const merged=mergeModels(start,now,r.model); applyModel(merged.model,[]);
+      const merged=mergeModels(start,now,r.model); applyModel(merged.model,[]); await recordClashes(merged.clashes,'first sync');
     }
-    syncBase={version:r.version,model:bare(r.model)};    // what we added differs from this, so it is sent next
+    syncBase={version:r.version,model:bare(r.model),hashes:r.hashes||null}; // what we added differs from this, so it is sent next
     await kvSet(SYNC_BASE_KEY,syncBase); await save(); flushSave(); renderAll(); focusBack(mark,true); return;
   }
   syncFirst={remote:r}; paintSync(); updateSyncBadge();  // both have data - you choose
@@ -5688,6 +5890,7 @@ function paintSync(){
     :`Connected${syncCfg.name?' to <b>'+esc(syncCfg.name)+'</b>':''}.`;
   if(syncCfg&&syncSV&&!svAtLeast('2.1')) st.innerHTML+=` <span class="hint" style="color:#a5670a">Sheet script ${esc(syncSV)} — paste the new Code.gs and deploy a new version for faster sync.</span>`;
   else if(syncCfg&&syncTrig===false) st.innerHTML+=` <span class="hint" style="color:#a5670a">Faster sync: in Apps Script run <b>installTriggers</b> once.</span>`;
+  paintHold();
   const ch=$('#syncChoice');
   if(!syncFirst){ ch.innerHTML=''; return; }
   const rm=syncFirst.remote.model;
@@ -5705,11 +5908,36 @@ function paintSync(){
     const r=syncFirst.remote; syncFirst=null;
     try{
       setSyncState('busy');
-      if(b.dataset.sfirst==='sheet'){ await keepRestorePoint('before "Use the sheet\'s data"',true); applyModel(r.model,[]); syncBase={version:r.version,model:bare(r.model)}; await save(); flushSave(); renderAll(); }
-      else{ const local=toModel(); const p=await syncCall('push',{baseVersion:r.version,model:local,force:true}); syncBase={version:p.version,model:local}; }
+      if(b.dataset.sfirst==='sheet'){ await keepRestorePoint('before "Use the sheet\'s data"',true); applyModel(r.model,[]); syncBase={version:r.version,model:bare(r.model),hashes:r.hashes||null}; await save(); flushSave(); renderAll(); }
+      else{ const local=toModel(); const p=await syncCall('push',{baseVersion:r.version,model:local,force:true}); syncBase={version:p.version,model:local,hashes:p.hashes||null}; }
       await kvSet(SYNC_BASE_KEY,syncBase); setSyncState('ok'); flash('Connected — syncing with the sheet from now on');
     }catch(e){ setSyncState('err',e.message); }
   }));
+}
+// v2.3: a save stopped by the big-delete check - the person decides
+function paintHold(){
+  const h=$('#syncHold'); if(!h) return;
+  if(!syncHold){ h.innerHTML=''; return; }
+  h.innerHTML=`<div class="incq" style="margin-top:8px;display:block;border-color:var(--alert)">
+    <b style="color:var(--alert)">Sync stopped — this device would delete ${esc(syncHold.what)} from the sheet.</b>
+    This usually means this device lost its saved data (phone storage, browser cleared). Nothing was deleted.
+    <div class="hint" style="margin-top:4px">${esc(syncHold.text)}</div>
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+      <span><button class="tiny primary" id="holdBack">Get the sheet's data back on this device</button></span>
+      <span><button class="tiny danger" id="holdYes">Yes, delete them from the sheet</button></span>
+    </div></div>`;
+  $('#holdYes').onclick=()=>armConfirm($('#holdYes'),'Yes, I deleted them on purpose',()=>{ bigOk=Date.now(); syncHold=null; paintHold(); syncNow('manual'); });
+  $('#holdBack').onclick=async()=>{
+    if(syncBusy){ flash('A sync is running — try again in a moment'); return; }
+    syncBusy=true; syncStarted=Date.now(); setSyncState('busy');
+    try{
+      const r=await syncCall('pull',{});
+      await keepRestorePoint('before getting the sheet\'s data back',true);
+      applyModel(r.model,[]); syncBase={version:r.version,model:bare(r.model),hashes:r.hashes||null}; await kvSet(SYNC_BASE_KEY,syncBase);
+      syncHold=null; await save(); flushSave(); renderAll(); setSyncState('ok'); flash('The sheet\'s data is back on this device');
+    }catch(e){ setSyncState('err',e.message); }
+    finally{ syncBusy=false; paintHold(); }
+  };
 }
 $('#syncConnect').onclick=async()=>{
   const url=$('#syncUrl').value.trim(), key=$('#syncKey').value.trim();
@@ -5743,7 +5971,7 @@ $('#forcePush').onclick=()=>{
     syncBusy=true; syncStarted=Date.now(); setSyncState('busy');
     try{ if(dirty) await flushSave(); const local=toModel();
       const p=await syncCall('push',{baseVersion:'',model:local,force:true});
-      syncBase={version:p.version,model:local}; syncFirst=null; await kvSet(SYNC_BASE_KEY,syncBase);
+      syncBase={version:p.version,model:local,hashes:p.hashes||null}; syncFirst=null; await kvSet(SYNC_BASE_KEY,syncBase);
       setSyncState('ok'); flash('The sheet now holds this device\'s data'); }
     catch(e){ setSyncState('err',e.message); }
     finally{ syncBusy=false; }
@@ -5753,7 +5981,7 @@ $('#syncOff').onclick=()=>armConfirm($('#syncOff'),'Yes, disconnect',async()=>{
   syncCfg=null; syncBase=null; syncFirst=null; await kvSet(SYNC_CFG_KEY,null); await kvSet(SYNC_BASE_KEY,null);
   setSyncState('off'); updateSyncBadge(); flash('Disconnected — the data stays on this device and in the sheet');
 });
-$('#syncBadge').onclick=()=>{ if(syncCfg){ if(syncFirst) gotoView('routes'); else syncNow('manual'); } };
+$('#syncBadge').onclick=()=>{ if(syncCfg){ if(syncFirst||syncHold) gotoView('routes'); else syncNow('manual'); } };
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&syncCfg){
   // coming back to the app. A call still running is left alone (Google keeps working on it anyway,
   // and cancelling only queues a new call behind it). Only a call past its time limit is dropped -
@@ -5765,6 +5993,11 @@ window.addEventListener('online',()=>{ if(syncCfg){ if(syncBusy&&syncAbort) sync
 (function pollLoop(){ setTimeout(()=>{ if(syncCfg&&document.visibilityState==='visible'&&!syncBusy) syncNow('poll'); pollLoop(); },25000+jitter(10000)); })();
 async function initSync(){
   syncCfg=await kvGet(SYNC_CFG_KEY); syncBase=await kvGet(SYNC_BASE_KEY);
+  // v2.3: this device opened with no data at all, but it had synced before - its saved data could
+  // not be read (storage cleared or a hiccup). Start over like a new device: it takes the sheet's
+  // data, instead of sending "everything deleted" to the sheet.
+  if(syncBase&&!localHasData()){ const bm=syncBase.model||{};
+    if((bm.orders||[]).length||Object.keys(bm.parties||{}).length||((bm.data||{}).log||[]).length){ syncBase=null; await kvSet(SYNC_BASE_KEY,null); } }
   paintSync(); updateSyncBadge();
   // after the opening sync, a quick lock-free ping tells which script version and whether the
   // change trigger is installed (shown in Setup and in the sync report)
@@ -5776,7 +6009,7 @@ gotoView(currentView); // header label before the saved data arrives
 // home-screen app: the small helper file sw.js lets the phone install this as an app and open
 // it without a connection (it always tries the live site first, so a new version shows at once)
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
-load().then(()=>{ renderAll(); undoReset(); updateSaveBadge(); updateSyncBadge(); initSync(); });
+load().then(()=>{ const slim=slimOldLog(); renderAll(); undoReset(); if(slim) save(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit
 window.addEventListener('beforeunload',e=>{ if(dirty||saving){ e.preventDefault(); e.returnValue=''; } });
