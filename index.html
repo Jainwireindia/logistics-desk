@@ -435,6 +435,22 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .traychoice input{width:auto}
 .trayalert{border-color:#1f5fa8;background:rgba(31,95,168,.06)}
 .traylast{margin:4px 0 0}
+/* v3.0 delivery locations + map spots */
+.dsite{display:inline-block;font-size:11px;font-weight:700;color:#1f5fa8;background:rgba(31,95,168,.10);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap}
+.dsite.big{font-size:12.5px;margin-left:0}
+tr.siterow td{background:rgba(31,95,168,.04)}
+.spotok{font-size:11px;font-weight:700;color:var(--ok);white-space:nowrap}
+.distgrid{display:flex;flex-wrap:wrap;gap:6px 14px}
+.distrow{display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;color:inherit;margin:0}
+.distrow span{min-width:44px;font-weight:700}
+.distrow input{width:170px}
+.rlpanel{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:900;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto}
+.rlpanel[hidden]{display:none}
+.rlcard{background:var(--card,#fff);border-radius:10px;padding:14px 16px;max-width:860px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.rlhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rltbl{margin-top:10px}
+.rlsave{display:inline-flex;gap:4px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:inherit;margin:0}
+.rlsave input{width:auto}
 .badge.open{background:var(--amber);color:#211500}
 .badge.done{background:var(--ok);color:#fff}
 .lgfleet{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:9px 11px;margin-bottom:10px;
@@ -588,6 +604,9 @@ tr.grp td{background:var(--panel2);font-weight:600}
       <div style="flex:0 0 auto;min-width:180px"><label>Sheet tab</label><select id="manTab"></select></div>
       <div style="flex:0 0 auto;width:130px"><label>Order date</label><input id="manDate" placeholder="dd-mm-yyyy"></div>
       <div style="flex:1 1 320px"><label>Party name</label><input id="manParty" list="manPartyList" autocomplete="off" placeholder="as in Tally, e.g. STEELANE AGENCIES KAKKANAD"><datalist id="manPartyList"></datalist></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:0 1 320px"><label>Delivery location (only if it goes to a site)</label><input id="manSite" list="manSiteList" autocomplete="off" placeholder="e.g. Kallara — leave empty for the party's own place"><datalist id="manSiteList"></datalist></div>
     </div>
     <p class="hint" id="manPartyNote" style="margin:4px 0 0"></p>
     <div style="margin-top:10px"><label>Routes</label><div id="manRoutes" class="manroutes"></div></div>
@@ -747,7 +766,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
 <section class="view" id="v-parties">
   <div class="card">
     <h2>Google Maps route</h2>
-    <p class="hint" style="margin-top:0;margin-bottom:10px">Used by the <b>Map route</b> button on each vehicle. Each stop is found by the party's place and pincode.</p>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Used by the <b>Map route</b> button on each vehicle (always by car). Each stop goes to the party's <b>exact map spot</b> when one is saved; otherwise it is found by place + pincode + the district of its route.</p>
     <div class="row">
       <div><label>Start from (godown address)</label><input id="mapStart" placeholder="e.g. Angamaly South, Angamaly, Kerala"></div>
       <div style="flex:0 0 220px"><label>Add to every place</label><input id="mapRegion" placeholder="e.g. Kerala"></div>
@@ -755,6 +774,9 @@ tr.grp td{background:var(--panel2);font-weight:600}
     <label style="display:flex;align-items:center;gap:6px;margin-top:10px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);cursor:pointer">
       <input type="checkbox" id="mapReturn" style="width:auto"> End the route back at the start
     </label>
+    <div style="margin-top:12px"><label>District of each route</label>
+      <p class="hint" style="margin:0 0 6px">Added to a place with no exact spot, so Google picks the right one of two places with the same name (Kallara in Kottayam or in Trivandrum). E.g. Tvm → Thiruvananthapuram. Leave it empty for a route that runs through several districts.</p>
+      <div id="distList" class="distgrid"></div></div>
   </div>
 
   <div class="card">
@@ -767,6 +789,8 @@ tr.grp td{background:var(--panel2);font-weight:600}
           <option value="all">All parties</option>
           <option value="today">Only parties with orders on hand</option>
           <option value="untagged">Only parties with no route</option>
+          <option value="nospot">Only parties on hand with no exact map spot</option>
+          <option value="sites">Only delivery locations</option>
         </select></div>
     </div>
     <div class="row" style="margin:-2px 0 10px;align-items:center">
@@ -1150,7 +1174,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='2.5', APP_BUILD='12-10-2026';
+const APP_VERSION='3.0', APP_BUILD='17-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1283,6 +1307,7 @@ async function load(){
   S.stockMeta=S.stockMeta||{}; // {itemKey: {at, zeroAt, unit, label}} when stock was last given, and when it ran out
   S.finalNotes=S.finalNotes||{}; // {idsKey: "text"} bracketed note typed onto a Final Plan item row
   S.dupOk=(S.dupOk&&typeof S.dupOk==='object'&&!Array.isArray(S.dupOk))?S.dupOk:{};
+  S.districts=(S.districts&&typeof S.districts==='object')?S.districts:{};
   normUploads(!(d&&Array.isArray(d.uploads)));
   S.log.forEach(g=>{ if(!('stockDelta' in g)) g.stockDelta=null; }); // per-entry undo record for stockOut
   S.log.forEach(g=>{ if(!g.notes||typeof g.notes!=='object') g.notes={}; }); // {orderId: "already billed"} per-line bracket note
@@ -1630,29 +1655,156 @@ function placeLine(p){
   const r=S.parties[p]||{};
   return [r.place,r.pincode].filter(Boolean).join(' · ');
 }
+/* ---------- v3.0: delivery locations ----------
+   An order going to one of a party's sites (WhatsApp "site at …" / "delivery to …", written in
+   the sheet as a "Delivery - <place>" row under the party) is kept as its own party key
+   "PARTY @ PLACE". Everything that works per party (routes, tab, holds, Build plan stops, map
+   spot, reports) then works per delivery location by itself, and the location is remembered:
+   its record in S.parties keeps its routes, place, map spot and the tab its orders go to
+   (homeTab). The party's own record is untouched. */
+const SITE_SEP=' @ ';
+const normName=v=>String(v||'').toUpperCase().replace(/\s+/g,' ').trim();
+function siteOf(p){ const s=String(p||''), i=s.lastIndexOf(SITE_SEP); return i>0?{base:s.slice(0,i),site:s.slice(i+SITE_SEP.length)}:{base:s,site:''}; }
+function siteKey(base,site){ base=normName(base); site=normName(site); return site?base+SITE_SEP+site:base; }
+const DELIVERY_RE=/^(?:delivery\s*(?:to\b|at\b|[-–:])|site\s*(?:at\b|[-–:]))\s*[-–:]?\s*(.+)$/i;
+function deliverySite(text){ const m=String(text||'').trim().match(DELIVERY_RE); return m?normName(m[1]):''; }
+const titleCase=s=>String(s||'').toLowerCase().replace(/(^|[\s(\/-])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
+function siteLine(p){ const s=siteOf(p).site; return s?'Delivery - '+titleCase(s):''; }
+function pnameHtml(p){ const {base,site}=siteOf(p); return esc(base)+(site?` <span class="dsite">Delivery - ${esc(titleCase(site))}</span>`:''); }
+function pnameText(p){ const {base,site}=siteOf(p); return site?`${base} (Delivery - ${titleCase(site)})`:base; }
+function sitesOf(base){ base=normName(base); return Object.keys(S.parties).filter(k=>{ const s=siteOf(k); return s.site&&s.base===base; }).sort(); }
+
+/* ---------- v3.0: exact map spots ----------
+   A spot is "lat,lng". It comes from the party's Map spot field, or from coordinates inside its
+   location link (long Google Maps links carry them; short maps.app.goo.gl links don't). */
+function parsePin(v){
+  const s=String(v||'').trim(); if(!s) return '';
+  const ok=(a,b)=>{ a=+a; b=+b; return isFinite(a)&&isFinite(b)&&Math.abs(a)<=90&&Math.abs(b)<=180&&(a||b)?`${+a.toFixed(6)},${+b.toFixed(6)}`:''; };
+  let m=s.match(/^\s*(-?\d{1,2}\.\d+)\s*[, ]\s*(-?\d{1,3}\.\d+)\s*$/); if(m) return ok(m[1],m[2]);
+  const pins=[...s.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)]; if(pins.length){ const p=pins[pins.length-1]; return ok(p[1],p[2]); }
+  m=s.match(/[?&](?:q|query|ll|destination|center)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i); if(m) return ok(m[1],m[2]);
+  m=s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/); if(m) return ok(m[1],m[2]);
+  return '';
+}
+function pinOf(p){ const r=S.parties[p]||{}; return parsePin(r.pin)||parsePin(r.loc); }
+const pinUrl=pin=>'https://www.google.com/maps/search/?api=1&query='+pin;
+// a party with no spot: its route's district helps tell two places of one name apart (Kallara, Pangode…)
+function districtOf(p){ const d=S.districts||{}; const r=(S.parties[p]?.routes||[]).find(x=>d[x]); return r?d[r]:''; }
+function kmBetween(a,b){ const [la1,lo1]=a.split(',').map(Number), [la2,lo2]=b.split(',').map(Number), R=6371, rad=x=>x*Math.PI/180;
+  const h=Math.sin(rad(la2-la1)/2)**2+Math.cos(rad(la1))*Math.cos(rad(la2))*Math.sin(rad(lo2-lo1)/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+
 /* Google Maps directions through a vehicle's stops, in delivery order. Uses the plain
    /maps/dir/A/B/C/... form, which takes far more than the 10 stops of the normal link. */
 function partyLocation(p){
-  const r=S.parties[p]||{}; const bits=[r.place,r.pincode].filter(Boolean).join(' ');
+  const pin=pinOf(p); if(pin) return pin;              // v3.0: the exact spot wins
+  const r=S.parties[p]||{}; let place=r.place||'';
+  // a delivery location with nothing typed in yet is searched by its own name
+  if(!place&&siteOf(p).site) place=titleCase(siteOf(p).site);
+  const bits=[place,r.pincode].filter(Boolean).join(' ');
   if(!bits) return '';
-  const reg=(S.settings&&S.settings.mapRegion)||'';
-  return reg&&!bits.toLowerCase().includes(reg.toLowerCase())?bits+', '+reg:bits;
+  const dist=districtOf(p), reg=(S.settings&&S.settings.mapRegion)||'';
+  let out=bits;
+  if(dist&&!out.toLowerCase().includes(dist.toLowerCase())) out+=', '+dist;
+  if(reg&&!out.toLowerCase().includes(reg.toLowerCase())) out+=', '+reg;
+  return out;
 }
+const MAP_DRIVING='/data=!4m2!4m1!3e0'; // Google Maps: travel by car
 function laneMapRoute(l){
-  const missing=[], pts=[];
+  const missing=[], approx=[], pts=[];
   const start=(S.settings&&S.settings.mapStart)||'';
   if(start) pts.push(start);
   l.stops.forEach(st=>{ const loc=partyLocation(st.party); if(!loc){ missing.push(st.party); return; }
+    if(!pinOf(st.party)) approx.push(st.party);
     if(pts[pts.length-1]!==loc) pts.push(loc); }); // two parties in one place = one stop
   if(start&&S.settings.mapReturn&&pts.length>1) pts.push(start);
-  const url='https://www.google.com/maps/dir/'+pts.map(x=>encodeURIComponent(x).replace(/%20/g,'+')).join('/');
-  return {url,missing,count:pts.length};
+  const url='https://www.google.com/maps/dir/'+pts.map(x=>encodeURIComponent(x).replace(/%20/g,'+').replace(/%2C/g,',')).join('/')+MAP_DRIVING;
+  return {url,missing,approx,count:pts.length};
 }
 function openLaneMap(l){
   const r=laneMapRoute(l);
-  if(r.count<2){ flash(r.missing.length?`No place or pincode for: ${r.missing.join(', ')}`:'Need at least 2 stops'); return; }
+  if(r.count<2){ flash(r.missing.length?`No place or pincode for: ${r.missing.map(pnameText).join(', ')}`:'Need at least 2 stops'); return; }
   window.open(r.url,'_blank','noopener');
-  if(r.missing.length) flash(`Left out (no place/pincode): ${r.missing.join(', ')}`);
+  const bits=[];
+  if(r.missing.length) bits.push(`left out (no place/pincode): ${r.missing.map(pnameText).join(', ')}`);
+  if(r.approx.length) bits.push(`no exact spot, found by place name: ${r.approx.map(pnameText).join(', ')}`);
+  if(bits.length) flash(bits.join(' · '));
+}
+/* ---------- v3.0: read a Google Maps route link back ----------
+   Arrange the stops in Chrome (Google Maps → directions), copy the address bar link and paste
+   it on the vehicle. The link carries the stops in order and, in its data part, the exact
+   coordinates Google picked for each stop. The vehicle's delivery order can follow the link,
+   and the spots can be saved to the parties - each only when you press its button. */
+function readRouteLink(url){
+  const u=String(url||'').trim();
+  if(!/google\.[a-z.]+\/maps\/dir\//i.test(u)) return {err:'That is not a Google Maps directions link — it should have /maps/dir/ in it. In Chrome, copy the whole address bar.'};
+  const path=u.split(/\/maps\/dir\//i)[1].split('?')[0];
+  const segs=[]; let data='';
+  path.split('/').forEach(seg=>{ if(!seg||seg.startsWith('@')) return; if(seg.startsWith('data=')){ data=seg.slice(5); return; }
+    let t; try{ t=decodeURIComponent(seg.replace(/\+/g,' ')); }catch(e){ t=seg.replace(/\+/g,' '); } if(t.trim()) segs.push(t.trim()); });
+  // the data part: !4m..!4m.. then one !1m<n> block per stop holding !1d<lng>!2d<lat>
+  const tok=data.split('!').filter(Boolean); let pts=[];
+  let i=tok.findIndex((t,k)=>/^4m\d+$/.test(t)&&/^4m\d+$/.test(tok[k+1]||''));
+  if(i>=0){ i+=2; while(i<tok.length){ const m=tok[i].match(/^1m(\d+)$/); if(!m) break; const n=+m[1], sub=tok.slice(i+1,i+1+n);
+      const d1=sub.find(x=>/^1d-?\d/.test(x)), d2=sub.find(x=>/^2d-?\d/.test(x)); pts.push(d1&&d2?parsePin(d2.slice(2)+','+d1.slice(2)):''); i+=1+n; } }
+  if(pts.length!==segs.length) pts=[]; // can't line them up - only stops typed as coordinates count
+  const mode=(data.match(/!3e(\d)/)||[])[1];
+  return {segs,pts:segs.map((sg,k)=>parsePin(sg)||pts[k]||''),mode:mode==null?'':({0:'car',1:'bicycle',2:'walking',3:'transit'}[mode]||'')};
+}
+const rlNorm=t=>String(t||'').toLowerCase().replace(/\b(keralam|kerala|india)\b/g,' ').replace(/[^a-z0-9, ]/g,' ').replace(/\s+/g,' ').trim();
+const rlHead=t=>rlNorm(t).split(',')[0].replace(/\b\d{6}\b/g,'').replace(/\s+/g,' ').trim();
+function matchRouteLink(l,link){
+  const start=rlHead((S.settings&&S.settings.mapStart)||'');
+  const stops=l.stops.map((st,idx)=>{ const p=st.party, loc=partyLocation(p), r=S.parties[p]||{};
+    return {st,idx,p,pin:pinOf(p),head:rlHead(parsePin(loc)?(r.place||titleCase(siteOf(p).site)||''):loc)||rlHead(r.place)||rlHead(titleCase(siteOf(p).site)),seg:-1}; });
+  const segUsed=link.segs.map(()=>[]);
+  link.segs.forEach((sg,k)=>{
+    const h=rlHead(sg);
+    if(start&&h===start&&(k===0||k===link.segs.length-1)) return; // the godown
+    stops.forEach(s=>{ if(s.seg>=0) return;
+      const near=s.pin&&link.pts[k]&&kmBetween(s.pin,link.pts[k])<1.5;
+      if(near||(h&&s.head&&h===s.head)){ s.seg=k; segUsed[k].push(s); } });
+  });
+  // looser second pass: one name inside the other ("sreekaryam" / "sreekaryam junction")
+  link.segs.forEach((sg,k)=>{ const h=rlHead(sg); if(!h||h.length<3||(start&&h===start)) return;
+    stops.forEach(s=>{ if(s.seg>=0||!s.head||s.head.length<3) return; if(h.includes(s.head)||s.head.includes(h)){ s.seg=k; segUsed[k].push(s); } }); });
+  const matched=stops.filter(s=>s.seg>=0).sort((a,b)=>a.seg-b.seg||a.idx-b.idx), unmatched=stops.filter(s=>s.seg<0);
+  const lostSegs=link.segs.map((sg,k)=>({sg,k})).filter(x=>!segUsed[x.k].length&&!(start&&rlHead(x.sg)===start));
+  return {matched,unmatched,lostSegs,order:[...matched,...unmatched].map(s=>s.st)};
+}
+function openRoutePanel(laneId){
+  const l=S.plan.lanes.find(x=>x.id===laneId); if(!l) return;
+  let box=$('#rlPanel'); if(!box){ box=document.createElement('div'); box.id='rlPanel'; box.className='rlpanel'; document.body.appendChild(box); }
+  box.hidden=false;
+  box.innerHTML=`<div class="rlcard"><div class="rlhead"><b>Route from Google Maps — ${esc(l.name)}</b><button class="tiny ghost" data-rlclose>Close</button></div>
+    <p class="hint" style="margin:4px 0 8px">In Chrome: open <b>Map route</b>, drag the stops into the right order (or pick the right place for a stop), then copy the whole address bar and paste it here.</p>
+    <textarea id="rlLink" rows="3" placeholder="https://www.google.com/maps/dir/…" style="width:100%"></textarea>
+    <div style="margin-top:6px"><button class="primary tiny" data-rlread>Read the link</button></div>
+    <div id="rlOut"></div></div>`;
+  box.querySelector('[data-rlclose]').onclick=()=>{ box.hidden=true; };
+  box.querySelector('[data-rlread]').onclick=()=>{
+    const out=box.querySelector('#rlOut'), link=readRouteLink(box.querySelector('#rlLink').value);
+    if(link.err){ out.innerHTML=`<p class="trayerr">${esc(link.err)}</p>`; return; }
+    const m=matchRouteLink(l,link);
+    const spots=m.matched.filter(s=>link.pts[s.seg]&&(!s.pin||kmBetween(s.pin,link.pts[s.seg])>0.3));
+    out.innerHTML=`<table class="rltbl"><tr><th>#</th><th>Stop in the link</th><th>Party</th><th>Spot from the link</th></tr>
+      ${m.matched.map((s,i)=>{ const pt=link.pts[s.seg], sv=spots.includes(s);
+        return `<tr><td class="num">${i+1}</td><td>${esc(link.segs[s.seg])}</td><td>${pnameHtml(s.p)}</td>
+          <td>${pt?`<span class="mono">${esc(pt)}</span>${sv?` <label class="rlsave"><input type="checkbox" data-rlspot="${s.idx}" checked> save as exact spot${s.pin?' (replaces '+esc(s.pin)+')':''}</label>`:' <span class="spotok">✓ already saved</span>'}`:'<span class="hint">none in the link</span>'}</td></tr>`; }).join('')}
+      </table>
+      ${m.unmatched.length?`<p class="trayerr">Not found in the link (kept at the end, in their current order): ${m.unmatched.map(s=>pnameHtml(s.p)).join(', ')}</p>`:''}
+      ${m.lostSegs.length?`<p class="hint">Stops in the link that match no party on this vehicle: ${m.lostSegs.map(x=>esc(x.sg)).join(' · ')}</p>`:''}
+      ${link.mode&&link.mode!=='car'?`<p class="trayerr">This link is set to ${esc(link.mode)} — Map route links from this tool are always by car.</p>`:''}
+      <div class="traybtns"><button class="primary tiny" data-rlorder>Use this delivery order</button>
+        ${spots.length?`<button class="tiny" data-rlspots>Save the ticked spots (${spots.length})</button>`:''}</div>
+      <p class="hint" style="margin:4px 0 0">Nothing changes until you press a button. Spots are where Google placed each stop — for a shop, check it is the right place first.</p>`;
+    const orderBtn=out.querySelector('[data-rlorder]');
+    orderBtn.onclick=async()=>{ l.stops=m.order; await save(); renderPlan(); renderOut(); orderBtn.disabled=true; orderBtn.textContent='✓ Delivery order changed'; flash(`${l.name}: delivery order now follows the link`); };
+    const spotBtn=out.querySelector('[data-rlspots]');
+    if(spotBtn) spotBtn.onclick=async()=>{
+      let n=0; out.querySelectorAll('[data-rlspot]').forEach(cb=>{ if(!cb.checked) return; const s=m.matched.find(x=>String(x.idx)===cb.dataset.rlspot); if(!s) return;
+        const p=s.p; S.parties[p]=S.parties[p]||{routes:[],place:'',pincode:''}; S.parties[p].pin=link.pts[s.seg]; n++; });
+      await save(); renderPlan(); renderOut(); spotBtn.disabled=true; spotBtn.textContent=`✓ ${n} spot${n===1?'':'s'} saved`; flash(`Saved ${n} exact spot${n===1?'':'s'}`); };
+  };
 }
 /* ---------- WhatsApp text for the driver ----------
    Stops in delivery order, each with the place, the shop's location link (Parties & map) or a
@@ -1680,10 +1832,10 @@ function daySummaryText(day){
     const g=t.g;
     L.push('');
     L.push(`*${g.vehicleNo||g.vehicle||'Vehicle'}*${g.driver?' · Driver: '+g.driver:''}`);
-    tripParties(t).forEach(p=>L.push(p));
+    tripParties(t).forEach(p=>L.push(pnameText(p)));
   });
   const gd=[...new Set(trips.filter(t=>t.g.godown).flatMap(t=>tripParties(t)))];
-  if(gd.length){ L.push(''); L.push('*Godown collection*'); gd.forEach(p=>L.push(p)); }
+  if(gd.length){ L.push(''); L.push('*Godown collection*'); gd.forEach(p=>L.push(pnameText(p))); }
   return L.join('\n');
 }
 // a log entry's parties in delivery order: the vehicle as it was arranged on screen, else the
@@ -1698,10 +1850,11 @@ function tripParties(t){
 function sumDay(){ const v=$('#sumDate').value.trim(); const iso=parseDMY(v); return iso?isoToDMY(iso):today10(); }
 // one party's location, for Parties & map → WhatsApp
 function partyLocText(p){
-  const r=S.parties[p]||{}, where=[r.place,r.pincode].filter(Boolean).join(' ');
-  const L=['*'+p+'*'];
+  const r=S.parties[p]||{}, where=[r.place,r.pincode].filter(Boolean).join(' '), pin=pinOf(p);
+  const L=['*'+siteOf(p).base+'*'];
+  if(siteLine(p)) L.push(siteLine(p));
   if(where) L.push(where);
-  if(r.loc) L.push('📍 '+r.loc); else if(where) L.push('📍 '+mapsUrl(p));
+  if(pin) L.push('📍 '+pinUrl(pin)); else if(r.loc) L.push('📍 '+r.loc); else if(where) L.push('📍 '+mapsUrl(p));
   return L.join('\n');
 }
 function driverText(g){
@@ -1717,10 +1870,11 @@ function driverText(g){
     const items=(st.orderIds||[]).map(id=>{ const o=S.orders.find(x=>x.id===id)||snap.get(id); if(!o) return null;
       const lq=st.loadQty&&st.loadQty[id]; return '   • '+stripTags(o.item)+' × '+(lq!=null?lq:o.qty); }).filter(Boolean);
     if(!items.length) return;
-    L.push(''); L.push(`${++n}. *${p}*`);
-    const where=[r.place,r.pincode].filter(Boolean).join(' ');
+    L.push(''); L.push(`${++n}. *${siteOf(p).base}*`);
+    if(siteLine(p)) L.push('   '+siteLine(p));
+    const where=[r.place,r.pincode].filter(Boolean).join(' '), pin=pinOf(p);
     if(where) L.push('   '+where);
-    if(r.loc) L.push('   📍 '+r.loc); else if(where) L.push('   📍 '+mapsUrl(p));
+    if(pin) L.push('   📍 '+pinUrl(pin)); else if(r.loc) L.push('   📍 '+r.loc); else if(where) L.push('   📍 '+mapsUrl(p));
     items.forEach(x=>L.push(x));
   });
   const route=laneMapRoute({stops:order.map(p=>({party:p}))});
@@ -1728,8 +1882,9 @@ function driverText(g){
   return L.join('\n');
 }
 function mapsUrl(p){
-  const r=S.parties[p]||{};
-  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([p,r.place,r.pincode].filter(Boolean).join(' '));
+  const r=S.parties[p]||{}, pin=pinOf(p);
+  if(pin) return pinUrl(pin);
+  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([siteOf(p).site?titleCase(siteOf(p).site):siteOf(p).base,r.place,r.pincode,districtOf(p)].filter(Boolean).join(' '));
 }
 
 /* ---------- dates ---------- */
@@ -1856,7 +2011,14 @@ function renameParty(oldN,newN){
   S.plan.lanes.forEach(l=>l.stops.forEach(s=>{ if(s.party===oldN) s.party=newN; }));
   S.log.forEach(g=>g.stops.forEach(s=>{ if(s.party===oldN) s.party=newN; }));
   if(editingParties.has(oldN)){ editingParties.delete(oldN); editingParties.add(newN); }
+  cascadeSites(oldN,newN);
   return {ok:true,newN};
+}
+// v3.0: a party's delivery locations follow it when it is renamed or merged
+function cascadeSites(oldN,newN){
+  if(siteOf(oldN).site||siteOf(newN).site) return;
+  sitesOf(oldN).forEach(k=>{ const nk=siteKey(newN,siteOf(k).site); if(nk===k) return;
+    if(S.parties[nk]) mergeParty(k,nk); else renameParty(k,nk); });
 }
 /* folds oldN into an EXISTING party newN — used when a rename collides with a real party.
    Unlike renameParty this combines route tags/hold/dates rather than overwriting, and
@@ -1871,7 +2033,9 @@ function mergeParty(oldN,newN){
     dueDate:'',
     dueBatches:{...(op.dueBatches||{}),...(np.dueBatches||{})},
     place:np.place||op.place||'',
-    pincode:np.pincode||op.pincode||''
+    pincode:np.pincode||op.pincode||'',
+    loc:np.loc||op.loc||'', pin:np.pin||op.pin||'',
+    ...((np.homeTab||op.homeTab)?{homeTab:np.homeTab||op.homeTab}:{})
   };
   delete S.parties[oldN];
   S.orders.forEach(o=>{ if(o.party===oldN) o.party=newN; });
@@ -1888,6 +2052,7 @@ function mergeParty(oldN,newN){
     }else if(oldStop) oldStop.party=newN;
   });
   if(editingParties.has(oldN)){ editingParties.delete(oldN); editingParties.add(newN); }
+  cascadeSites(oldN,newN);
 }
 /* shared collision handler for both the Master Data rename box and the Add Orders inline
    rename — offers a merge instead of just refusing when the typed name already exists */
@@ -1920,15 +2085,19 @@ function parsePaste(text,tab){
   if(!lines.length) return {rows:[],note:'Nothing to read — the box was empty.'};
   const split=l=>l.includes('\t')?l.split('\t'):l.split(/\s{2,}/);
   const rows=[];
-  let curParty=null,curDate='',curRoute='';
+  let curParty=null,curBase=null,curDate='',curRoute='';
   lines.forEach(line=>{
     const c=split(line).map(x=>x.trim());
     const date=c[0]||'',route=c[1]||'',text=c[2]||'',n1=c[3]||'',n2=c[4]||'',n3=c[5]||'',rem=c[6]||'';
     if(date) curDate=date;
     if(route) curRoute=route;
     if(!text) return;
-    if(n1===''&&n2===''&&n3===''){ curParty=text.toUpperCase(); return; }
-    if(!curParty){ curParty=text.toUpperCase(); return; }
+    if(n1===''&&n2===''&&n3===''){
+      // v3.0: "Delivery - Kallara" under a party = that party's order for that site
+      const site=curBase?deliverySite(text):'';
+      if(site){ curParty=siteKey(curBase,site); return; }
+      curBase=curParty=text.toUpperCase(); return; }
+    if(!curParty){ curBase=curParty=text.toUpperCase(); return; }
     rows.push({party:curParty,item:text,qty:n1,unit:n2,weight:n3,date:curDate,route:curRoute,tab,...(rem?{remark:rem}:{})});
   });
   const ps=new Set(rows.map(r=>r.party));
@@ -1992,8 +2161,9 @@ function paintDash(){
   const held=parties.filter(p=>anyHeld(p)).length;
   const aging2=parties.filter(p=>{const g=partyAge(p);return g!=null&&g>=2;});
   const aging5=parties.filter(p=>{const g=partyAge(p);return g!=null&&g>=5;});
-  const noRoute=parties.filter(p=>!(S.parties[p]?.routes||[]).length);
-  const noPlace=parties.filter(p=>!placeLine(p));
+  const noRoute=parties.filter(p=>!siteOf(p).site&&!(S.parties[p]?.routes||[]).length);
+  const noSiteRoute=parties.filter(p=>siteOf(p).site&&!(S.parties[p]?.routes||[]).length); // v3.0
+  const noPlace=parties.filter(p=>!placeLine(p)&&!pinOf(p));
   const overdue=overdueBatches();
   const openLogs=S.log.filter(g=>!g.resolved);
   const dupPs=dupParties();
@@ -2041,7 +2211,7 @@ function paintDash(){
       const detail=open?`<tr class="cdet"><td colspan="7" style="background:var(--panel2)">
         ${r.match.length?r.match.map(p=>`
           <div style="margin:6px 0 8px">
-            <b>${esc(p)}</b>${a.has(p)?' <span class="pill">on a vehicle</span>':''}
+            <b>${pnameHtml(p)}</b>${a.has(p)?' <span class="pill">on a vehicle</span>':''}
             <span class="hint">· ${esc((S.parties[p]?.routes||[]).join(', ')||'no routes')} · ${num(loadableWeight(p))} kg</span>
             <div style="padding-left:14px">${itemsOf(p).map(o=>{
               const out=outOfStockKeys.has(stockKey(o.item)), held=lineHeld(o);
@@ -2101,7 +2271,7 @@ function paintDash(){
   </div>`:'';
 
   // "Needs attention" rows carry the fix inline, so nothing sends you off to another tab
-  const arow=(p,inner)=>`<div class="arow"><span class="aname">${esc(p)}</span>${inner}</div>`;
+  const arow=(p,inner)=>`<div class="arow"><span class="aname">${pnameHtml(p)}</span>${inner}</div>`;
   const agingSection=aging5.length?`<div class="asec" data-clip="aging"><h4 class="bad">5+ days old</h4>
     ${aging5.map(p=>{
       const g=openLogEntryFor(p);
@@ -2132,6 +2302,10 @@ function paintDash(){
       return arow(p,`<span class="g">${ds.map(o=>esc(o.item)+' ×'+esc(o.qty)).join(', ')}</span>
         <button class="tiny primary" data-ajump="${esc(p)}">Open in Orders</button>`);
     }).join('')}</div>`:'';
+  // v3.0: a delivery location's routes are its own (not the party's) - asked for on their own, first
+  const siteSection=noSiteRoute.length?`<div class="asec" data-clip="nositeroute"><h4 class="bad">Delivery location with no route — set its routes so the order isn't missed</h4>
+    ${noSiteRoute.map(p=>arow(p,`<span class="g">${esc(itemsOf(p)[0]&&itemsOf(p)[0].tab||'')}</span><span class="arpills">${S.routes.map(r=>
+      `<span class="pill click" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>`)).join('')}</div>`:'';
   const routeSection=noRoute.length?`<div class="asec" data-clip="noroute"><h4 class="bad">No route tagged — cannot be planned</h4>
     ${noRoute.map(p=>arow(p,`<span class="arpills">${S.routes.map(r=>
       `<span class="pill click" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>`)).join('')}</div>`:'';
@@ -2187,10 +2361,10 @@ function paintDash(){
 
   ${shortageSection}
 
-  ${(dupPs.length||noRoute.length||noPlace.length||overdue.length||aging5.length||lapsed.length||soon.length)?`<div class="card">
+  ${(dupPs.length||noRoute.length||noSiteRoute.length||noPlace.length||overdue.length||aging5.length||lapsed.length||soon.length)?`<div class="card">
     <h2>Needs your attention</h2>
     <p class="hint" style="margin-top:0">Fixed right here — no need to go find the party elsewhere.</p>
-    ${overdueSection}${soonSection}${lapsedSection}${dupSection}${agingSection}${routeSection}${placeSection}
+    ${siteSection}${overdueSection}${soonSection}${lapsedSection}${dupSection}${agingSection}${routeSection}${placeSection}
   </div>`:''}
 
   <div class="card">
@@ -2399,7 +2573,7 @@ function paintOrders(){
             <select data-tab="${esc(p)}" data-tabdate="${esc(d)}" data-tabold="${esc(blockTab)}" style="width:150px" title="Which sheet tab this batch files under">${tabOptions(blockTab)}</select>
             <span class="oparty">${editing
               ?`<input data-erename="${esc(p)}" value="${esc(p)}" style="font-weight:700;width:auto;min-width:220px">`
-              :esc(p)} ${tags}
+              :pnameHtml(p)} ${tags}
               ${placeLine(p)?`<br><span class="opl">${esc(placeLine(p))}</span>`:''}</span>
             <span class="osum">${its.length} item${its.length>1?'s':''} · ${num(blockWt)} kg</span>
             <span class="oact">
@@ -2632,6 +2806,10 @@ function paintRoutes(){
   let names=Object.keys(S.parties).sort();
   if(f==='today')names=names.filter(n=>today.has(n));
   if(f==='untagged')names=names.filter(n=>!(S.parties[n].routes||[]).length);
+  if(f==='nospot')names=names.filter(n=>today.has(n)&&!pinOf(n));
+  if(f==='sites')names=names.filter(n=>siteOf(n).site);
+  // a party's delivery locations sit right under it
+  names.sort((a,b)=>{ const x=siteOf(a), y=siteOf(b); return x.base.localeCompare(y.base)||(x.site?1:0)-(y.site?1:0)||x.site.localeCompare(y.site); });
   if(q)names=names.filter(n=>n.toLowerCase().includes(q));
 
   const t=$('#partyTable');
@@ -2640,14 +2818,17 @@ function paintRoutes(){
   if(wd){ const cur=wd.value||waDriverPick;
     wd.innerHTML=`<option value="">— pick in WhatsApp —</option>`+S.fleet.drivers.map(d=>`<option value="${esc(d)}"${d===cur?' selected':''}>${esc(d)}${driverPhone(d)?'':' (no number)'}</option>`).join('');
     wd.onchange=()=>{ waDriverPick=wd.value; }; }
-  t.innerHTML='<tr><th style="width:230px">Party</th><th style="width:130px">Place</th><th style="width:90px">Pincode</th><th style="width:170px">Location link</th><th>Routes it can go on</th><th style="width:200px"></th></tr>'+
+  t.innerHTML='<tr><th style="width:230px">Party</th><th style="width:130px">Place</th><th style="width:90px">Pincode</th><th style="width:170px">Location link</th><th style="width:150px">Map spot (exact)</th><th>Routes it can go on</th><th style="width:200px"></th></tr>'+
     names.map(n=>{
-      const rec=S.parties[n], rs=rec.routes||[];
-      return `<tr>
-        <td><input data-rename="${esc(n)}" value="${esc(n)}" style="padding:3px 6px;font-weight:600"> ${today.has(n)?'<span class="pill on">on hand</span>':''}</td>
+      const rec=S.parties[n], rs=rec.routes||[], st=siteOf(n), pin=pinOf(n);
+      return `<tr${st.site?' class="siterow"':''}>
+        <td>${st.site?`<span class="dsite big">↳ Delivery - ${esc(titleCase(st.site))}</span><div class="hint" style="margin:2px 0 0">${esc(st.base)}${rec.homeTab?' · tab '+esc(rec.homeTab):''}</div>`
+          :`<input data-rename="${esc(n)}" value="${esc(n)}" style="padding:3px 6px;font-weight:600">`} ${today.has(n)?'<span class="pill on">on hand</span>':''}</td>
         <td><input data-place="${esc(n)}" value="${esc(rec.place||'')}" style="padding:3px 6px" placeholder="town"></td>
         <td><input data-pin="${esc(n)}" value="${esc(rec.pincode||'')}" style="padding:3px 6px" placeholder="6 digits" inputmode="numeric"></td>
         <td><input data-ploc="${esc(n)}" value="${esc(rec.loc||'')}" style="padding:3px 6px" placeholder="maps.app.goo.gl/…" inputmode="url"></td>
+        <td><input data-pspot="${esc(n)}" value="${esc(rec.pin||'')}" style="padding:3px 6px;width:120px" placeholder="lat, lng or long link" title="Paste the coordinates (long-press the shop in Google Maps → copy) or a long google.com/maps link">
+          ${pin?`<span class="spotok" title="${esc(pin)}">✓ exact</span>`:'<span class="hint" style="margin:0">by name</span>'}</td>
         <td>${S.routes.map(r=>`<span class="pill click ${rs.includes(r)?'on':''}" data-p="${esc(n)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</td>
         <td style="white-space:nowrap"><a href="${mapsUrl(n)}" target="_blank" rel="noopener" class="pill click">map</a>
             <button class="tiny wabtn" data-pwa="${esc(n)}" title="Send this party's location to the driver picked above">WhatsApp</button>
@@ -2666,7 +2847,12 @@ function paintRoutes(){
     else if(d&&!ph) flash(`No number saved for ${d} — pick the chat in WhatsApp`);
   });
   t.querySelectorAll('[data-ploc]').forEach(el=>el.onchange=async()=>{
-    S.parties[el.dataset.ploc].loc=el.value.trim(); await save(); renderLog();});
+    S.parties[el.dataset.ploc].loc=el.value.trim(); await save(); renderLog(); paintRoutes();});
+  // v3.0: exact spot - coordinates, or a long Google Maps link they are read from
+  t.querySelectorAll('[data-pspot]').forEach(el=>el.onchange=async()=>{
+    const v=el.value.trim(), pin=parsePin(v);
+    if(v&&!pin){ flash(/goo\.gl|maps\.app/.test(v)?'That short link has no coordinates in it — open it in Chrome and copy the long link from the address bar, or long-press the shop and copy the numbers':'No coordinates found — paste like 8.7591, 76.9462'); el.value=S.parties[el.dataset.pspot].pin||''; return; }
+    S.parties[el.dataset.pspot].pin=pin; await save(); paintRoutes(); renderPlan(); flash(pin?`Exact spot saved for ${pnameText(el.dataset.pspot)}`:'Map spot cleared');});
   t.querySelectorAll('[data-pin]').forEach(el=>el.onchange=async()=>{
     S.parties[el.dataset.pin].pincode=el.value.trim(); await save();renderOrders();renderPlan();renderDash();});
   t.querySelectorAll('[data-rename]').forEach(el=>el.onchange=()=>
@@ -2700,7 +2886,7 @@ function partyCard(p,laneId,idx,total){
       ${inPool?'':`<span class="drag" title="Drag here to move this party">⠿</span>
         <input class="seqin" data-seq="${laneId}" data-from="${idx}" value="${idx+1}" title="Type a position to move this party there">`}
       <div style="flex:1">
-        <div class="pname">${esc(p)}
+        <div class="pname">${pnameHtml(p)}
           ${dup?' <span class="tag">ON 2 VEHICLES</span>':''}
           ${hasDupLines(its)?' <span class="tag" title="This card holds the same order line twice - check Orders">DUPLICATE</span>':''}
           ${urgent?' <span class="tag">URGENT</span>':''}
@@ -2826,7 +3012,8 @@ function paintPlan(){
           <button class="tiny primary" data-lpull="${l.id}" ${avail&&rts.length?'':'disabled'}>Pull ${avail} waiting</button>
           <button class="tiny ghost" data-lclear="${l.id}" ${l.stops.length?'':'disabled'}>Clear vehicle</button>
         </div>
-        ${l.stops.length?`<div class="lbtns"><button class="tiny" data-lmap="${l.id}" title="Open the stops in delivery order in Google Maps">🗺 Map route${(()=>{ const m=laneMapRoute(l).missing.length; return m?` <span style="color:var(--alert)">(${m} without place)</span>`:''; })()}</button></div>`:''}
+        ${l.stops.length?`<div class="lbtns"><button class="tiny" data-lmap="${l.id}" title="Open the stops in delivery order in Google Maps (by car)">🗺 Map route${(()=>{ const r=laneMapRoute(l), m=r.missing.length, a=r.approx.length; return m?` <span style="color:var(--alert)">(${m} without place)</span>`:a?` <span style="color:#a5670a" title="Found by place name, not an exact spot: ${esc(r.approx.map(pnameText).join(', '))}">(${a} no exact spot)</span>`:''; })()}</button>
+          <button class="tiny ghost" data-lroute="${l.id}" title="Paste a Google Maps route link from Chrome to use its stop order and spots">📋 Route from Maps</button></div>`:''}
       </div>
       <div class="drop" data-lane="${l.id}">
         ${l.stops.length?l.stops.map((s,i)=>partyCard(s.party,l.id,i,l.stops.length)).join('')
@@ -3104,7 +3291,7 @@ function paintOut(){
       ${tabOrder.map(t=>`<div style="margin-top:10px">
         <div style="font-weight:700;font-size:13px">${esc(t)} <span class="hint" style="font-weight:400">(${byTab[t].length})</span></div>
         <ul style="margin:4px 0 0;padding-left:20px;columns:2;column-gap:24px">
-          ${byTab[t].map(p=>`<li style="break-inside:avoid;margin-bottom:4px">${esc(p)}</li>`).join('')}
+          ${byTab[t].map(p=>`<li style="break-inside:avoid;margin-bottom:4px">${pnameHtml(p)}</li>`).join('')}
         </ul></div>`).join('')}
       <p class="hint">Go back to step 3 and place them, or remove them from Orders.</p>
     </div></div>`;
@@ -3118,7 +3305,7 @@ function paintOut(){
     const w=laneWeight(l);
     let rows=`<tr class="title"><td></td><td colspan="4"><input data-title="${l.id}" value="${esc(laneTitle(l))}" style="font-weight:700;border:none;background:transparent;padding:2px"></td></tr>`;
     stops.forEach((s,i)=>{
-      rows+=`<tr class="pty"><td class="num">${i+1}</td><td colspan="4">${esc(s.party)}${s.urgent?' <span class="tag">URGENT</span>':''}${holdTag(stopItems(s))?' '+holdTag(stopItems(s)):''}${dueTagFor(stopItems(s))?' '+dueTagFor(stopItems(s)):''}${placeLine(s.party)?`<span class="ponly"> — ${esc(placeLine(s.party))}</span>`:''}</td></tr>`;
+      rows+=`<tr class="pty"><td class="num">${i+1}</td><td colspan="4">${pnameHtml(s.party)}${s.urgent?' <span class="tag">URGENT</span>':''}${holdTag(stopItems(s))?' '+holdTag(stopItems(s)):''}${dueTagFor(stopItems(s))?' '+dueTagFor(stopItems(s)):''}${placeLine(s.party)?`<span class="ponly"> — ${esc(placeLine(s.party))}</span>`:''}</td></tr>`;
       mergedItems(stopLines(s)).forEach(o=>{
         const short=isItemShort(o.item);
         const nk=noteKeyFor(o.ids);
@@ -3135,6 +3322,7 @@ function paintOut(){
         <h2 style="flex:1 1 auto">Plan ${idx+1} — ${esc(l.name)} — ${stops.length} stops · ${num(w)} kg${w>l.cap?' · <span style="color:var(--alert)">over capacity</span>':''}</h2>
         <div style="flex:0 0 auto;display:flex;gap:6px">
           <button class="tiny" data-lmap="${l.id}">🗺 Map route</button>
+          <button class="tiny ghost" data-lroute="${l.id}">📋 Route from Maps</button>
           <button class="tiny" data-copylane="${l.id}">Copy Plan ${idx+1}</button>
           <button class="tiny" data-xlsxlane="${l.id}">Download Excel</button>
           <button class="tiny primary" data-addlanelog="${l.id}">Add to log</button>
@@ -3190,7 +3378,8 @@ function laneTsv(l){
   const stops=laneLoadingStops(l), out=[];
   out.push(['',laneTitle(l),'','',''].join('\t'));
   stops.forEach((s,i)=>{
-    out.push([i+1,s.party,'','',''].join('\t'));
+    out.push([i+1,siteOf(s.party).base,'','',''].join('\t'));
+    if(siteLine(s.party)) out.push(['',siteLine(s.party),'','',''].join('\t'));
     mergedItems(stopLines(s)).forEach(o=>out.push(['',itemWithNote(o.item,o.ids),o.qty,o.unit,weightCell(o)].join('\t')));
     if(i<stops.length-1) out.push(['','','','',''].join('\t'));
   });
@@ -3214,7 +3403,8 @@ function laneRows(l){
   const stops=laneLoadingStops(l), out=[];
   out.push({bold:true,c:['',laneTitle(l),'','','']});
   stops.forEach((s,i)=>{
-    out.push({bold:true,c:[i+1,s.party,'','','']});
+    out.push({bold:true,c:[i+1,siteOf(s.party).base,'','','']});
+    if(siteLine(s.party)) out.push({bold:true,c:['',siteLine(s.party),'','','']});
     mergedItems(stopLines(s)).forEach(o=>{
       const q=parseQty(o.qty), u=String(o.unit??'').trim();
       const f=S.settings&&S.settings.tsvFormula&&q.u===''&&q.n>0&&/^\d+(\.\d+)?$/.test(u)&&String(o.qty).trim()===String(q.n);
@@ -3622,7 +3812,7 @@ function paintLog(){
           </div>`;
       }).join('');
       return `<div class="lparty">
-        <div class="lphead"><span>${esc(s.party)} <span class="g" style="font-weight:400">· ${num(Math.round(kw.byParty[s.party]||0))} kg gone</span>${s.added?` <span class="tag added" title="Added to this vehicle after it was logged">ADDED ${esc(shortDate(s.added))}</span>`:''}</span>
+        <div class="lphead"><span>${pnameHtml(s.party)} <span class="g" style="font-weight:400">· ${num(Math.round(kw.byParty[s.party]||0))} kg gone</span>${s.added?` <span class="tag added" title="Added to this vehicle after it was logged">ADDED ${esc(shortDate(s.added))}</span>`:''}</span>
           <span style="margin-left:auto;display:flex;gap:5px">
             <button class="tiny ghost" data-pfull="${esc(s.party)}" data-g="${g.id}">Whole party stayed</button>
             <button class="tiny ghost" data-pzero="${esc(s.party)}" data-g="${g.id}">Whole party delivered</button>
@@ -4274,11 +4464,11 @@ function tripHtml(t,showParty,noDate){
   const g=t.g, pct=t.cap?Math.round(t.kg/t.cap*100):null;
   const byP=new Map(); tripParties(t).forEach(p=>byP.set(p,[])); t.lines.forEach(l=>byP.get(l.party).push(l));
   if(g.godown) return `<div class="rtrip"><div class="rh">${noDate?'':esc(t.date||'no date')+' · '}<b>Godown collection</b> · ${num(+t.kg.toFixed(1))} kg</div>
-    ${[...byP].filter(([p,ls])=>ls.length).map(([p,ls])=>`<div class="ri">${showParty?`<b>${esc(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
+    ${[...byP].filter(([p,ls])=>ls.length).map(([p,ls])=>`<div class="ri">${showParty?`<b>${pnameHtml(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
   return `<div class="rtrip"><div class="rh">${noDate?'':esc(t.date||'no date')+' · '}<b>${esc(g.vehicleNo||g.vehicle||'vehicle')}</b>${g.vehicleNo&&g.vehicle?` <span class="hint">(${esc(g.vehicle)})</span>`:!g.vehicleNo?' <span class="hint">(no number)</span>':''}
     · Driver: ${g.driver?esc(g.driver):'<span class="hint">not set</span>'}
     · ${num(+t.kg.toFixed(1))} kg${pct!=null?` <span class="hint">(${pct}% of ${num(t.cap)})</span>`:''}${t.conf?'':' <span class="tag unconf">NOT CONFIRMED</span>'}</div>
-    ${[...byP].filter(([p,ls])=>ls.length).map(([p,ls])=>`<div class="ri">${showParty?`<b>${esc(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
+    ${[...byP].filter(([p,ls])=>ls.length).map(([p,ls])=>`<div class="ri">${showParty?`<b>${pnameHtml(p)}</b> — `:''}${ls.map(l=>`${esc(l.item)} ×${esc(l.qty)}`).join(', ')}</div>`).join('')}</div>`;
 }
 let repLast=[];
 let repSub='vehicle'; // Vehicle & driver trips: which way the trips are grouped
@@ -4566,7 +4756,7 @@ function paintUploads(){
         ${lines.length?`<table>
           <tr><th>Party</th><th>Item</th><th class="n">Qty</th><th class="n">Wt</th><th>Order date</th><th>Now</th></tr>
           ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr>
-            <td>${i?'':'<b>'+esc(p)+'</b>'}</td><td>${esc(l.item)}</td><td class="n mono">${esc(l.qty)}</td>
+            <td>${i?'':'<b>'+pnameHtml(p)+'</b>'}</td><td>${esc(l.item)}</td><td class="n mono">${esc(l.qty)}</td>
             <td class="n mono">${esc(l.weight)}</td><td class="mono">${esc(l.date||'—')}</td><td>${where(l)}</td></tr>`).join('')).join('')}
         </table>`:''}
         ${skipped.length?`<p class="hint" style="margin:10px 0 4px;color:var(--alert);font-weight:700">Skipped as duplicates — not added</p>
@@ -4731,6 +4921,9 @@ function paintMasters(){
   $('#tabList').querySelectorAll('[data-tabup]').forEach(b=>b.onclick=async()=>{
     const i=+b.dataset.tabup; [S.tabs[i-1],S.tabs[i]]=[S.tabs[i],S.tabs[i-1]]; await save(); renderAll(); });
   $('#mapStart').value=S.settings.mapStart||'';
+  { const dl=$('#distList'); if(dl){ S.districts=S.districts||{};
+    dl.innerHTML=S.routes.length?S.routes.map(r=>`<label class="distrow"><span>${esc(r)}</span><input data-dist="${esc(r)}" value="${esc(S.districts[r]||'')}" placeholder="district"></label>`).join(''):'<span class="hint">No routes yet.</span>';
+    dl.querySelectorAll('[data-dist]').forEach(el=>el.onchange=async()=>{ const v=el.value.trim(); if(v) S.districts[el.dataset.dist]=v; else delete S.districts[el.dataset.dist]; await save(); flash('District saved'); }); } }
   $('#mapRegion').value=S.settings.mapRegion||'';
   $('#mapReturn').checked=!!S.settings.mapReturn;
 }
@@ -4759,6 +4952,8 @@ function commitPasteRows(rows){
       weight:r.weight,date:r.date,tab:r.tab,addedOn:today10(),...(r.remark?{remark:r.remark}:{})};
     S.orders.push(o); added.push(o);
     const rec=S.parties[r.party]=S.parties[r.party]||{routes:[],hold:false,dueDate:'',place:'',pincode:''};
+    if(siteOf(r.party).site){ if(r.tab) rec.homeTab=r.tab; // a delivery location remembers its tab
+      const b=siteOf(r.party).base; if(!S.parties[b]) S.parties[b]={routes:[],hold:false,dueDate:'',place:'',pincode:''}; } // and its party is in the master too
     if(r.route) splitRoutes(r.route).forEach(rt=>{
       if(!S.routes.includes(rt))S.routes.push(rt);
       if(!rec.routes.includes(rt))rec.routes.push(rt);
@@ -4861,7 +5056,7 @@ async function addOrderRows(rows,tab,note,noteEl,opts){
         <th>Party</th><th>Item</th><th class="n">Qty</th><th>Date</th><th>Why</th></tr>
       ${[...byParty].map(([p,ds])=>ds.map((d,i)=>`<tr class="duppick" data-di="${dupes.indexOf(d)}">
         <td><input type="checkbox" class="chk" data-dtick="${dupes.indexOf(d)}" title="Tick to add this line anyway"></td>
-        <td>${i?'':'<b>'+esc(p)+'</b>'}</td><td>${esc(d.item)}</td><td class="n">${esc(d.qty)}</td>
+        <td>${i?'':'<b>'+pnameHtml(p)+'</b>'}</td><td>${esc(d.item)}</td><td class="n">${esc(d.qty)}</td>
         <td class="mono">${esc(d.date||'—')}</td><td class="dupwhy">${esc(d.why)}</td></tr>`).join('')).join('')}
     </table>
     <p class="hint" style="margin:0 0 8px">Tick any line that is a genuine repeat order to add it too — unticked lines are skipped.</p>
@@ -5123,6 +5318,8 @@ function manPartyChanged(){
   // tapping a route pill right after typing isn't swallowed by a redraw
   if(p===manLastParty) return; manLastParty=p;
   manRoutes.clear();
+  $('#manSiteList').innerHTML=p?sitesOf(p).map(k=>`<option value="${esc(titleCase(siteOf(k).site))}">`).join(''):'';
+  if($('#manSite').value.trim()){ manLastSite=null; manSiteChanged(); return; }
   if(!p){ note.textContent=''; manPaintRoutes(); return; }
   const rec=S.parties[p];
   if(rec){
@@ -5130,6 +5327,22 @@ function manPartyChanged(){
     const t=partyTab(p); if(t&&sheetTabs().includes(t)) $('#manTab').value=t;
     note.textContent=`Saved party${(rec.routes||[]).length?' — routes filled in':' — no routes saved yet, pick them below'}${t?' · usually '+t:''}.`;
   } else note.textContent='New party — check the name matches Tally, then pick its routes.';
+  manPaintRoutes();
+}
+// v3.0: the order goes to one of the party's sites - its own tab and routes, remembered for next time
+let manLastSite=null;
+function manSiteChanged(){
+  const p=manPartyName($('#manParty').value), site=normName($('#manSite').value), note=$('#manPartyNote');
+  const k=site+'|'+p; if(k===manLastSite) return; manLastSite=k;
+  if(!site){ manLastParty=null; manPartyChanged(); return; }
+  if(!p){ note.textContent='Type the party name first.'; return; }
+  manRoutes.clear();
+  const key=siteKey(p,site), rec=S.parties[key];
+  if(rec){
+    (rec.routes||[]).forEach(r=>manRoutes.add(r));
+    if(rec.homeTab&&sheetTabs().includes(rec.homeTab)) $('#manTab').value=rec.homeTab;
+    note.innerHTML=`Delivery to <b>${esc(titleCase(site))}</b> — saved location${(rec.routes||[]).length?': its routes':''}${rec.homeTab?' and tab '+esc(rec.homeTab):''} filled in.`;
+  } else note.innerHTML=`New delivery location <b>${esc(titleCase(site))}</b> for ${esc(p)} — pick the <b>tab of that place</b> and its routes. They are remembered for next time.`;
   manPaintRoutes();
 }
 function paintManual(){
@@ -5140,7 +5353,7 @@ function paintManual(){
   const d=$('#manDate'); maskDateInput(d); if(!d.value) d.value=today10();
   const key=Object.keys(S.parties).length+'|'+S.orders.length+'|'+S.log.length;
   if(key!==manListKey){ manListKey=key;
-    $('#manPartyList').innerHTML=Object.keys(S.parties).sort().map(p=>`<option value="${esc(p)}">`).join('');
+    $('#manPartyList').innerHTML=Object.keys(S.parties).filter(p=>!siteOf(p).site).sort().map(p=>`<option value="${esc(p)}">`).join('');
     $('#manItemList').innerHTML=[...manKnownUnits().values()].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}))
       .map(x=>`<option value="${esc(x.name)}"${x.unit?` label="unit wt ${esc(x.unit)}"`:''}>`).join('');
   }
@@ -5148,7 +5361,7 @@ function paintManual(){
   manPaintRoutes(); manPaintTotal();
 }
 function manClear(keep){
-  $('#manParty').value=''; $('#manPartyNote').textContent=''; manRoutes.clear(); manLastParty='';
+  $('#manParty').value=''; $('#manSite').value=''; $('#manPartyNote').textContent=''; manRoutes.clear(); manLastParty=''; manLastSite=null;
   $('#manItems').innerHTML=''; manAddRow(); manAddRow(); manAddRow();
   if(!keep) $('#manNote').textContent='';
   manPaintRoutes(); manPaintTotal();
@@ -5159,14 +5372,17 @@ $('#manToggle').onclick=()=>{
   if(open){ paintManual(); $('#manParty').focus(); }
 };
 $('#manParty').onchange=manPartyChanged;
+$('#manSite').onchange=manSiteChanged;
 $('#manAddLine').onclick=()=>manAddRow(true);
 $('#manClear').onclick=()=>manClear();
 $('#manSave').onclick=async()=>{
-  const note=$('#manNote'), tab=$('#manTab').value, party=manPartyName($('#manParty').value);
+  const note=$('#manNote'), tab=$('#manTab').value, base=manPartyName($('#manParty').value), site=normName($('#manSite').value);
+  const party=base?siteKey(base,site):'';
   const dRaw=$('#manDate').value.trim(), iso=parseDMY(dRaw);
   if(sheetTabs().length&&!tab){ note.textContent='Pick the sheet tab first.'; return; }
   if(!iso){ note.textContent='Enter the order date as dd-mm-yyyy.'; $('#manDate').focus(); return; }
   if(!party){ note.textContent='Type the party name.'; $('#manParty').focus(); return; }
+  if(site&&!manRoutes.size){ note.textContent=`Pick the routes for the delivery location ${titleCase(site)} — it would be missed otherwise.`; return; }
   const rows=[]; let bad='';
   $$('#manItems [data-manrow]').forEach(r=>{
     const v=k=>r.querySelector(`[data-mf="${k}"]`).value.trim();
@@ -5178,7 +5394,7 @@ $('#manSave').onclick=async()=>{
   });
   if(bad){ note.textContent=bad; return; }
   if(!rows.length){ note.textContent='Add at least one item with its qty.'; return; }
-  await addOrderRows(rows,tab,`${party}:`,note,{src:'typed',
+  await addOrderRows(rows,tab,`${pnameText(party)}:`,note,{src:'typed',
     onAdded:()=>manClear(true), cancelMsg:'Cancelled — nothing added. The order is still in the form.'});
 };
 
@@ -5349,6 +5565,8 @@ $('#addVeh').onclick=async()=>{
 $('#resetPlan').onclick=()=>armConfirm($('#resetPlan'),'Clear the plan',async()=>{
   S.plan.lanes=[];await save();renderPlan();flash('Plan cleared');});
 document.addEventListener('click',async e=>{
+  const rl=e.target.closest('[data-lroute]');
+  if(rl){ openRoutePanel(rl.dataset.lroute); return; }
   const mp=e.target.closest('[data-lmap]');
   if(mp){ const l=S.plan.lanes.find(x=>x.id===mp.dataset.lmap); if(l) openLaneMap(l); return; }
   const rev=e.target.closest('[data-lrev]');
@@ -5567,7 +5785,7 @@ function stable(v){
   return JSON.stringify(v===undefined?null:v);
 }
 const same=(a,b)=>stable(a)===stable(b);
-const PARTY_SHEET_FIELDS=['routes','place','pincode','loc'];
+const PARTY_SHEET_FIELDS=['routes','place','pincode','loc','pin'];
 const ordKey=o=>o?stable({tab:o.tab||'',date:o.date||'',party:o.party,item:o.item,qty:str(o.qty),unit:str(o.unit),weight:str(o.weight),remark:str(o.remark)}):'-';
 
 // this device's data in the shape the sheet stores
@@ -5578,7 +5796,7 @@ function toModel(){
     item:str(o.item),qty:str(o.qty),unit:str(o.unit),weight:str(o.weight),remark:str(o.remark)}));
   const parties={}, partyExtra={};
   Object.entries(S.parties).forEach(([n,p])=>{
-    parties[n]={routes:[...(p.routes||[])],place:str(p.place),pincode:str(p.pincode),loc:str(p.loc)};
+    parties[n]={routes:[...(p.routes||[])],place:str(p.place),pincode:str(p.pincode),loc:str(p.loc),pin:str(p.pin)};
     const x={...p}; PARTY_SHEET_FIELDS.forEach(k=>delete x[k]);
     if(Object.keys(x).length) partyExtra[n]=x;
   });
@@ -5588,7 +5806,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],
+  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -5647,7 +5865,7 @@ function m3ids(b,l,r,keyFn,name){ b=b||[]; l=l||[]; r=r||[]; keyFn=keyFn||stable
 const FIELD_NAMES={qty:'qty',unit:'unit wt',weight:'total wt',remark:'remark',date:'date',tab:'sheet tab',item:'item',party:'party',
   driver:'driver',vehicleNo:'vehicle no',vehicle:'vehicle',title:'title',qtyGone:'qty gone',notes:'line note',stops:'parties / lines on the vehicle',
   resolved:'applied / reopened',snapshot:'applied lines',stockDelta:'stock taken off',appliedAt:'applied time',incKeep:'extra-qty choice',laneSnap:'Build Plan copy',
-  routes:'routes',place:'place',pincode:'pincode',loc:'location link',holdInfo:'hold',due:'due date',reason:'reason'};
+  routes:'routes',place:'place',pincode:'pincode',loc:'location link',pin:'map spot',homeTab:'tab',holdInfo:'hold',due:'due date',reason:'reason'};
 const fieldName=f=>FIELD_NAMES[f]||f;
 function mergeModels(b,l,r){
   b=b||{orders:[],parties:{},masters:{},data:{}};
@@ -5676,7 +5894,7 @@ function mergeModels(b,l,r){
     combos:m3(bm.combos,lm.combos,rm.combos,'Route combinations')||[], settings:m3map(bm.settings,lm.settings,rm.settings,'Setting')};
   const bd=b.data||{}, ld=l.data||{}, rd=r.data||{};
   const data={};
-  const MAPS={dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date'};
+  const MAPS={dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date',districts:'District of route'};
   new Set([...Object.keys(ld),...Object.keys(rd)]).forEach(k=>{
     if(k==='cancels'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||[]; // older versions leave it out - never a wipe
     else if(k==='log') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable,logName);
@@ -5710,8 +5928,8 @@ function applyModel(m,fromSheet){
   S.orders=(m.orders||[]).map(o=>({id:o.id,party:o.party,item:o.item,qty:o.qty,unit:o.unit,weight:o.weight,
     date:o.date,tab:o.tab||'',addedOn:meta[o.id]||t,...(str(o.remark)?{remark:str(o.remark)}:{})})).concat(blanks);
   const px=d.partyExtra||{}, P={};
-  Object.entries(m.parties||{}).forEach(([n,p])=>{ P[n]={...(px[n]||{}),routes:[...(p.routes||[])],place:p.place||'',pincode:p.pincode||'',loc:p.loc||''}; });
-  Object.keys(px).forEach(n=>{ if(!P[n]) P[n]={routes:[],place:'',pincode:'',loc:'',...px[n]}; });
+  Object.entries(m.parties||{}).forEach(([n,p])=>{ P[n]={...(px[n]||{}),routes:[...(p.routes||[])],place:p.place||'',pincode:p.pincode||'',loc:p.loc||'',pin:p.pin||''}; });
+  Object.keys(px).forEach(n=>{ if(!P[n]) P[n]={routes:[],place:'',pincode:'',loc:'',pin:'',...px[n]}; });
   S.parties=P;
   const ms=m.masters||{};
   S.routes=[...(ms.routes||[])]; S.tabs=[...(ms.tabs||[])];
@@ -5729,6 +5947,7 @@ function applyModel(m,fromSheet){
   S.summaryPhone=d.summaryPhone||'';
   S.sheetLink=d.sheetLink||'';
   if(Array.isArray(d.cancels)) S.cancels=d.cancels; else if(!S.cancels) S.cancels=[]; // older versions don't send it
+  if(d.districts&&typeof d.districts==='object') S.districts=d.districts; else if(!S.districts) S.districts={};
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
   S.plan=S.plan||{poolFilter:[],lanes:[]}; S.plan.lanes=S.plan.lanes||[]; S.plan.poolFilter=S.plan.poolFilter||[];
