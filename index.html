@@ -156,6 +156,23 @@ nav button.on{background:#fff;color:var(--green-dk);border-color:#fff}
 .st.disp{background:#fff3da;color:#a5670a} .st.part{background:#f1e9ff;color:var(--hold)}
 .st.done{background:#e3f5ea;color:var(--ok)} .st.del{background:#eef1f4;color:var(--mute)}
 .st.skip{background:#fdeeee;color:var(--alert)}
+/* v3.1: Find missing orders + vehicle sent outside the tool */
+.misstab{width:100%;border-collapse:collapse;font-size:13px}
+.misstab th{text-align:left;font-size:11px;color:var(--mute);font-weight:700;padding:4px 6px;border-bottom:1px solid var(--edge)}
+.misstab td{padding:4px 6px;border-bottom:1px solid var(--edge);vertical-align:middle}
+.misstab .n{text-align:right}
+.outform{margin-top:10px;border:1px solid var(--edge);border-radius:var(--r);padding:10px 12px;background:var(--panel)}
+.ofparties{margin-top:8px;max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.ofp{border:1px solid var(--edge);border-radius:8px;padding:5px 8px}
+.ofp.on{border-color:var(--accent,#1b7a45);background:#f3faf5}
+.ofph{display:flex;gap:6px;align-items:center;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0}
+.ofph .g,.lpi .g{color:var(--mute);font-weight:400}
+/* v3.2: exact spots one by one */
+.spotq{border:1px solid var(--edge);border-radius:var(--r);padding:10px 12px;background:var(--panel);margin-bottom:4px}
+.sqbox{margin-top:10px;border-top:1px solid var(--edge);padding-top:10px}
+.sqname{font-size:15px;font-weight:700}
+.sqmsg{margin:8px 0 0;font-size:13px}
+.sqmsg.ok{color:var(--ok)} .sqmsg.bad{color:var(--alert)}
 /* clear data */
 .clrrow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eef2f7;flex-wrap:wrap}
 .clrrow:last-child{border-bottom:none}
@@ -498,6 +515,7 @@ tr.siterow td{background:rgba(31,95,168,.04)}
   .manrow [data-mdel]{grid-column:4;grid-row:1}
   .manrow [data-mf="remark"]{grid-column:1 / 5}
 }
+@media (max-width:640px){ .misstab{display:block;overflow-x:auto;white-space:nowrap} .outform{padding:8px} }
 </style>
 </head>
 <body>
@@ -521,12 +539,12 @@ tr.siterow td{background:rgba(31,95,168,.04)}
   <!-- the menu folds away behind ☰ so the header stays one short line on any screen -->
   <nav id="mainMenu" aria-hidden="true">
     <button data-v="dash" class="on mdash">Dashboard</button>
+    <button data-v="orders" class="mdash">Orders</button>
     <div class="mgroup">
       <div class="mglabel">Logistics</div>
-      <button data-v="orders">1 · Add orders</button>
-      <button data-v="plan">2 · Build plan</button>
-      <button data-v="out">3 · Final plan</button>
-      <button data-v="log">4 · Plan log</button>
+      <button data-v="plan">1 · Build plan</button>
+      <button data-v="out">2 · Final plan</button>
+      <button data-v="log">3 · Plan log</button>
     </div>
     <div class="mgroup mreport">
       <div class="mglabel">Reports</div>
@@ -672,7 +690,7 @@ tr.siterow td{background:rgba(31,95,168,.04)}
   <div class="card">
     <h2>Order to Sheet on this computer</h2>
     <p class="hint" style="margin-top:0">Order to Sheet (5.6+) opened in this same browser puts finished readings in a tray; they show up at the top of
-      <a href="#" data-goto="orders">Add orders</a> to check and add. Nothing is added without you.</p>
+      <a href="#" data-goto="orders">Orders</a> to check and add. Nothing is added without you.</p>
     <p class="hint" id="otsSeen" style="margin:4px 0 0"></p>
   </div>
 
@@ -790,6 +808,7 @@ tr.siterow td{background:rgba(31,95,168,.04)}
           <option value="today">Only parties with orders on hand</option>
           <option value="untagged">Only parties with no route</option>
           <option value="nospot">Only parties on hand with no exact map spot</option>
+          <option value="linknospot">Only parties with a map link but no exact spot</option>
           <option value="sites">Only delivery locations</option>
         </select></div>
     </div>
@@ -799,6 +818,29 @@ tr.siterow td{background:rgba(31,95,168,.04)}
       <div style="flex:1 1 200px"><span class="hint" style="margin:0">Then tap <b>WhatsApp</b> on a party — its name, place and location go to that driver.</span></div>
     </div>
     <div class="scroll"><table id="partyTable"></table></div>
+  </div>
+
+  <div class="card" id="spotCard">
+    <h2>Exact spots from map links <span class="hint" style="font-weight:400">(Map spot finder)</span></h2>
+    <p class="hint" style="margin-top:0">A short <b>maps.app.goo.gl</b> link has no coordinates in it, so this tool can't read it. The separate
+      <b>Map spot finder</b> sheet can: copy the links here, paste them into the finder, press <b>Find spots</b>, then copy its rows back here.
+      Nothing is saved until you press <b>Save the ticked spots</b>. The finder never touches the Logistics sheet, so syncing is not affected.</p>
+    <div class="spotq">
+      <div class="row" style="align-items:center;gap:8px">
+        <div style="flex:0 0 auto"><button class="primary" id="spotQStart">Find exact spots one by one</button></div>
+        <div style="flex:1 1 220px"><span class="hint" style="margin:0">Best for phone-shared links (<b>…?g_st=…</b>), which the finder can't read: <b>Open map</b> → when the
+          map has loaded press <b>Ctrl+L</b>, <b>Ctrl+C</b> → come back → <b>Take from clipboard</b>. The spot is read from the long link and saved; the next party comes up.</span></div>
+      </div>
+      <div id="spotQ"></div>
+    </div>
+    <div class="row" style="align-items:flex-end;gap:8px;margin-top:12px">
+      <div style="flex:0 0 auto"><button class="tiny" id="spotCopy">Copy the links with no exact spot</button></div>
+      <div style="flex:1 1 200px"><span class="hint" id="spotCopyNote" style="margin:0"></span></div>
+    </div>
+    <label style="margin-top:10px">Paste the finder's rows here (party | link | spot)</label>
+    <textarea id="spotPaste" style="min-height:90px" placeholder="PARTY NAME	https://maps.app.goo.gl/…	9.981234,76.287654"></textarea>
+    <div class="row" style="margin-top:8px"><div style="flex:0 0 auto"><button class="tiny" id="spotCheck">Check these spots</button></div></div>
+    <div id="spotBody"></div>
   </div>
 
 </section>
@@ -895,6 +937,19 @@ tr.siterow td{background:rgba(31,95,168,.04)}
     <p class="hint">Copies in sheet layout: a <b>date | party</b> row, then a <b>blank | item | qty</b> row for each item.
       "Copy all shown" goes oldest upload first and follows the search and filters above. Skipped duplicates are not included.</p>
   </div>
+  <div class="card" id="missCard">
+    <h2>Find missing orders</h2>
+    <p class="hint" style="margin-top:0">Lines that came in through this tool and are no longer in Orders, with no record anywhere:
+      not on a Plan log vehicle, not cancelled, and not deleted here in the tool. Usually rows deleted straight from the
+      Google Sheet. Only lines in the Upload log can be checked — a row typed into the sheet by hand and deleted again leaves nothing to find.</p>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:0 0 auto"><label>Uploaded in</label><select id="missPeriod" style="width:auto">
+        <option value="3">Last 3 days</option><option value="7" selected>Last 7 days</option><option value="14">Last 14 days</option>
+        <option value="30">Last 30 days</option><option value="0">Everything in the Upload log</option></select></div>
+      <div style="flex:0 0 auto"><button class="primary" id="missFind">Find missing orders</button></div>
+    </div>
+    <div id="missBody"></div>
+  </div>
   <div id="upBody"></div>
 </section>
 
@@ -961,6 +1016,8 @@ tr.siterow td{background:rgba(31,95,168,.04)}
           <option value="resolved">Cleared</option>
         </select></div>
     </div>
+    <div style="margin-top:10px"><button class="tiny" id="outOpen">+ Record a vehicle sent outside the tool</button></div>
+    <div id="outBox"></div>
   </div>
   <div id="logBody"></div>
 </section>
@@ -1174,7 +1231,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.0', APP_BUILD='17-10-2026';
+const APP_VERSION='3.2', APP_BUILD='19-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1884,6 +1941,9 @@ function driverText(g){
 function mapsUrl(p){
   const r=S.parties[p]||{}, pin=pinOf(p);
   if(pin) return pinUrl(pin);
+  // v3.1: a saved link with no coordinates readable in it (a short maps.app.goo.gl link) is opened
+  // as it is - Google takes it to the shop. Only with no link at all is the name searched.
+  if(/^https?:\/\//i.test(String(r.loc||'').trim())) return String(r.loc).trim();
   return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([siteOf(p).site?titleCase(siteOf(p).site):siteOf(p).base,r.place,r.pincode,districtOf(p)].filter(Boolean).join(' '));
 }
 
@@ -2485,7 +2545,7 @@ function paintOrders(){
     });
   });
   if(!S.orders.length){
-    boxes.forEach(b=>b.innerHTML='<p class="hint">No orders yet. Go to Add orders, pick the sheet tab, and paste a batch.</p>');
+    boxes.forEach(b=>b.innerHTML='<p class="hint">No orders yet. Go to Orders, pick the sheet tab, and paste a batch.</p>');
     setCount(''); renderGuard(); return;
   }
   const parties=partiesToday();
@@ -2645,7 +2705,7 @@ function wireOrderBox(box){
   });
   box.querySelectorAll('[data-odel]').forEach(b=>b.onclick=()=>armConfirm(b,'Remove this batch',async()=>{
     const p=b.dataset.odel, d=b.dataset.odeldate, t=b.dataset.odeltab;
-    S.orders=S.orders.filter(o=>!(o.party===p && (o.date||'')===d && (o.tab||'')===t));
+    dropOrders(o=>o.party===p && (o.date||'')===d && (o.tab||'')===t);
     if(!itemsOf(p).length){ // nothing left for this party at all - clear it off any vehicle too
       S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>s.party!==p));
       editingParties.delete(p);
@@ -2694,14 +2754,14 @@ function wireOrderBox(box){
     o[el.dataset.efield]=el.value.trim();
     await save();renderOrders();renderPlan();});
   box.querySelectorAll('[data-dupdel]').forEach(b=>b.onclick=()=>armConfirm(b,'Yes, remove copy',async()=>{
-    S.orders=S.orders.filter(o=>o.id!==b.dataset.dupdel);
+    dropOrders(o=>o.id===b.dataset.dupdel);
     await save();renderAll();flash('Duplicate line removed');}));
   box.querySelectorAll('[data-dupok]').forEach(b=>b.onclick=async()=>{
     const k=b.dataset.dupok;
     S.dupOk[k]=S.orders.filter(o=>dupKey(o)===k).length;
     await save();renderAll();flash('Kept — no longer flagged as a duplicate');});
   box.querySelectorAll('[data-edelitem]').forEach(b=>b.onclick=async()=>{
-    S.orders=S.orders.filter(o=>o.id!==b.dataset.edelitem);
+    dropOrders(o=>o.id===b.dataset.edelitem);
     await save();renderOrders();renderPlan();});
   box.querySelectorAll('[data-eadd]').forEach(b=>b.onclick=async()=>{
     const p=b.dataset.eadd, d=b.dataset.eadddate, t=b.dataset.eaddtab;
@@ -2722,7 +2782,7 @@ function sheetUrl(){ return S.sheetLink||(syncCfg&&syncCfg.sheetUrl)||''; }
 function paintSheetLinkNote(){
   const n=$('#sheetLinkNote'); if(!n) return; const auto=syncCfg&&syncCfg.sheetUrl;
   n.innerHTML=auto?`Found automatically from the connected sheet: <a href="${esc(auto)}" target="_blank" rel="noopener">open it ↗</a>. Leave this box empty unless you want the link to go somewhere else.`
-    :'For the "Open the Google Sheet" link on Add orders. Filled in automatically once the sheet script is 2.1.1 or newer; or paste the link here.';
+    :'For the "Open the Google Sheet" link on Orders. Filled in automatically once the sheet script is 2.1.1 or newer; or paste the link here.';
 }
 function paintRoutes(){
   { const i=$('#sheetLink'); if(i&&document.activeElement!==i) i.value=S.sheetLink||''; }
@@ -2807,6 +2867,7 @@ function paintRoutes(){
   if(f==='today')names=names.filter(n=>today.has(n));
   if(f==='untagged')names=names.filter(n=>!(S.parties[n].routes||[]).length);
   if(f==='nospot')names=names.filter(n=>today.has(n)&&!pinOf(n));
+  if(f==='linknospot')names=names.filter(n=>str(S.parties[n].loc)&&!pinOf(n));
   if(f==='sites')names=names.filter(n=>siteOf(n).site);
   // a party's delivery locations sit right under it
   names.sort((a,b)=>{ const x=siteOf(a), y=siteOf(b); return x.base.localeCompare(y.base)||(x.site?1:0)-(y.site?1:0)||x.site.localeCompare(y.site); });
@@ -2818,7 +2879,7 @@ function paintRoutes(){
   if(wd){ const cur=wd.value||waDriverPick;
     wd.innerHTML=`<option value="">— pick in WhatsApp —</option>`+S.fleet.drivers.map(d=>`<option value="${esc(d)}"${d===cur?' selected':''}>${esc(d)}${driverPhone(d)?'':' (no number)'}</option>`).join('');
     wd.onchange=()=>{ waDriverPick=wd.value; }; }
-  t.innerHTML='<tr><th style="width:230px">Party</th><th style="width:130px">Place</th><th style="width:90px">Pincode</th><th style="width:170px">Location link</th><th style="width:150px">Map spot (exact)</th><th>Routes it can go on</th><th style="width:200px"></th></tr>'+
+  t.innerHTML='<tr><th style="width:230px">Party</th><th style="width:130px">Place</th><th style="width:90px">Pincode</th><th style="width:230px">Map link or spot</th><th>Routes it can go on</th><th style="width:200px"></th></tr>'+
     names.map(n=>{
       const rec=S.parties[n], rs=rec.routes||[], st=siteOf(n), pin=pinOf(n);
       return `<tr${st.site?' class="siterow"':''}>
@@ -2826,9 +2887,9 @@ function paintRoutes(){
           :`<input data-rename="${esc(n)}" value="${esc(n)}" style="padding:3px 6px;font-weight:600">`} ${today.has(n)?'<span class="pill on">on hand</span>':''}</td>
         <td><input data-place="${esc(n)}" value="${esc(rec.place||'')}" style="padding:3px 6px" placeholder="town"></td>
         <td><input data-pin="${esc(n)}" value="${esc(rec.pincode||'')}" style="padding:3px 6px" placeholder="6 digits" inputmode="numeric"></td>
-        <td><input data-ploc="${esc(n)}" value="${esc(rec.loc||'')}" style="padding:3px 6px" placeholder="maps.app.goo.gl/…" inputmode="url"></td>
-        <td><input data-pspot="${esc(n)}" value="${esc(rec.pin||'')}" style="padding:3px 6px;width:120px" placeholder="lat, lng or long link" title="Paste the coordinates (long-press the shop in Google Maps → copy) or a long google.com/maps link">
-          ${pin?`<span class="spotok" title="${esc(pin)}">✓ exact</span>`:'<span class="hint" style="margin:0">by name</span>'}</td>
+        <td><input data-pmap="${esc(n)}" value="${esc(rec.loc||rec.pin||'')}" style="padding:3px 6px" placeholder="Google Maps link or lat, lng" inputmode="url"
+            title="Paste the shop's Google Maps link (short or long) or its coordinates. Coordinates inside a long link are read at once; a short maps.app.goo.gl link is opened as it is - get its exact spot with the Map spot finder below.">
+          ${pin?`<span class="spotok" title="${esc(pin)}">✓ exact spot</span>`:str(rec.loc)?'<span class="hint" style="margin:0;color:#a5670a" title="The map button opens this link; Map route can\'t use it until the exact spot is found">link · no spot yet</span>':'<span class="hint" style="margin:0">by name</span>'}</td>
         <td>${S.routes.map(r=>`<span class="pill click ${rs.includes(r)?'on':''}" data-p="${esc(n)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</td>
         <td style="white-space:nowrap"><a href="${mapsUrl(n)}" target="_blank" rel="noopener" class="pill click">map</a>
             <button class="tiny wabtn" data-pwa="${esc(n)}" title="Send this party's location to the driver picked above">WhatsApp</button>
@@ -2846,13 +2907,17 @@ function paintRoutes(){
     if(!(S.parties[p]?.loc)&&!placeLine(p)) flash(`No place or location link saved for ${p} — only the name goes`);
     else if(d&&!ph) flash(`No number saved for ${d} — pick the chat in WhatsApp`);
   });
-  t.querySelectorAll('[data-ploc]').forEach(el=>el.onchange=async()=>{
-    S.parties[el.dataset.ploc].loc=el.value.trim(); await save(); renderLog(); paintRoutes();});
-  // v3.0: exact spot - coordinates, or a long Google Maps link they are read from
-  t.querySelectorAll('[data-pspot]').forEach(el=>el.onchange=async()=>{
-    const v=el.value.trim(), pin=parsePin(v);
-    if(v&&!pin){ flash(/goo\.gl|maps\.app/.test(v)?'That short link has no coordinates in it — open it in Chrome and copy the long link from the address bar, or long-press the shop and copy the numbers':'No coordinates found — paste like 8.7591, 76.9462'); el.value=S.parties[el.dataset.pspot].pin||''; return; }
-    S.parties[el.dataset.pspot].pin=pin; await save(); paintRoutes(); renderPlan(); flash(pin?`Exact spot saved for ${pnameText(el.dataset.pspot)}`:'Map spot cleared');});
+  // v3.1: one box - a link (short or long) or coordinates. Coordinates read from it become the exact
+  // spot; the link itself is kept for the driver's WhatsApp and the map button.
+  t.querySelectorAll('[data-pmap]').forEach(el=>el.onchange=async()=>{
+    const n=el.dataset.pmap, rec=S.parties[n], v=el.value.trim();
+    const coordsOnly=/^\s*-?\d{1,2}\.\d+\s*[, ]\s*-?\d{1,3}\.\d+\s*$/.test(v), pin=parsePin(v);
+    if(!v){ rec.loc=''; rec.pin=''; }
+    else if(coordsOnly){ if(!pin){ flash('Those numbers are not a place - paste like 8.7591, 76.9462'); el.value=rec.loc||rec.pin||''; return; } rec.pin=pin; rec.loc=''; }
+    else { rec.loc=v; rec.pin=pin; }
+    await save(); renderLog(); paintRoutes(); renderPlan();
+    flash(!v?'Map link cleared':rec.pin?`Exact spot saved for ${pnameText(n)}`:`Link saved for ${pnameText(n)} - no coordinates in it, so the map button opens the link. Use the Map spot finder for its exact spot.`);
+  });
   t.querySelectorAll('[data-pin]').forEach(el=>el.onchange=async()=>{
     S.parties[el.dataset.pin].pincode=el.value.trim(); await save();renderOrders();renderPlan();renderDash();});
   t.querySelectorAll('[data-rename]').forEach(el=>el.onchange=()=>
@@ -2860,7 +2925,7 @@ function paintRoutes(){
   t.querySelectorAll('[data-pdel]').forEach(el=>el.onclick=()=>armConfirm(el,'Delete party',async()=>{
     const p=el.dataset.pdel;
     delete S.parties[p];
-    S.orders=S.orders.filter(o=>o.party!==p);
+    dropOrders(o=>o.party===p);
     S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>s.party!==p));
     await save();renderAll();flash(`Removed ${p}`);}));
 }
@@ -4552,7 +4617,7 @@ function stockText(){
    you switch to it, so one edit no longer rebuilds five screens you can't see. */
 const PAINT={
   dash:()=>{ paintDash(); paintOrders(); },
-  orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); const os=$('#otsSeen'); if(os) os.innerHTML=otsSeenText(); }, parties:()=>{ paintRoutes(); paintMasters(); }, admin:paintAdmin, plan:paintPlan, out:paintOut, log:paintLog, stock:paintStock,
+  orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); const os=$('#otsSeen'); if(os) os.innerHTML=otsSeenText(); }, parties:()=>{ paintRoutes(); paintMasters(); }, admin:paintAdmin, plan:paintPlan, out:paintOut, log:()=>{ paintLog(); paintOutsideForm(); }, stock:paintStock,
   uploads:paintUploads, rparty:paintReports, rveh:paintReports, rdrv:paintReports, rday:paintReports
 };
 let currentView='dash';
@@ -4621,8 +4686,8 @@ $$('#mainMenu .mgroup').forEach(gp=>{
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') setMenu(false); });
 $$('nav button[data-v]').forEach(b=>b.onclick=()=>{ setMenu(false); gotoView(b.dataset.v); });
 // every place that switches tabs goes through here, so currentView and the header label stay honest
-/* Prev / Next through the four Logistics steps, at the right end of the bar under the header */
-const STEPS=[['orders','Add orders'],['plan','Build plan'],['out','Final plan'],['log','Plan log']];
+/* Prev / Next through the three Logistics steps, at the right end of the bar under the header */
+const STEPS=[['plan','Build plan'],['out','Final plan'],['log','Plan log']]; // v3.1: Orders is its own tab, not a step
 function paintSumFields(){
   const d=$('#sumDate'), p=$('#sumPhone'); if(!d) return;
   if(!d.value) d.value=today10();
@@ -4635,12 +4700,12 @@ function paintStepNav(v){
   box.hidden=false;
   const pv=STEPS[i-1], nx=STEPS[i+1];
   box.innerHTML=`${pv?`<button data-step="${pv[0]}" title="Back to ${pv[1]}">‹ <span class="snl">${i}. ${pv[1]}</span></button>`:''}
-    <span class="sn">${i+1}/4</span>
+    <span class="sn">${i+1}/${STEPS.length}</span>
     ${nx?`<button class="nx" data-step="${nx[0]}" title="Go to ${nx[1]}"><span class="snl">${i+2}. ${nx[1]}</span> ›</button>`:''}`;
   box.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ gotoView(b.dataset.step); window.scrollTo(0,0); });
 }
-const LOGI_STEPS=['orders','plan','out','log'];
-function lastLogiStep(){ try{ const v=localStorage.getItem('ld:lastlogi'); return LOGI_STEPS.includes(v)?v:'orders'; }catch(_){ return 'orders'; } }
+const LOGI_STEPS=['plan','out','log'];
+function lastLogiStep(){ try{ const v=localStorage.getItem('ld:lastlogi'); return LOGI_STEPS.includes(v)?v:'plan'; }catch(_){ return 'plan'; } }
 function gotoView(v){
   if(currentView==='admin'&&v!=='admin') adminOpenUntil=0; // leaving Admin locks it again
   if(LOGI_STEPS.includes(v)) try{ localStorage.setItem('ld:lastlogi',v); }catch(_){}
@@ -4685,6 +4750,20 @@ function normUploads(backfill){
   }
 }
 function upLine(o){ return {id:o.id,party:o.party,item:o.item,qty:o.qty,unit:o.unit,weight:o.weight,date:o.date}; }
+/* v3.1: lines deleted in the tool (a mistake, typed twice…) are noted by ID with the day, so
+   "Find missing orders" doesn't list them. Synced in _DATA as delNote {id: 'dd-mm-yyyy'};
+   only the newest DEL_NOTE_CAP are kept (older ones are past any search period anyway). */
+const DEL_NOTE_CAP=3000;
+function noteDeleted(ids){
+  S.delNote=S.delNote||{}; const d=today10();
+  ids.forEach(id=>{ if(id) S.delNote[id]=d; });
+  const ks=Object.keys(S.delNote);
+  if(ks.length>DEL_NOTE_CAP) ks.sort((a,b)=>dmyKey(S.delNote[a])-dmyKey(S.delNote[b])).slice(0,ks.length-DEL_NOTE_CAP).forEach(k=>delete S.delNote[k]);
+}
+function dropOrders(pred){
+  noteDeleted(S.orders.filter(pred).filter(o=>str(o.item)).map(o=>o.id));
+  S.orders=S.orders.filter(o=>!pred(o));
+}
 function recordUpload(tab,pasted,added,skipped,src,extra){
   const d=new Date();
   S.uploads.push({id:uid('u'), no:++S.upSeq, day:today10(),
@@ -4731,7 +4810,7 @@ function paintUploads(){
   const hit=l=>!q||String(l.party).toLowerCase().includes(q)||String(l.item).toLowerCase().includes(q);
   const where=upWhere();
   const list=[...all].reverse().filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)&&(!q||u.lines.some(hit)||u.skipped.some(hit)));
-  if(!all.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">Nothing uploaded yet. Each paste you add in 1 · Add orders will be listed here.</p></div>'; return; }
+  if(!all.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">Nothing uploaded yet. Each paste you add in Orders will be listed here.</p></div>'; return; }
   if(!list.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">No upload matches.</p></div>'; return; }
   $('#upBody').innerHTML=list.map(u=>{
     const parties=[...new Set(u.lines.map(l=>l.party))];
@@ -4780,7 +4859,7 @@ function paintUploads(){
     const ids=new Set(u.lines.map(l=>l.id));
     const n=S.orders.filter(o=>ids.has(o.id)).length;
     armConfirm(b,`Yes, delete ${n} line${n===1?'':'s'}`,async()=>{
-      S.orders=S.orders.filter(o=>!ids.has(o.id));
+      dropOrders(o=>ids.has(o.id));
       dropEmptyStops();
       await save(); renderAll(); flash(`Deleted ${n} line${n===1?'':'s'} from upload #${u.no}`);
     });
@@ -4824,6 +4903,306 @@ $('#upSearch').oninput=()=>paintUploads();
 $('#upTab').onchange=()=>paintUploads();
 $('#upDate').onchange=()=>paintUploads();
 $('#upReset').onclick=()=>{ $('#upSearch').value=''; $('#upTab').value=''; $('#upDate').value=''; paintUploads(); };
+
+/* ---------- v3.1: Find missing orders ----------
+   Every line in the Upload log (within the period, by upload day) that is no longer in Orders and
+   has no record: not on any Plan log entry, not cancelled, not deleted in the tool (delNote).
+   A row cut and pasted back in the sheet can lose its hidden ID and come back under a new one,
+   so a line whose ID is gone but whose party + item + order date is still in Orders, in a Plan log
+   copy or in Cancelled is not missing either. Only runs when the button is pressed. */
+const contentKey=(p,i,d)=>normName(p)+'|'+String(i||'').toLowerCase().replace(/\s+/g,' ').trim()+'|'+String(d||'').trim();
+function findMissing(days){
+  let cut=0;
+  if(days>0){ const d=new Date(); d.setDate(d.getDate()-(days-1)); cut=dmyKey(String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear()); }
+  const have=new Set(S.orders.map(o=>o.id)), logged=new Set(), logK=new Set();
+  (S.log||[]).forEach(g=>{ (g.stops||[]).forEach(st=>(st.orderIds||[]).forEach(id=>logged.add(id)));
+    (g.snapshot||[]).forEach(o=>logK.add(contentKey(o.party,o.item,o.date))); });
+  const handK=new Set(S.orders.map(o=>contentKey(o.party,o.item,o.date)));
+  const cxK=new Set((S.cancels||[]).map(c=>contentKey(c.party,c.item,c.date)));
+  const del=S.delNote||{}, seen=new Set(), out=[];
+  (S.uploads||[]).forEach(u=>{
+    if(cut&&dmyKey(u.day)<cut) return;
+    (u.lines||[]).forEach(l=>{
+      if(!l.id||seen.has(l.id)||!str(l.item)) return; seen.add(l.id);
+      if(have.has(l.id)||logged.has(l.id)||del[l.id]) return;
+      const k=contentKey(l.party,l.item,l.date);
+      if(handK.has(k)||logK.has(k)||cxK.has(k)) return;
+      out.push({...l,tab:u.tab||'',day:u.day||'',upNo:u.no});
+    });
+  });
+  return out;
+}
+let missState=null; // {days, list, tick:Set of ids, done:''}
+function missPeriodText(d){ return +d?`uploaded in the last ${d} days`:'in the whole Upload log'; }
+function paintMissing(){
+  const box=$('#missBody'); if(!box) return;
+  if(!missState){ box.innerHTML=''; return; }
+  const {list,tick}=missState;
+  if(!list.length){ box.innerHTML=`<p class="hint" style="margin:10px 0 0;color:var(--ok,#1b7a45);font-weight:700">✓ Nothing missing — every line ${missPeriodText(missState.days)} is in Orders or has a record.${missState.done?' '+esc(missState.done):''}</p>`; return; }
+  const byP=new Map(); list.forEach(l=>{ if(!byP.has(l.party)) byP.set(l.party,[]); byP.get(l.party).push(l); });
+  const n=list.filter(l=>tick.has(l.id)).length;
+  box.innerHTML=`${missState.done?`<p class="hint" style="margin:10px 0 0;font-weight:700">${esc(missState.done)}</p>`:''}
+    <p class="hint" style="margin:10px 0 6px"><b>${list.length}</b> line${list.length===1?'':'s'} of <b>${byP.size}</b> part${byP.size===1?'y':'ies'} missing — ${missPeriodText(missState.days)}.
+      Tick what to act on.</p>
+    <table class="misstab">
+      <tr><th style="width:28px"></th><th>Party</th><th>Item</th><th class="n">Qty</th><th class="n">Wt</th><th>Order date</th><th>Tab</th><th>Upload</th></tr>
+      ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr>
+        <td><input type="checkbox" class="chk" data-mk="${esc(l.id)}"${tick.has(l.id)?' checked':''}></td>
+        <td>${i?'':`<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" class="chk" data-mkp="${esc(p)}"${ls.every(x=>tick.has(x.id))?' checked':''}><b>${pnameHtml(p)}</b></label>`}</td>
+        <td>${esc(l.item)}</td><td class="n mono">${esc(l.qty)}</td><td class="n mono">${esc(l.weight)}</td>
+        <td class="mono">${esc(l.date||'—')}</td><td>${esc(l.tab||'—')}</td><td class="mono">#${esc(l.upNo)} · ${esc(l.day||'—')}</td></tr>`).join('')).join('')}
+    </table>
+    <div class="row" style="margin-top:10px;gap:8px">
+      <div style="flex:0 0 auto"><span><button class="tiny" id="missBack"${n?'':' disabled'}>Put back the ${n} ticked into Orders</button></span></div>
+      <div style="flex:0 0 auto"><button class="tiny primary" id="missGone"${n?'':' disabled'}>Record the ${n} ticked as gone…</button></div>
+    </div>
+    <p class="hint" style="margin:6px 0 0">Put back: the lines return to Orders (and to the sheet at the next sync) exactly as they came in.
+      Record as gone: they go into the Plan log as a vehicle sent outside the tool, so Party history and reports have them.</p>`;
+  box.querySelectorAll('[data-mk]').forEach(c=>c.onchange=()=>{ c.checked?tick.add(c.dataset.mk):tick.delete(c.dataset.mk); missState.done=''; paintMissing(); });
+  box.querySelectorAll('[data-mkp]').forEach(c=>c.onchange=()=>{ (byP.get(c.dataset.mkp)||[]).forEach(l=>c.checked?tick.add(l.id):tick.delete(l.id)); missState.done=''; paintMissing(); });
+  const back=$('#missBack');
+  if(back) back.onclick=()=>armConfirm(back,`Yes, put back ${n} line${n===1?'':'s'}`,async()=>{
+    const ls=list.filter(l=>tick.has(l.id)), k=putBackLines(ls);
+    await save(); renderAll(); refindMissing(`Put back ${k} line${k===1?'':'s'} into Orders.`); flash(`Put back ${k} line${k===1?'':'s'} into Orders`);
+  });
+  const gone=$('#missGone');
+  if(gone) gone.onclick=()=>{ outForm=newOutForm(list.filter(l=>tick.has(l.id))); gotoView('log'); window.scrollTo(0,0); };
+}
+function refindMissing(done){ if(!missState) return; const list=findMissing(missState.days); missState={days:missState.days,list,tick:new Set(list.map(l=>l.id)),done:done||''}; paintMissing(); }
+// a missing line goes back into Orders as it came in - same ID, so the Upload log shows it as on hand again
+function putBackLines(ls){
+  let k=0;
+  ls.forEach(l=>{
+    if(S.orders.some(o=>o.id===l.id)) return;
+    S.orders.push({id:l.id,party:l.party,item:l.item,qty:l.qty,unit:l.unit,weight:l.weight,date:l.date||'',tab:l.tab||'',addedOn:today10()});
+    if(!S.parties[l.party]) S.parties[l.party]={routes:[],hold:false,dueDate:'',place:'',pincode:''};
+    if(S.delNote&&S.delNote[l.id]) delete S.delNote[l.id];
+    k++;
+  });
+  return k;
+}
+$('#missFind').onclick=()=>{
+  const days=+$('#missPeriod').value||0, list=findMissing(days);
+  missState={days,list,tick:new Set(list.map(l=>l.id)),done:''}; paintMissing();
+};
+
+/* ---------- v3.1: a vehicle sent outside the tool ----------
+   For plans made straight in the sheet (cut and pasted to the side): pick the parties and lines
+   that went and they go into the Plan log as one entry, applied at once - like Godown collected,
+   so they leave Orders WITH a record. Opened from "Find missing orders" it records those lines
+   (already gone from Orders) the same way: they are put back for a moment, then applied. */
+let outForm=null; // {date, veh, vno, drv, q, tab, pick:{party:{ids:Set, qty:{id:n}}}, missing:[lines]|null}
+function newOutForm(missing){ return {date:today10(),veh:'',vno:'',drv:'',q:'',tab:'',pick:{},missing:missing&&missing.length?missing:null}; }
+function outFreeParties(){
+  const used=linesInOpenLogs(), seen=new Set(), out=[];
+  S.orders.forEach(o=>{ if(!str(o.item)||used.has(o.id)||seen.has(o.party)) return; seen.add(o.party); out.push(o.party); });
+  return out.sort((a,b)=>a.localeCompare(b));
+}
+function paintOutsideForm(){
+  const box=$('#outBox'); if(!box) return;
+  $('#outOpen').hidden=!!outForm;
+  if(!outForm){ box.innerHTML=''; return; }
+  const F=outForm, dl=(id,vals)=>`<datalist id="${id}">${[...new Set(vals.filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
+  const head=`<div class="outform">
+    <h3 style="margin:0 0 4px">${F.missing?'Record the missing lines as gone':'Record a vehicle sent outside the tool'}</h3>
+    <p class="hint" style="margin:0 0 8px">${F.missing?'These lines are no longer in Orders. They go into the Plan log as one entry, so Party history and reports have them.':'For a plan made straight in the sheet. The ticked lines leave Orders with a Plan log record (applied at once, like Godown collected). Reopen the entry in the log to undo.'}</p>
+    <div class="row" style="align-items:flex-end;gap:8px">
+      <div style="flex:0 0 130px"><label>Date</label><input id="ofDate" value="${esc(F.date)}" placeholder="dd-mm-yyyy"></div>
+      <div style="flex:1 1 160px"><label>Vehicle</label><input id="ofVeh" list="ofVehL" value="${esc(F.veh)}" placeholder="e.g. Tata Ace">${dl('ofVehL',vehTypes().map(t=>t.name))}</div>
+      <div style="flex:1 1 130px"><label>Vehicle no. (optional)</label><input id="ofVno" list="ofVnoL" value="${esc(F.vno)}">${dl('ofVnoL',S.fleet.vehicles||[])}</div>
+      <div style="flex:1 1 130px"><label>Driver (optional)</label><input id="ofDrv" list="ofDrvL" value="${esc(F.drv)}">${dl('ofDrvL',S.fleet.drivers||[])}</div>
+    </div>`;
+  let body='', nL=0, nP=0;
+  if(F.missing){
+    const byP=new Map(); F.missing.forEach(l=>{ if(!byP.has(l.party)) byP.set(l.party,[]); byP.get(l.party).push(l); });
+    nL=F.missing.length; nP=byP.size;
+    body=`<table class="misstab" style="margin-top:8px"><tr><th>Party</th><th>Item</th><th class="n">Qty</th><th>Order date</th></tr>
+      ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr><td>${i?'':'<b>'+pnameHtml(p)+'</b>'}</td><td>${esc(l.item)}</td><td class="n mono">${esc(l.qty)}</td><td class="mono">${esc(l.date||'—')}</td></tr>`).join('')).join('')}</table>`;
+  } else {
+    const tabs=sheetTabs(), q=F.q.trim().toLowerCase();
+    const ps=outFreeParties().filter(p=>(!q||p.toLowerCase().includes(q))&&(!F.tab||itemsOf(p).some(o=>(o.tab||'')===F.tab))||F.pick[p]);
+    Object.keys(F.pick).forEach(p=>{ const k=F.pick[p].ids.size; if(k){ nP++; nL+=k; } });
+    body=`<div class="row" style="margin-top:8px;align-items:flex-end;gap:8px">
+        <div><label>Find party</label><input id="ofQ" value="${esc(F.q)}" placeholder="Type to filter"></div>
+        <div style="flex:0 0 auto"><label>Tab</label><select id="ofTab" style="width:auto"><option value="">All tabs</option>${tabs.map(t=>`<option${t===F.tab?' selected':''}>${esc(t)}</option>`).join('')}</select></div>
+      </div>
+      <div class="ofparties">${ps.length?ps.map(p=>{ const on=!!F.pick[p], lines=freeLinesOf(p);
+        return `<div class="ofp${on?' on':''}"><label class="ofph"><input type="checkbox" class="chk" data-ofp="${esc(p)}"${on?' checked':''}>
+          <b>${pnameHtml(p)}</b> <span class="g">· ${lines.length} line${lines.length===1?'':'s'}${(S.parties[p]?.routes||[]).length?' · '+esc(S.parties[p].routes.join(', ')):''}</span></label>
+          ${on?`<div data-ofbox="${esc(p)}">${linePickHtml(lines,F.pick[p].ids)}</div>`:''}</div>`; }).join(''):'<p class="hint">No party with lines on hand matches.</p>'}</div>`;
+  }
+  box.innerHTML=head+body+`<div class="row" style="margin-top:10px;gap:8px">
+      <div style="flex:0 0 auto"><span><button class="tiny primary" id="ofSave"${nL?'':' disabled'}>Record ${nL} line${nL===1?'':'s'} of ${nP} part${nP===1?'y':'ies'} as gone</button></span></div>
+      <div style="flex:0 0 auto"><button class="tiny ghost" id="ofCancel">Cancel</button></div>
+    </div><p class="hint" id="ofErr" style="color:var(--alert);margin:4px 0 0"></p></div>`;
+  const keep=(id,f)=>{ const el=$('#'+id); if(el) el.oninput=()=>{ F[f]=el.value; }; };
+  keep('ofDate','date'); keep('ofVeh','veh'); keep('ofVno','vno'); keep('ofDrv','drv');
+  const fq=$('#ofQ'); if(fq) fq.oninput=()=>{ F.q=fq.value; const pos=fq.selectionStart; paintOutsideForm(); const n=$('#ofQ'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } };
+  const ft=$('#ofTab'); if(ft) ft.onchange=()=>{ F.tab=ft.value; paintOutsideForm(); };
+  box.querySelectorAll('[data-ofp]').forEach(c=>c.onchange=()=>{ const p=c.dataset.ofp;
+    if(c.checked) F.pick[p]={ids:new Set(freeLinesOf(p).map(o=>o.id))}; else delete F.pick[p]; paintOutsideForm(); });
+  box.querySelectorAll('[data-ofbox] [data-lpk]').forEach(c=>c.onchange=()=>{ const p=c.closest('[data-ofbox]').dataset.ofbox;
+    if(!F.pick[p]) return; c.checked?F.pick[p].ids.add(c.dataset.lpk):F.pick[p].ids.delete(c.dataset.lpk); paintOutsideForm(); });
+  $('#ofCancel').onclick=()=>{ outForm=null; paintOutsideForm(); };
+  const sv=$('#ofSave');
+  if(sv) sv.onclick=()=>{
+    const err=m=>{ $('#ofErr').textContent=m; };
+    const dt=parseDate(F.date); if(!dt) return err('Type the date as dd-mm-yyyy');
+    if(!F.veh.trim()) return err('Type the vehicle (e.g. Tata Ace)');
+    const date=String(dt.getDate()).padStart(2,'0')+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+dt.getFullYear();
+    let picks=[];
+    if(!F.missing){
+      for(const p of Object.keys(F.pick)){
+        if(!F.pick[p].ids.size) continue;
+        const bx=box.querySelector(`[data-ofbox="${CSS.escape(p)}"]`), pk=bx?readLinePick(bx):{err:'Tick at least one line'};
+        if(pk.err) return err(pnameText(p)+': '+pk.err);
+        picks.push({party:p,...pk});
+      }
+      if(!picks.length) return err('Tick at least one party');
+    }
+    armConfirm(sv,'Yes, record as gone',async()=>{
+      if(F.missing){
+        putBackLines(F.missing);
+        const byP=new Map(); F.missing.forEach(l=>{ if(!byP.has(l.party)) byP.set(l.party,[]); byP.get(l.party).push(l.id); });
+        picks=[...byP].map(([party,ids])=>({party,ids,loadQty:{}}));
+      }
+      const g=recordOutside({date,vehicle:F.veh.trim(),vehicleNo:F.vno.trim(),driver:F.drv.trim()},picks);
+      const nl=picks.reduce((a,p)=>a+p.ids.length,0), wasMissing=!!F.missing;
+      outForm=null; await save(); renderAll();
+      if(wasMissing) refindMissing(`Recorded ${nl} line${nl===1?'':'s'} as gone in the Plan log.`);
+      flash(`Recorded in the Plan log: ${g.vehicle} ${date} — ${nl} line${nl===1?'':'s'}`);
+    });
+  };
+}
+function recordOutside(v,picks){
+  // the log keeps stops in loading order (last delivered first) - picks are in delivery order
+  const g={id:uid('g'),title:`${v.vehicle} — ${v.date} (outside the tool)`,vehicle:v.vehicle,outside:true,
+    createdAt:v.date,vehicleNo:v.vehicleNo||'',driver:v.driver||'',
+    stops:[...picks].reverse().map(p=>({party:p.party,orderIds:[...p.ids],loadQty:{...(p.loadQty||{})}})),
+    qtyGone:{},notes:{},resolved:false,open:false,snapshot:null,stockDelta:null};
+  S.log.push(g); applyLogEntry(g);
+  S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>stopItems(s).length));
+  return g;
+}
+$('#outOpen').onclick=()=>{ outForm=newOutForm(null); paintOutsideForm(); };
+
+/* ---------- v3.1: exact spots from the Map spot finder ----------
+   Copy: every party with a saved link but no exact spot, as PARTY <TAB> LINK (the key exactly as
+   the tool has it, delivery locations included). Paste back: the finder's rows; each row's spot is
+   the first cell after the party that holds coordinates (or a long link with them). Saved only
+   for the ticked rows, only when the button is pressed. */
+function spotNeedList(){ return Object.keys(S.parties).filter(n=>str(S.parties[n].loc)&&!pinOf(n)).sort(); }
+$('#spotCopy').onclick=()=>{
+  const ns=spotNeedList();
+  if(!ns.length){ $('#spotCopyNote').textContent='Every party with a link already has its exact spot.'; return; }
+  copy(ns.map(n=>n+'\t'+String(S.parties[n].loc).trim()).join('\n'),`Copied ${ns.length} link${ns.length===1?'':'s'} - paste them into the Map spot finder at A2`);
+  $('#spotCopyNote').textContent=`${ns.length} link${ns.length===1?'':'s'} copied. In the finder sheet click cell A2 and paste.`;
+};
+let spotRows=null; // [{party, spot, now, ok, why, tick}]
+function readSpotPaste(txt){
+  const out=[];
+  String(txt||'').split(/\r?\n/).forEach(line=>{
+    if(!line.trim()) return;
+    const c=line.split('\t'), raw=(c[0]||'').trim(); if(!raw||/^party$/i.test(raw)) return;
+    const n=Object.keys(S.parties).find(k=>k===raw)||Object.keys(S.parties).find(k=>normName(k)===normName(raw));
+    let spot=''; for(let i=c.length-1;i>=1;i--){ const v=(c[i]||'').trim(); if(!v) continue; if(/^-?\d{1,2}\.\d+\s*[, ]\s*-?\d{1,3}\.\d+$/.test(v)||/!3d|@-?\d|[?&](q|query|ll|center|destination)=-?\d/.test(v)){ spot=parsePin(v); if(spot) break; } }
+    const why=!n?'party not found in this tool':!spot?'no spot in this row':'';
+    out.push({raw,party:n||'',spot,now:n?pinOf(n):'',ok:!why,why,tick:!why&&!(n&&pinOf(n)===spot)});
+  });
+  return out;
+}
+function paintSpotRows(){
+  const box=$('#spotBody'); if(!box) return;
+  if(!spotRows){ box.innerHTML=''; return; }
+  if(!spotRows.length){ box.innerHTML='<p class="hint">Nothing to read - paste the finder rows above.</p>'; return; }
+  const n=spotRows.filter(r=>r.tick).length;
+  box.innerHTML=`<table class="misstab" style="margin-top:10px"><tr><th style="width:28px"></th><th>Party</th><th>Spot found</th><th>Now</th><th></th></tr>
+    ${spotRows.map((r,i)=>`<tr><td>${r.ok?`<input type="checkbox" class="chk" data-spk="${i}"${r.tick?' checked':''}>`:''}</td>
+      <td>${r.party?pnameHtml(r.party):esc(r.raw)}</td><td class="mono">${esc(r.spot||'—')}</td><td class="mono">${esc(r.now||'by name / link')}</td>
+      <td>${r.why?`<span class="st skip">${esc(r.why)}</span>`:r.now===r.spot?'<span class="st done">same as saved</span>':r.now?'<span class="st veh">replaces the saved spot</span>':''}${r.ok&&!/^(8|9|10|11|12|13)\./.test(r.spot)?' <span class="st veh" title="Kerala is about 8 to 13 north">outside Kerala?</span>':''}</td></tr>`).join('')}
+  </table>
+  <div class="row" style="margin-top:8px"><div style="flex:0 0 auto"><span><button class="tiny primary" id="spotSave"${n?'':' disabled'}>Save the ${n} ticked spot${n===1?'':'s'}</button></span></div></div>`;
+  box.querySelectorAll('[data-spk]').forEach(c=>c.onchange=()=>{ spotRows[+c.dataset.spk].tick=c.checked; paintSpotRows(); });
+  const sv=$('#spotSave');
+  if(sv) sv.onclick=()=>armConfirm(sv,`Yes, save ${n}`,async()=>{
+    let k=0; spotRows.forEach(r=>{ if(r.tick&&r.ok&&S.parties[r.party]){ S.parties[r.party].pin=r.spot; k++; } });
+    spotRows=null; $('#spotPaste').value=''; await save(); renderAll(); paintSpotRows();
+    flash(`Saved ${k} exact spot${k===1?'':'s'}`);
+  });
+}
+$('#spotCheck').onclick=()=>{ spotRows=readSpotPaste($('#spotPaste').value); paintSpotRows(); };
+
+/* ---------- v3.2: exact spots one by one ----------
+   A phone-shared link (…?g_st=…) only leads to a place page that is built by JavaScript, so no
+   script can read its spot. Chrome can: once the map has loaded, the address bar holds the long
+   link with the pin (!3d…!4d…). The queue walks the parties with a link and no spot: Open map,
+   copy the address bar there, Take from clipboard here → the spot is read, saved, next party.
+   The clipboard is read only when the button is pressed; pasting into the box works too. */
+let spotQ=null; // {list:[party], i, msg, cls, last:{party, prev}}
+function sqParty(){ return spotQ&&spotQ.list[spotQ.i]; }
+function paintSpotQueue(){
+  const box=$('#spotQ'); if(!box) return;
+  $('#spotQStart').hidden=!!spotQ;
+  if(!spotQ){ box.innerHTML=''; return; }
+  const p=sqParty(), n=spotQ.list.length;
+  const last=spotQ.last?`<p class="hint" style="margin:6px 0 0">Saved ${esc(pnameText(spotQ.last.party))}: <span class="mono">${esc(spotQ.last.pin)}</span>
+    · <a href="#" id="sqUndo">Undo</a></p>`:'';
+  if(!p){ box.innerHTML=`<div class="sqbox">${spotQ.msg?`<p class="sqmsg ${spotQ.cls||''}" style="margin:0 0 6px">${spotQ.msg}</p>`:''}<p class="sqmsg ok" style="margin-top:0"><b>Done</b> — ${spotQ.saved} spot${spotQ.saved===1?'':'s'} saved${spotQ.skipped?`, ${spotQ.skipped} skipped`:''}.</p>${last}
+    <div style="margin-top:8px"><button class="tiny ghost" id="sqStop">Close</button></div></div>`;
+  } else {
+    const rec=S.parties[p]||{}, where=[rec.place,rec.pincode].filter(Boolean).join(' ');
+    box.innerHTML=`<div class="sqbox">
+      <div class="hint" style="margin:0 0 2px">Party ${spotQ.i+1} of ${n}</div>
+      <div class="sqname">${pnameHtml(p)}</div>
+      <div class="hint" style="margin:2px 0 8px">${where?esc(where)+' · ':''}<span class="mono" style="word-break:break-all">${esc(rec.loc||'')}</span></div>
+      <div class="row" style="gap:8px;align-items:center">
+        <div style="flex:0 0 auto"><a class="pill click" id="sqOpen" href="${esc(rec.loc||'#')}" target="_blank" rel="noopener" style="padding:6px 12px;font-size:13px">1 · Open map ↗</a></div>
+        <div style="flex:0 0 auto"><button class="primary" id="sqTake">2 · Take from clipboard</button></div>
+        <div style="flex:1 1 180px"><input id="sqPaste" placeholder="…or paste the long link here (Ctrl+V)"></div>
+        <div style="flex:0 0 auto"><button class="tiny ghost" id="sqSkip">Skip</button></div>
+        <div style="flex:0 0 auto"><button class="tiny ghost" id="sqStop">Stop</button></div>
+      </div>
+      ${spotQ.msg?`<p class="sqmsg ${spotQ.cls||''}">${spotQ.msg}</p>`:''}${last}</div>`;
+  }
+  const on=(id,f)=>{ const el=$('#'+id); if(el) f(el); };
+  on('sqStop',el=>el.onclick=()=>{ spotQ=null; paintSpotQueue(); paintRoutes(); });
+  on('sqSkip',el=>el.onclick=()=>{ spotQ.i++; spotQ.skipped++; spotQ.msg=''; paintSpotQueue(); });
+  on('sqTake',el=>el.onclick=async()=>{
+    let txt='';
+    try{ txt=await navigator.clipboard.readText(); }
+    catch(e){ spotQ.msg='This browser did not let the tool read the clipboard — paste the link into the box instead (click it, Ctrl+V).'; spotQ.cls='bad'; paintSpotQueue(); const i=$('#sqPaste'); if(i) i.focus(); return; }
+    sqTakeText(txt);
+  });
+  on('sqPaste',el=>el.oninput=()=>{ if(el.value.trim()) sqTakeText(el.value); });
+  on('sqUndo',el=>el.onclick=async e=>{ e.preventDefault(); const L=spotQ.last; if(!L) return;
+    if(S.parties[L.party]) S.parties[L.party].pin=L.prev||''; spotQ.last=null; spotQ.saved=Math.max(0,spotQ.saved-1);
+    const k=spotQ.list.indexOf(L.party); if(k>=0) spotQ.i=k; spotQ.msg=`Undone — ${esc(pnameText(L.party))} is back to no spot.`; spotQ.cls='';
+    await save(); renderPlan(); paintSpotQueue(); });
+}
+async function sqTakeText(txt){
+  const p=sqParty(); if(!p) return;
+  const t=String(txt||'').trim(), pin=parsePin(t);
+  if(!pin){
+    spotQ.cls='bad';
+    spotQ.msg=!t?'The clipboard is empty — in the map tab press Ctrl+L, then Ctrl+C.'
+      :/goo\.gl|maps\.app/.test(t)?'That is the short link again — the map had not finished loading. Wait a second in the map tab until the address bar changes, then Ctrl+L, Ctrl+C.'
+      :/google\.[a-z.]+\/maps/.test(t)?'This link has no spot yet — click the shop\'s red pin in the map tab (or wait for it to load), then copy the address bar again.'
+      :'No map spot in what was copied — copy the address bar of the map tab (Ctrl+L, Ctrl+C).';
+    paintSpotQueue(); return;
+  }
+  const rec=S.parties[p], prev=rec.pin||'';
+  rec.pin=pin;
+  const [la,lo]=pin.split(',').map(Number), kerala=la>=8&&la<=13&&lo>=74&&lo<=78;
+  spotQ.last={party:p,pin,prev}; spotQ.saved++; spotQ.i++;
+  spotQ.msg=`✓ ${esc(pnameText(p))}: <span class="mono">${esc(pin)}</span> saved.${kerala?'':' <b style="color:var(--alert)">Outside Kerala — check it, Undo if wrong.</b>'}`;
+  spotQ.cls=kerala?'ok':'bad';
+  await save(); renderPlan(); paintSpotQueue();
+}
+$('#spotQStart').onclick=()=>{
+  const list=spotNeedList();
+  if(!list.length){ spotQ=null; flash('Every party with a map link already has its exact spot'); return; }
+  spotQ={list,i:0,saved:0,skipped:0,msg:'',cls:'',last:null}; paintSpotQueue();
+};
 
 /* ---------- clear data (Master Data) ----------
    One row per kind of data, each cleared on its own with an inline confirm. */
@@ -5155,7 +5534,7 @@ function paintTray(){
   const wait=trayWaiting();
   if(menu){ let bd=menu.querySelector('.traybadge'); if(wait.length){ if(!bd){ bd=document.createElement('span'); bd.className='badge open traybadge'; bd.style.marginLeft='6px'; menu.appendChild(bd); } bd.textContent=wait.length; } else if(bd) bd.remove(); }
   if(dash) dash.innerHTML=wait.length?`<div class="card trayalert"><b>📥 ${wait.length} batch${wait.length>1?'es':''} from Order to Sheet waiting</b> —
-      ${wait.reduce((a,b)=>a+(+b.lines||0),0)} lines. <button class="tiny primary" data-goto="orders">Open Add orders</button></div>`:'';
+      ${wait.reduce((a,b)=>a+(+b.lines||0),0)} lines. <button class="tiny primary" data-goto="orders">Open Orders</button></div>`:'';
   if(!card) return;
   // the duplicate picker of a batch is open - don't redraw it under the person
   if(trayOpen&&card.querySelector('.traybatch.on .duppanel')) return;
@@ -5806,7 +6185,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},
+  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},delNote:S.delNote||{},
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -5894,9 +6273,10 @@ function mergeModels(b,l,r){
     combos:m3(bm.combos,lm.combos,rm.combos,'Route combinations')||[], settings:m3map(bm.settings,lm.settings,rm.settings,'Setting')};
   const bd=b.data||{}, ld=l.data||{}, rd=r.data||{};
   const data={};
-  const MAPS={dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date',districts:'District of route'};
+  const MAPS={delNote:'Deleted in the tool',dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date',districts:'District of route'};
   new Set([...Object.keys(ld),...Object.keys(rd)]).forEach(k=>{
     if(k==='cancels'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||[]; // older versions leave it out - never a wipe
+    else if(k==='delNote'&&(rd[k]===undefined||ld[k]===undefined)) data[k]={...(bd[k]||{}),...(rd[k]||{}),...(ld[k]||{})}; // 3.1+: never wiped by a copy that lacks it
     else if(k==='log') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable,logName);
     else if(k==='uploads') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable,upName);
     else if(k==='cancels') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable,cxName);
@@ -5948,6 +6328,7 @@ function applyModel(m,fromSheet){
   S.sheetLink=d.sheetLink||'';
   if(Array.isArray(d.cancels)) S.cancels=d.cancels; else if(!S.cancels) S.cancels=[]; // older versions don't send it
   if(d.districts&&typeof d.districts==='object') S.districts=d.districts; else if(!S.districts) S.districts={};
+  if(d.delNote&&typeof d.delNote==='object') S.delNote=d.delNote; else if(!S.delNote) S.delNote={};
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
   S.plan=S.plan||{poolFilter:[],lanes:[]}; S.plan.lanes=S.plan.lanes||[]; S.plan.poolFilter=S.plan.poolFilter||[];
