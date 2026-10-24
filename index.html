@@ -48,7 +48,7 @@ header{background:var(--green);border-bottom:2px solid var(--green-dk);position:
 .mver{margin-top:8px;padding:8px 10px 2px;border-top:1px solid rgba(255,255,255,.2);font-size:11px;color:rgba(255,255,255,.6);font-family:ui-monospace,Menlo,monospace}
 .menubtn{flex:0 0 auto;background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;
   font-size:18px;line-height:1;padding:5px 10px}
-.undobar{display:inline-flex;gap:3px;flex:0 0 auto}
+.undobar{display:inline-flex;gap:3px;flex:0 0 auto;margin-right:8px;padding-right:10px;border-right:1px solid rgba(255,255,255,.3)}
 .ubtn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;padding:4px 7px;line-height:0}
 .ubtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ubtn:hover:not(:disabled){background:#fff;color:var(--green-dk)}
@@ -163,6 +163,8 @@ nav button.on{background:#fff;color:var(--green-dk);border-color:#fff}
 .misstab .n{text-align:right}
 .outform{margin-top:10px;border:1px solid var(--edge);border-radius:var(--r);padding:10px 12px;background:var(--panel)}
 .ofparties{margin-top:8px;max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.ofsel{margin-top:8px;display:flex;flex-direction:column;gap:4px;padding:6px;border:1px dashed var(--accent,#1b7a45);border-radius:8px;background:#f3faf5}
+.ofsh{font-size:12px;font-weight:700;color:var(--accent,#1b7a45);text-transform:uppercase;letter-spacing:.04em}
 .ofp{border:1px solid var(--edge);border-radius:8px;padding:5px 8px}
 .ofp.on{border-color:var(--accent,#1b7a45);background:#f3faf5}
 .ofph{display:flex;gap:6px;align-items:center;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0}
@@ -466,6 +468,10 @@ tr.siterow td{background:rgba(31,95,168,.04)}
 .rlcard{background:var(--card,#fff);border-radius:10px;padding:14px 16px;max-width:860px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
 .rlhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rltbl{margin-top:10px}
+.rltbl tr.rlchg td{background:#fff6d6}
+.rlnote{font-size:11.5px;color:#8a5a00;margin-top:2px}
+.rlpick{width:auto;max-width:100%;font-size:12.5px;padding:3px 6px}
+.rlun{margin-top:4px;color:var(--ink);font-weight:400}.rlun .g{color:var(--mute)}
 .rlsave{display:inline-flex;gap:4px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:inherit;margin:0}
 .rlsave input{width:auto}
 .badge.open{background:var(--amber);color:#211500}
@@ -523,15 +529,15 @@ tr.siterow td{background:rgba(31,95,168,.04)}
 <header>
   <div class="hwrap">
     <button id="menuBtn" class="menubtn" aria-expanded="false" aria-controls="mainMenu" title="Menu">☰</button>
-    <span class="undobar">
-      <button id="undoBtn" class="ubtn" disabled aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7"/></svg></button>
-      <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
-    </span>
     <button id="logiBtn" class="logibtn" title="Logistics — back to the step you were on"><svg viewBox="0 0 20 16"><path d="M1.5 3.5h10v8h-10z"/><path d="M11.5 6.5h4l3 3v2h-7"/><circle cx="5" cy="12.5" r="1.6"/><circle cx="15" cy="12.5" r="1.6"/></svg><span class="lbl">Logistics</span></button>
     <div class="stepnav" id="stepNav" hidden></div>
     <div class="brand"><span class="co">JAIN WIRE NETTING CORPORATION</span><small class="loc">EKM</small><span class="tool">Logistics Desk</span></div>
     <div id="curView" class="curview"></div>
     <div class="hbadges">
+      <span class="undobar">
+        <button id="undoBtn" class="ubtn" disabled aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7"/></svg></button>
+        <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
+      </span>
       <button id="saveBadge" class="savebadge clean" title="Saves on its own a moment after each edit — tap to save right now">All saved</button>
       <span id="syncBadge" class="savebadge" style="display:none"></span>
     </div>
@@ -1231,7 +1237,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.2', APP_BUILD='19-10-2026';
+const APP_VERSION='3.2.1', APP_BUILD='24-10-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1767,20 +1773,32 @@ function partyLocation(p){
 }
 const MAP_DRIVING='/data=!4m2!4m1!3e0'; // Google Maps: travel by car
 function laneMapRoute(l){
-  const missing=[], approx=[], pts=[];
+  const missing=[], approx=[], pts=[], sent=[];
   const start=(S.settings&&S.settings.mapStart)||'';
   if(start) pts.push(start);
   l.stops.forEach(st=>{ const loc=partyLocation(st.party); if(!loc){ missing.push(st.party); return; }
     if(!pinOf(st.party)) approx.push(st.party);
+    sent.push({party:st.party,text:loc});
     if(pts[pts.length-1]!==loc) pts.push(loc); }); // two parties in one place = one stop
   if(start&&S.settings.mapReturn&&pts.length>1) pts.push(start);
   const url='https://www.google.com/maps/dir/'+pts.map(x=>encodeURIComponent(x).replace(/%20/g,'+').replace(/%2C/g,',')).join('/')+MAP_DRIVING;
-  return {url,missing,approx,count:pts.length};
+  return {url,missing,approx,count:pts.length,sent};
+}
+/* v3.2.1: what Map route sent for each party, kept on this device (not synced) so the link
+   pasted back can be matched to it even when a stop was changed in Google Maps. */
+const MAPSENT_KEY='jw-ld-mapsent-v1';
+function mapSentAll(){ try{ return JSON.parse(localStorage.getItem(MAPSENT_KEY)||'{}')||{}; }catch(_){ return {}; } }
+function mapSentOf(laneId){ const r=mapSentAll()[laneId]; return r&&Array.isArray(r.list)?r:null; }
+function rememberMapSent(laneId,list){
+  try{ const all=mapSentAll(); all[laneId]={at:Date.now(),list};
+    const keep=Object.entries(all).sort((a,b)=>b[1].at-a[1].at).slice(0,60);
+    localStorage.setItem(MAPSENT_KEY,JSON.stringify(Object.fromEntries(keep))); }catch(_){}
 }
 function openLaneMap(l){
   const r=laneMapRoute(l);
   if(r.count<2){ flash(r.missing.length?`No place or pincode for: ${r.missing.map(pnameText).join(', ')}`:'Need at least 2 stops'); return; }
   window.open(r.url,'_blank','noopener');
+  if(l.id) rememberMapSent(l.id,r.sent);
   const bits=[];
   if(r.missing.length) bits.push(`left out (no place/pincode): ${r.missing.map(pnameText).join(', ')}`);
   if(r.approx.length) bits.push(`no exact spot, found by place name: ${r.approx.map(pnameText).join(', ')}`);
@@ -1809,21 +1827,56 @@ function readRouteLink(url){
 }
 const rlNorm=t=>String(t||'').toLowerCase().replace(/\b(keralam|kerala|india)\b/g,' ').replace(/[^a-z0-9, ]/g,' ').replace(/\s+/g,' ').trim();
 const rlHead=t=>rlNorm(t).split(',')[0].replace(/\b\d{6}\b/g,'').replace(/\s+/g,' ').trim();
-function matchRouteLink(l,link){
+function matchRouteLink(l,link,sentList,manual){
   const start=rlHead((S.settings&&S.settings.mapStart)||'');
+  const sent=new Map((sentList||[]).map(x=>[x.party,x.text]));
   const stops=l.stops.map((st,idx)=>{ const p=st.party, loc=partyLocation(p), r=S.parties[p]||{};
-    return {st,idx,p,pin:pinOf(p),head:rlHead(parsePin(loc)?(r.place||titleCase(siteOf(p).site)||''):loc)||rlHead(r.place)||rlHead(titleCase(siteOf(p).site)),seg:-1}; });
+    return {st,idx,p,pin:pinOf(p),sent:sent.get(p)||'',head:rlHead(parsePin(loc)?(r.place||titleCase(siteOf(p).site)||''):loc)||rlHead(r.place)||rlHead(titleCase(siteOf(p).site)),seg:-1,changed:false,manual:false}; });
   const segUsed=link.segs.map(()=>[]);
+  const isStart=(h,k)=>start&&h===start&&(k===0||k===link.segs.length-1);
+  const take=(s,k)=>{ s.seg=k; segUsed[k].push(s); };
+  // exactly what Map route sent for this party
+  link.segs.forEach((sg,k)=>{ const n=rlNorm(sg); stops.forEach(s=>{ if(s.seg!==-1||!s.sent) return;
+    const sp=parsePin(s.sent); if((sp&&link.pts[k]&&kmBetween(sp,link.pts[k])<0.3)||(!sp&&rlNorm(s.sent)===n)) take(s,k); }); });
   link.segs.forEach((sg,k)=>{
     const h=rlHead(sg);
-    if(start&&h===start&&(k===0||k===link.segs.length-1)) return; // the godown
-    stops.forEach(s=>{ if(s.seg>=0) return;
+    if(isStart(h,k)) return; // the godown
+    stops.forEach(s=>{ if(s.seg!==-1) return;
       const near=s.pin&&link.pts[k]&&kmBetween(s.pin,link.pts[k])<1.5;
-      if(near||(h&&s.head&&h===s.head)){ s.seg=k; segUsed[k].push(s); } });
+      if(near||(h&&s.head&&h===s.head)){ take(s,k); } });
   });
   // looser second pass: one name inside the other ("sreekaryam" / "sreekaryam junction")
   link.segs.forEach((sg,k)=>{ const h=rlHead(sg); if(!h||h.length<3||(start&&h===start)) return;
-    stops.forEach(s=>{ if(s.seg>=0||!s.head||s.head.length<3) return; if(h.includes(s.head)||s.head.includes(h)){ s.seg=k; segUsed[k].push(s); } }); });
+    stops.forEach(s=>{ if(s.seg!==-1||!s.head||s.head.length<3) return; if(h.includes(s.head)||s.head.includes(h)){ take(s,k); } }); });
+  // a stop changed in Google Maps (another place picked): pair what is left by the stops around it
+  const free=()=>link.segs.map((sg,k)=>k).filter(k=>!segUsed[k].length&&!isStart(rlHead(link.segs[k]),k));
+  const order=(sentList&&sentList.length?sentList.map(x=>x.party):l.stops.map(st=>st.party));
+  const posOf=p=>{ const i=order.indexOf(p); return i<0?1e9:i; };
+  const around=u=>{ const mine=posOf(u.p), m=stops.filter(s=>s.seg>=0&&posOf(s.p)<1e9);
+    const before=m.filter(s=>posOf(s.p)<mine).sort((a,b)=>posOf(b.p)-posOf(a.p))[0], after=m.filter(s=>posOf(s.p)>mine).sort((a,b)=>posOf(a.p)-posOf(b.p))[0];
+    return {b:before?before.p:null,a:after?after.p:null}; };
+  const segAround=k=>{ let b=null,a=null; for(let j=k-1;j>=0&&!b;j--) if(segUsed[j].length) b=segUsed[j].map(s=>s.p); for(let j=k+1;j<link.segs.length&&!a;j++) if(segUsed[j].length) a=segUsed[j].map(s=>s.p);
+    return {b:b||[],a:a||[]}; };
+  for(let guard=0;guard<50;guard++){
+    const left=stops.filter(s=>s.seg===-1), fk=free(); if(!left.length||!fk.length) break;
+    let best=null;
+    left.forEach(u=>{ const nu=around(u); fk.forEach(k=>{ const ns=segAround(k);
+      const sc=(nu.b&&ns.b.includes(nu.b)?1:0)+(nu.a&&ns.a.includes(nu.a)?1:0)+(!nu.b&&k===fk[0]&&!ns.b.length?0.5:0)+(!nu.a&&!ns.a.length?0.5:0);
+      if(!best||sc>best.sc) best={u,k,sc}; }); });
+    if(left.length===1&&fk.length===1) best={u:left[0],k:fk[0],sc:best?best.sc:0};
+    if(!best||best.sc<1) break;
+    take(best.u,best.k); best.u.changed=true;
+    // parties Map route sent as the same stop go with it
+    if(best.u.sent) stops.forEach(s=>{ if(s.seg===-1&&s.sent===best.u.sent){ take(s,best.k); s.changed=true; } });
+  }
+  // your own picks go on top: a stop you give to a party is taken from whoever had it
+  if(manual&&Object.keys(manual).length){
+    stops.forEach(s=>{ const k=manual[s.idx]; if(k==null) return;
+      const was=s.seg; if(was>=0) segUsed[was]=segUsed[was].filter(x=>x!==s);
+      s.manual=true; s.changed=true; s.seg=-1;
+      if(k>=0&&k<link.segs.length){ segUsed[k].filter(x=>manual[x.idx]==null).forEach(x=>{ x.seg=-1; x.changed=false; }); segUsed[k]=segUsed[k].filter(x=>manual[x.idx]!=null); take(s,k); }
+    });
+  }
   const matched=stops.filter(s=>s.seg>=0).sort((a,b)=>a.seg-b.seg||a.idx-b.idx), unmatched=stops.filter(s=>s.seg<0);
   const lostSegs=link.segs.map((sg,k)=>({sg,k})).filter(x=>!segUsed[x.k].length&&!(start&&rlHead(x.sg)===start));
   return {matched,unmatched,lostSegs,order:[...matched,...unmatched].map(s=>s.st)};
@@ -1838,29 +1891,41 @@ function openRoutePanel(laneId){
     <div style="margin-top:6px"><button class="primary tiny" data-rlread>Read the link</button></div>
     <div id="rlOut"></div></div>`;
   box.querySelector('[data-rlclose]').onclick=()=>{ box.hidden=true; };
-  box.querySelector('[data-rlread]').onclick=()=>{
-    const out=box.querySelector('#rlOut'), link=readRouteLink(box.querySelector('#rlLink').value);
-    if(link.err){ out.innerHTML=`<p class="trayerr">${esc(link.err)}</p>`; return; }
-    const m=matchRouteLink(l,link);
+  let manual={}, link=null;
+  const paint=()=>{
+    const out=box.querySelector('#rlOut');
+    const ms=mapSentOf(l.id), m=matchRouteLink(l,link,ms&&ms.list,manual);
     const spots=m.matched.filter(s=>link.pts[s.seg]&&(!s.pin||kmBetween(s.pin,link.pts[s.seg])>0.3));
-    out.innerHTML=`<table class="rltbl"><tr><th>#</th><th>Stop in the link</th><th>Party</th><th>Spot from the link</th></tr>
+    const pickable=s=>[...m.lostSegs.map(x=>x.k),...(s.seg>=0?[s.seg]:[])].sort((a,b)=>a-b);
+    const picker=s=>`<select class="rlpick" data-rlpick="${s.idx}"><option value="-1">— not in the link —</option>${pickable(s).map(k=>`<option value="${k}"${k===s.seg?' selected':''}>${esc(link.segs[k])}</option>`).join('')}</select>`;
+    out.innerHTML=(ms?'':`<p class="hint" style="margin:8px 0 0">Map route was not opened for this vehicle on this device, so stops are matched by place name only.</p>`)+
+      `<table class="rltbl"><tr><th>#</th><th>Stop in the link</th><th>Party</th><th>Spot from the link</th></tr>
       ${m.matched.map((s,i)=>{ const pt=link.pts[s.seg], sv=spots.includes(s);
-        return `<tr><td class="num">${i+1}</td><td>${esc(link.segs[s.seg])}</td><td>${pnameHtml(s.p)}</td>
-          <td>${pt?`<span class="mono">${esc(pt)}</span>${sv?` <label class="rlsave"><input type="checkbox" data-rlspot="${s.idx}" checked> save as exact spot${s.pin?' (replaces '+esc(s.pin)+')':''}</label>`:' <span class="spotok">✓ already saved</span>'}`:'<span class="hint">none in the link</span>'}</td></tr>`; }).join('')}
+        return `<tr${s.changed?' class="rlchg"':''}><td class="num">${i+1}</td><td>${s.changed?picker(s)+`<div class="rlnote">${s.manual?'your pick':'changed in Google Maps'}${s.sent?' · the tool sent: '+esc(s.sent):''}</div>`:esc(link.segs[s.seg])}</td><td>${pnameHtml(s.p)}</td>
+          <td>${pt?`<span class="mono">${esc(pt)}</span>${sv?` <label class="rlsave"><input type="checkbox" data-rlspot="${s.idx}"${s.changed?'':' checked'}> save as exact spot${s.pin?' (replaces '+esc(s.pin)+')':''}</label>`:' <span class="spotok">✓ already saved</span>'}`:'<span class="hint">none in the link</span>'}</td></tr>`; }).join('')}
       </table>
-      ${m.unmatched.length?`<p class="trayerr">Not found in the link (kept at the end, in their current order): ${m.unmatched.map(s=>pnameHtml(s.p)).join(', ')}</p>`:''}
+      ${m.unmatched.length?`<div class="trayerr">Not found in the link (kept at the end, in their current order):${m.unmatched.map(s=>`<div class="rlun">${pnameHtml(s.p)}${s.sent?' <span class="g">· the tool sent: '+esc(s.sent)+'</span>':''} ${m.lostSegs.length?'— it is '+picker(s):''}</div>`).join('')}</div>`:''}
       ${m.lostSegs.length?`<p class="hint">Stops in the link that match no party on this vehicle: ${m.lostSegs.map(x=>esc(x.sg)).join(' · ')}</p>`:''}
+      ${m.matched.some(s=>s.changed)?`<p class="hint">Rows in yellow: a place you changed in Google Maps, matched by the stops around it. Check the party, change it in the box if wrong. Their spot is not ticked - tick it if the place is right.</p>`:''}
       ${link.mode&&link.mode!=='car'?`<p class="trayerr">This link is set to ${esc(link.mode)} — Map route links from this tool are always by car.</p>`:''}
       <div class="traybtns"><button class="primary tiny" data-rlorder>Use this delivery order</button>
-        ${spots.length?`<button class="tiny" data-rlspots>Save the ticked spots (${spots.length})</button>`:''}</div>
+        ${spots.length?`<button class="tiny" data-rlspots>Save the ticked spots</button>`:''}</div>
       <p class="hint" style="margin:4px 0 0">Nothing changes until you press a button. Spots are where Google placed each stop — for a shop, check it is the right place first.</p>`;
+    out.querySelectorAll('[data-rlpick]').forEach(sel=>sel.onchange=()=>{ const idx=+sel.dataset.rlpick, k=+sel.value;
+      Object.keys(manual).forEach(i=>{ if(manual[i]===k&&k>=0) delete manual[i]; }); manual[idx]=k; paint(); });
     const orderBtn=out.querySelector('[data-rlorder]');
     orderBtn.onclick=async()=>{ l.stops=m.order; await save(); renderPlan(); renderOut(); orderBtn.disabled=true; orderBtn.textContent='✓ Delivery order changed'; flash(`${l.name}: delivery order now follows the link`); };
     const spotBtn=out.querySelector('[data-rlspots]');
     if(spotBtn) spotBtn.onclick=async()=>{
       let n=0; out.querySelectorAll('[data-rlspot]').forEach(cb=>{ if(!cb.checked) return; const s=m.matched.find(x=>String(x.idx)===cb.dataset.rlspot); if(!s) return;
         const p=s.p; S.parties[p]=S.parties[p]||{routes:[],place:'',pincode:''}; S.parties[p].pin=link.pts[s.seg]; n++; });
+      if(!n){ flash('Tick at least one spot'); return; }
       await save(); renderPlan(); renderOut(); spotBtn.disabled=true; spotBtn.textContent=`✓ ${n} spot${n===1?'':'s'} saved`; flash(`Saved ${n} exact spot${n===1?'':'s'}`); };
+  };
+  box.querySelector('[data-rlread]').onclick=()=>{
+    const out=box.querySelector('#rlOut'), lk=readRouteLink(box.querySelector('#rlLink').value);
+    if(lk.err){ out.innerHTML=`<p class="trayerr">${esc(lk.err)}</p>`; return; }
+    link=lk; manual={}; paint();
   };
 }
 /* ---------- WhatsApp text for the driver ----------
@@ -3659,12 +3724,12 @@ function cancelLines(party,pick,reason){
 }
 function linesInOpenLogs(){ return new Set(S.log.filter(g=>!g.resolved).flatMap(g=>g.stops.flatMap(s=>s.orderIds))); }
 function freeLinesOf(p){ const used=linesInOpenLogs(); return itemsOf(p).filter(o=>!used.has(o.id)&&str(o.item)); }
-function linePickHtml(lines,ticked){
+function linePickHtml(lines,ticked,qtys){
   return `<div class="lpick">${lines.map(o=>`<label class="lprow">
     <input type="checkbox" class="chk" data-lpk="${o.id}"${!ticked||ticked.has(o.id)?' checked':''}>
     <span class="lpi">${esc(o.item)}${remHtml(o)} <span class="g">· ${esc(o.date||'no date')}${o.tab?' · '+esc(o.tab):''}</span></span>
     <span class="g">ordered ${esc(o.qty)}</span>
-    <input data-lpq="${o.id}" value="${esc(o.qty)}" inputmode="decimal" title="Change if only part of it goes">
+    <input data-lpq="${o.id}" value="${esc(qtys&&qtys[o.id]!=null?qtys[o.id]:o.qty)}" inputmode="decimal" title="Change if only part of it goes">
   </label>`).join('')}</div>`;
 }
 // ticked lines and any changed qty, or {err}
@@ -5002,7 +5067,7 @@ function paintOutsideForm(){
   const box=$('#outBox'); if(!box) return;
   $('#outOpen').hidden=!!outForm;
   if(!outForm){ box.innerHTML=''; return; }
-  const F=outForm, dl=(id,vals)=>`<datalist id="${id}">${[...new Set(vals.filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
+  const F=outForm, keepY=window.scrollY, keepL=(box.querySelector('.ofparties')||{}).scrollTop||0, dl=(id,vals)=>`<datalist id="${id}">${[...new Set(vals.filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
   const head=`<div class="outform">
     <h3 style="margin:0 0 4px">${F.missing?'Record the missing lines as gone':'Record a vehicle sent outside the tool'}</h3>
     <p class="hint" style="margin:0 0 8px">${F.missing?'These lines are no longer in Orders. They go into the Plan log as one entry, so Party history and reports have them.':'For a plan made straight in the sheet. The ticked lines leave Orders with a Plan log record (applied at once, like Godown collected). Reopen the entry in the log to undo.'}</p>
@@ -5020,27 +5085,32 @@ function paintOutsideForm(){
       ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr><td>${i?'':'<b>'+pnameHtml(p)+'</b>'}</td><td>${esc(l.item)}</td><td class="n mono">${esc(l.qty)}</td><td class="mono">${esc(l.date||'—')}</td></tr>`).join('')).join('')}</table>`;
   } else {
     const tabs=sheetTabs(), q=F.q.trim().toLowerCase();
-    const ps=outFreeParties().filter(p=>(!q||p.toLowerCase().includes(q))&&(!F.tab||itemsOf(p).some(o=>(o.tab||'')===F.tab))||F.pick[p]);
-    Object.keys(F.pick).forEach(p=>{ const k=F.pick[p].ids.size; if(k){ nP++; nL+=k; } });
-    body=`<div class="row" style="margin-top:8px;align-items:flex-end;gap:8px">
+    const ps=outFreeParties().filter(p=>!F.pick[p]&&(!q||p.toLowerCase().includes(q))&&(!F.tab||itemsOf(p).some(o=>(o.tab||'')===F.tab)));
+    const sel=Object.keys(F.pick);
+    sel.forEach(p=>{ const k=F.pick[p].ids.size; if(k){ nP++; nL+=k; } });
+    const card=p=>{ const on=!!F.pick[p], lines=freeLinesOf(p);
+      return `<div class="ofp${on?' on':''}"><label class="ofph"><input type="checkbox" class="chk" data-ofp="${esc(p)}"${on?' checked':''}>
+        <b>${pnameHtml(p)}</b> <span class="g">· ${lines.length} line${lines.length===1?'':'s'}${(S.parties[p]?.routes||[]).length?' · '+esc(S.parties[p].routes.join(', ')):''}</span></label>
+        ${on?`<div data-ofbox="${esc(p)}">${linePickHtml(lines,F.pick[p].ids,F.pick[p].qty)}</div>`:''}</div>`; };
+    body=(sel.length?`<div class="ofsel"><div class="ofsh">Selected · ${sel.length} part${sel.length===1?'y':'ies'}</div>${sel.map(card).join('')}</div>`:'')+
+      `<div class="row" style="margin-top:8px;align-items:flex-end;gap:8px">
         <div><label>Find party</label><input id="ofQ" value="${esc(F.q)}" placeholder="Type to filter"></div>
         <div style="flex:0 0 auto"><label>Tab</label><select id="ofTab" style="width:auto"><option value="">All tabs</option>${tabs.map(t=>`<option${t===F.tab?' selected':''}>${esc(t)}</option>`).join('')}</select></div>
       </div>
-      <div class="ofparties">${ps.length?ps.map(p=>{ const on=!!F.pick[p], lines=freeLinesOf(p);
-        return `<div class="ofp${on?' on':''}"><label class="ofph"><input type="checkbox" class="chk" data-ofp="${esc(p)}"${on?' checked':''}>
-          <b>${pnameHtml(p)}</b> <span class="g">· ${lines.length} line${lines.length===1?'':'s'}${(S.parties[p]?.routes||[]).length?' · '+esc(S.parties[p].routes.join(', ')):''}</span></label>
-          ${on?`<div data-ofbox="${esc(p)}">${linePickHtml(lines,F.pick[p].ids)}</div>`:''}</div>`; }).join(''):'<p class="hint">No party with lines on hand matches.</p>'}</div>`;
+      <div class="ofparties">${ps.length?ps.map(card).join(''):'<p class="hint">No more parties with lines on hand match.</p>'}</div>`;
   }
   box.innerHTML=head+body+`<div class="row" style="margin-top:10px;gap:8px">
       <div style="flex:0 0 auto"><span><button class="tiny primary" id="ofSave"${nL?'':' disabled'}>Record ${nL} line${nL===1?'':'s'} of ${nP} part${nP===1?'y':'ies'} as gone</button></span></div>
       <div style="flex:0 0 auto"><button class="tiny ghost" id="ofCancel">Cancel</button></div>
     </div><p class="hint" id="ofErr" style="color:var(--alert);margin:4px 0 0"></p></div>`;
+  box.querySelectorAll('[data-ofbox] [data-lpq]').forEach(i=>i.oninput=()=>{ const p=i.closest('[data-ofbox]').dataset.ofbox; if(F.pick[p]){ F.pick[p].qty=F.pick[p].qty||{}; F.pick[p].qty[i.dataset.lpq]=i.value; } });
+  const ofl=box.querySelector('.ofparties'); if(ofl) ofl.scrollTop=keepL; window.scrollTo(0,keepY);
   const keep=(id,f)=>{ const el=$('#'+id); if(el) el.oninput=()=>{ F[f]=el.value; }; };
   keep('ofDate','date'); keep('ofVeh','veh'); keep('ofVno','vno'); keep('ofDrv','drv');
   const fq=$('#ofQ'); if(fq) fq.oninput=()=>{ F.q=fq.value; const pos=fq.selectionStart; paintOutsideForm(); const n=$('#ofQ'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } };
   const ft=$('#ofTab'); if(ft) ft.onchange=()=>{ F.tab=ft.value; paintOutsideForm(); };
   box.querySelectorAll('[data-ofp]').forEach(c=>c.onchange=()=>{ const p=c.dataset.ofp;
-    if(c.checked) F.pick[p]={ids:new Set(freeLinesOf(p).map(o=>o.id))}; else delete F.pick[p]; paintOutsideForm(); });
+    if(c.checked) F.pick[p]={ids:new Set(freeLinesOf(p).map(o=>o.id)),qty:{}}; else delete F.pick[p]; paintOutsideForm(); });
   box.querySelectorAll('[data-ofbox] [data-lpk]').forEach(c=>c.onchange=()=>{ const p=c.closest('[data-ofbox]').dataset.ofbox;
     if(!F.pick[p]) return; c.checked?F.pick[p].ids.add(c.dataset.lpk):F.pick[p].ids.delete(c.dataset.lpk); paintOutsideForm(); });
   $('#ofCancel').onclick=()=>{ outForm=null; paintOutsideForm(); };
