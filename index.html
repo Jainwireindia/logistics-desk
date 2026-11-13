@@ -389,7 +389,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .holdform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:#fff6e6;border-top:1px solid #f0d58f}
 .holdform .hchips .pill{font-size:10.5px}
 .holdnote{padding:4px 10px;font-size:12px;color:#7a4d00;background:#fff8ea;border-top:1px solid #f3e1b5}
-.tag.hold{background:var(--hold)} .tag.age{background:#a5670a} .tag.due{background:#0d6e6e}
+.tag.vehtag{background:#2f5d8a} .tag.hold{background:var(--hold)} .tag.age{background:#a5670a} .tag.due{background:#0d6e6e}
 .carddate{font-size:10px;padding:1px 6px;border-radius:2px;background:var(--panel2);border:1px solid var(--edge);
   color:var(--mute);font-family:ui-monospace,Menlo,monospace;font-weight:600}
 .tag.inlog{background:#1d4ed8}
@@ -1065,7 +1065,7 @@ Tata MS Wire 10g   350"></textarea>
   </div>
   <div class="card" style="padding-bottom:10px">
     <h2>Stock required</h2>
-    <p class="hint" style="margin:2px 0 8px">Every distinct item in Orders, A–Z, with qty needed across all parties. Open a row to see which parties.</p>
+    <p class="hint" id="stockHint" style="margin:2px 0 8px">Every distinct item in Orders, A–Z, with qty needed across all parties. Open a row to see which parties.</p>
     <div class="row" style="margin-bottom:6px">
       <div><label>Find an item</label><input id="stockSearch" placeholder="Type to filter items"></div>
       <div style="flex:0 0 auto"><label>Sort</label>
@@ -1237,7 +1237,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.2.1', APP_BUILD='24-10-2026';
+const APP_VERSION='3.4.1', APP_BUILD='09-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1275,6 +1275,7 @@ let S={
   // still loading; a field missing here (like combos used to be) crashes that early paint.
 };
 let dirty=false, saving=false, saveTimer=null, saveFailed=false;
+let syncUnsent=false; // v3.3.1: a change on this device the Google Sheet has not got yet (badge + close warning)
 // Every edit calls save(); that now only marks the state dirty and schedules one coalesced
 // write ~1.2s later, instead of blocking the screen on a full-state write per keystroke.
 // save() is awaited by nearly every click handler before it re-renders, so it must never
@@ -1314,6 +1315,7 @@ async function undoGo(back){
 let stateRev=0; // goes up on every change, so a save only counts as done if nothing changed while it ran
 function markDirty(){
   stateRev++; dirty=true; saveFailed=false; updateSaveBadge();
+  if(typeof syncCfg!=='undefined'&&syncCfg&&!syncUnsent){ syncUnsent=true; if(typeof updateSyncBadge==='function') updateSyncBadge(); }
   clearTimeout(saveTimer); saveTimer=setTimeout(flushSave,1200);
 }
 async function flushSave(){
@@ -1402,6 +1404,49 @@ function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).sli
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---------- v3.4: search like Tally ----------
+   Type any part of a name, spaced or dotted any way: "SN Traders", "S N Traders", "S.N. Traders" and
+   "sntraders" all find S N TRADERS ADOOR, S.N. TRADERS and SN TRADERS. Capitals, dots, dashes, "&" and
+   "and" do not matter; words can be typed in any order; every typed word must match (as the start of
+   a word, or anywhere inside the name once it is run together); a small typo in a longer word is forgiven.
+   nameSearch(q) -> test(text) or null when nothing is typed.   itemSearch(q) -> same, for sizes and item names. */
+const _srchCache=new Map();
+function _srchWords(text){
+  let t=String(text==null?'':text);
+  let c=_srchCache.get(t); if(c) return c;
+  let s=t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  s=s.replace(/[-\/,()+:;|_*&\\#@]+/g,' ').replace(/['’`.]/g,'');
+  const ws=s.split(/\s+/).filter(w=>w&&w!=='and');
+  const m=[]; let run=false;                         // single letters side by side are one word: "s n" -> "sn"
+  ws.forEach(w=>{ if(w.length===1){ if(run) m[m.length-1]+=w; else{ m.push(w); run=true; } } else { m.push(w); run=false; } });
+  c={w:m,c:m.join('')};
+  if(_srchCache.size>6000) _srchCache.clear();
+  _srchCache.set(t,c); return c;
+}
+function _near(a,b){            // one letter wrong / missing / extra / swapped
+  if(Math.abs(a.length-b.length)>1) return false;
+  let i=0; while(i<a.length&&i<b.length&&a[i]===b[i]) i++;
+  if(i===a.length||i===b.length) return Math.abs(a.length-b.length)<=1;
+  if(a.length===b.length){ if(a.slice(i+1)===b.slice(i+1)) return true; return a[i]===b[i+1]&&a[i+1]===b[i]&&a.slice(i+2)===b.slice(i+2); }
+  return a.length>b.length?a.slice(i+1)===b.slice(i):b.slice(i+1)===a.slice(i);
+}
+function nameSearch(q){
+  const Q=_srchWords(q); if(!Q.w.length) return null;
+  return text=>{
+    const H=_srchWords(text);
+    return Q.w.every(t=>H.w.some(w=>w.startsWith(t))||(t.length>=3&&H.c.includes(t))||
+      (t.length>=5&&H.w.some(w=>_near(t,w)||_near(t,w.slice(0,t.length))||_near(t,w.slice(0,t.length+1)))));
+  };
+}
+function _itemWords(text){
+  const s=String(text==null?'':text).toLowerCase().replace(/[×*]/g,'x').replace(/[^a-z0-9./x ]+/g,' ');
+  return {w:s.split(/\s+/).filter(Boolean),c:s.replace(/\s+/g,'')};
+}
+function itemSearch(q){
+  const Q=_itemWords(q); if(!Q.w.length) return null;
+  return text=>{ const H=_itemWords(text); return Q.w.every(t=>H.c.includes(t)); };
+}
+
 const num=n=>Number(n||0).toLocaleString('en-IN');
 function flash(msg){
   const d=document.createElement('div');d.className='flash';d.textContent=msg;
@@ -1687,8 +1732,8 @@ function complementRoutes(selected){
 }
 function poolParties(){
   const all=unassignedParties(), f=poolFilter();
-  const q=($('#poolSearch')?.value||'').trim().toLowerCase();
-  let list=q?all.filter(p=>p.toLowerCase().includes(q)):all.slice();
+  const qt=nameSearch($('#poolSearch')?.value||'');
+  let list=qt?all.filter(qt):all.slice();
   // parties that fit a vehicle already set up (routes picked) float to the top - a stable sort
   // means anything with no match just stays in its original order underneath, untouched
   // urgency first: overdue, then due today, then the rest; batches all on hold sink to the bottom.
@@ -2616,8 +2661,8 @@ function paintOrders(){
   const parties=partiesToday();
   setCount(`— ${parties.length} parties, ${S.orders.length} item lines`);
 
-  const q=ordQuery.trim().toLowerCase();
-  let shown=q?parties.filter(p=>p.toLowerCase().includes(q)):parties;
+  const q=ordQuery.trim(), qt=nameSearch(q);
+  let shown=qt?parties.filter(qt):parties;
   if(ordTabs.size) shown=shown.filter(p=>itemsOf(p).some(o=>ordTabs.has(o.tab||'Untagged')));
   if(q||ordTabs.size) setCount(`— showing ${shown.length} of ${parties.length} parties`);
   if(!shown.length){
@@ -2926,7 +2971,7 @@ function paintRoutes(){
       S.combos=S.combos.filter(x=>x.id!==b.dataset.cdel);
       await save();renderRoutes();renderDash();}));
 
-  const q=$('#pSearch').value.trim().toLowerCase(),f=$('#pFilter').value;
+  const q=$('#pSearch').value.trim(),f=$('#pFilter').value;
   const today=new Set(partiesToday());
   let names=Object.keys(S.parties).sort();
   if(f==='today')names=names.filter(n=>today.has(n));
@@ -2936,7 +2981,7 @@ function paintRoutes(){
   if(f==='sites')names=names.filter(n=>siteOf(n).site);
   // a party's delivery locations sit right under it
   names.sort((a,b)=>{ const x=siteOf(a), y=siteOf(b); return x.base.localeCompare(y.base)||(x.site?1:0)-(y.site?1:0)||x.site.localeCompare(y.site); });
-  if(q)names=names.filter(n=>n.toLowerCase().includes(q));
+  { const qt=nameSearch(q); if(qt) names=names.filter(qt); }
 
   const t=$('#partyTable');
   if(!names.length){t.innerHTML='<tr><td class="hint">No parties match.</td></tr>';return;}
@@ -3572,17 +3617,20 @@ function xmlEsc(v){ return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function buildPlanXlsx(lanes){
   const COLS='ABCDEF', rows=[]; let r=3; // rows 1-2 empty
   lanes.forEach((l,li)=>{ laneRows(l).forEach(x=>rows.push({...x,r:r++})); if(li<lanes.length-1) r++; });
+  // text goes in a shared-strings list (iPhone's built-in viewer shows blank cells for inline text)
+  const sst=[], sstIx=new Map(); let sstCount=0;
+  const sIdx=v=>{ const k=String(v); sstCount++; if(!sstIx.has(k)){ sstIx.set(k,sst.length); sst.push(k); } return sstIx.get(k); };
   const cell=(col,row,v,style,f)=>{
     const ref=col+row, sAttr=` s="${style}"`;
     if(f) return `<c r="${ref}"${sAttr}><f>D${row}*E${row}</f><v>${xmlEsc(v)}</v></c>`;
     if(v===''||v==null) return `<c r="${ref}"${sAttr}/>`;
     const t=String(v).trim();
     if(/^-?\d+(\.\d+)?$/.test(t)) return `<c r="${ref}"${sAttr}><v>${t}</v></c>`;
-    return `<c r="${ref}"${sAttr} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+    return `<c r="${ref}"${sAttr} t="s"><v>${sIdx(v)}</v></c>`;
   };
   const sheetRows=rows.map(x=>`<row r="${x.r}">${x.c.map((v,i)=>cell(COLS[i+1],x.r,v,x.bold?2:1,i===4&&x.f)).join('')}</row>`).join('');
   const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="1"/></sheetViews>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="${rows.length?'B3:F'+rows[rows.length-1].r:'A1'}"/><sheetViews><sheetView workbookViewId="0" showGridLines="1"/></sheetViews>
 <cols><col min="1" max="1" width="3" customWidth="1"/><col min="2" max="2" width="6" customWidth="1"/><col min="3" max="3" width="48" customWidth="1"/><col min="4" max="4" width="10" customWidth="1"/><col min="5" max="5" width="10" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/></cols>
 <sheetData>${sheetRows}</sheetData><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/></worksheet>`;
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -3595,15 +3643,21 @@ function buildPlanXlsx(lanes){
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   const files=[
     {name:'[Content_Types].xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`},
     {name:'_rels/.rels',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`},
+    {name:'docProps/core.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>Loading plan</dc:title><dc:creator>Logistics Desk</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString().replace(/\.\d+Z$/,'Z')}</dcterms:created></cp:coreProperties>`},
+    {name:'docProps/app.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Microsoft Excel</Application></Properties>`},
     {name:'xl/workbook.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets><sheet name="Loading plan" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`},
     {name:'xl/_rels/workbook.xml.rels',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>`},
     {name:'xl/styles.xml',text:styles},
-    {name:'xl/worksheets/sheet1.xml',text:sheet}];
+    {name:'xl/worksheets/sheet1.xml',text:sheet},
+    {name:'xl/sharedStrings.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${sstCount}" uniqueCount="${sst.length}">${sst.map(t=>`<si><t xml:space="preserve">${xmlEsc(t)}</t></si>`).join('')}</sst>`}];
   return zipStore(files);
 }
 /* "For Jain Wire Ekm Loading Idukki, Tdpa, Pala 06-10-26 0745.xlsx" - the routes of the plan(s)
@@ -3890,14 +3944,13 @@ function paintLog(){
   if(!S.log.length){ box.innerHTML='<div class="card"><p class="hint">Nothing logged yet. Build a plan in step 3, then press "Add this plan to the log" in step 4.</p></div>'; return; }
   S.log.forEach(normalizeGone);
 
-  const q=($('#logSearch')?.value||'').trim().toLowerCase();
+  const q=($('#logSearch')?.value||'').trim();
   const f=$('#logFilter')?.value||'all';
   let list=S.log.slice().reverse();
   if(f==='open') list=list.filter(g=>!g.resolved);
   if(f==='resolved') list=list.filter(g=>g.resolved);
-  if(q) list=list.filter(g=>
-    [g.title,g.vehicle,g.vehicleNo,g.driver,g.createdAt].some(v=>(v||'').toLowerCase().includes(q)) ||
-    g.stops.some(st=>(st.party||'').toLowerCase().includes(q)));
+  { const qt=nameSearch(q);
+    if(qt) list=list.filter(g=>qt([g.title,g.vehicle,g.vehicleNo,g.driver,g.createdAt,...g.stops.map(st=>st.party)].join(' '))); }
   if(!list.length){ box.innerHTML='<div class="card"><p class="hint">No log entries match.</p></div>'; return; }
   const kgs=new Map(list.map(g=>[g.id,logKg(g)]));
   const totGone=list.reduce((a,g)=>a+kgs.get(g.id).gone,0), totLoaded=list.reduce((a,g)=>a+kgs.get(g.id).loaded,0);
@@ -3987,6 +4040,7 @@ function paintLog(){
               : (incPending(g).length?`<button class="danger" disabled>Choose keep or remove for ${incPending(g).length} increased line${incPending(g).length===1?'':'s'} first</button>`
                 : `<button class="danger" data-cleardel="${g.id}" ${changing.length?'':'disabled'}>Apply delivery — updates ${changing.length} line${changing.length===1?'':'s'}</button>`)}
           </div>
+          ${!g.resolved&&live.length<allIds.length?`<div style="flex:0 0 auto"><button class="ghost" data-logclear="${g.id}" title="Marks this log done without changing anything. Lines still in Orders stay as they are (not gone).">Clear log — ${allIds.length-live.length} of ${allIds.length} line${allIds.length===1?'':'s'} already deleted from sheet</button></div>`:''}
           ${g.resolved||g.godown?'':`<div style="flex:0 0 auto"><button class="primary" data-logback="${g.id}" title="Deletes this log entry and puts the vehicle back on Build Plan to edit">Delete &amp; edit again in Build Plan</button></div>`}
           <div style="flex:0 0 auto"><button class="ghost" data-logdel="${g.id}">Delete this log entry</button></div>
         </div>
@@ -4092,6 +4146,15 @@ function paintLog(){
     armConfirm(el,`Yes, update ${changing.length} lines`,async()=>{
       applyLogEntry(g);
       await save(); renderAll(); flash(`Updated ${changing.length} line(s)`);});
+  });
+  // orders already deleted in the sheet: close the entry by hand, nothing in Orders/Stock changes
+  box.querySelectorAll('[data-logclear]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation();
+    const g=S.log.find(x=>x.id===el.dataset.logclear); if(!g||g.resolved)return;
+    const left=g.stops.flatMap(s=>s.orderIds).filter(id=>S.orders.some(o=>o.id===id)).length;
+    armConfirm(el,left?`Yes, clear — ${left} line${left===1?'':'s'} stay in Orders`:'Yes, clear this log',async()=>{
+      g.resolved=true; g.cleared=true; g.snapshot=[]; g.stockDelta=null; g.appliedAt=Date.now();
+      await save(); renderAll(); flash(left?`Log cleared — ${left} line${left===1?'':'s'} left in Orders unchanged`:'Log cleared');});
   });
   box.querySelectorAll('[data-reopen]').forEach(el=>el.onclick=e=>{
     e.stopPropagation();
@@ -4230,9 +4293,11 @@ function qtyText(map){
     .sort((a,b)=>a[0]===''?-1:b[0]===''?1:a[0].localeCompare(b[0]))
     .map(([u,n])=>num(+n.toFixed(3))+(u?' '+u:'')).join(' + ');
 }
-function stockGroups(){
+/* v3.3: lines = S.orders by default; the Vehicle view passes the Build plan's loaded lines,
+   each with _lane (vehicle name) - then a party is kept per vehicle (a party in two lanes = two rows) */
+function stockGroups(lines){
   const g=new Map();
-  S.orders.forEach(o=>{
+  (lines||S.orders).forEach(o=>{
     const k=stockKey(o.item); if(!k) return;
     let e=g.get(k);
     if(!e){ e={key:k,labels:new Map(),qty:new Map(),qtyLines:new Map(),weight:0,parties:new Map(),units:new Set()}; g.set(k,e); }
@@ -4245,9 +4310,10 @@ function stockGroups(){
     e.qtyLines.get(qu).n++;
     addQty(e.qty,o.qty); e.weight+=w;
     if(o.unit!=='' && o.unit!=null) e.units.add(String(o.unit));
-    let p=e.parties.get(o.party);
-    if(!p){ p={party:o.party,qty:new Map(),weight:0,tab:o.tab||'',date:o.date||'',
-               routes:(S.parties[o.party]?.routes)||[],tags:new Set()}; e.parties.set(o.party,p); }
+    const pk=o._lane?o.party+'\u0001'+o._lane:o.party;
+    let p=e.parties.get(pk);
+    if(!p){ p={party:o.party,lane:o._lane||'',qty:new Map(),weight:0,tab:o.tab||'',date:o.date||'',
+               routes:(S.parties[o.party]?.routes)||[],tags:new Set()}; e.parties.set(pk,p); }
     addQty(p.qty,o.qty); p.weight+=w;
     p.held=(p.held!==false)&&lineHeld(o); // HOLD only when every line of this party's item is held
     itemTags(o.item).forEach(t=>p.tags.add(t));
@@ -4347,9 +4413,17 @@ function parseStockPaste(text){
 const stockOpen=new Set();
 const stockTabs=new Set();
 const stockRoutes=new Set();
-let stockMode='tab'; // 'tab' | 'route' — mutually exclusive, matches the toggle
+let stockMode='tab'; // 'tab' | 'route' | 'veh' — mutually exclusive, matches the toggle
+const stockVehs=new Set(); // lane ids ticked in the Vehicle view; empty = every vehicle on the Build plan
+let stockLast=null;        // what the screen shows now, for Copy list
+// the Build plan vehicles' lines as they will be loaded (edited load qty counted), each tagged with its vehicle
+function vehLanes(){ return S.plan.lanes.filter(l=>l.stops.some(st=>stopItems(st).length)); }
+function vehStockLines(){
+  const ls=vehLanes().filter(l=>!stockVehs.size||stockVehs.has(l.id));
+  return ls.flatMap(l=>l.stops.flatMap(st=>stopLines(st).filter(o=>str(o.item)).map(o=>({...o,_lane:l.name}))));
+}
 function paintStock(){
-  const q=stockKey($('#stockSearch')?.value||'');
+  const qi=itemSearch($('#stockSearch')?.value||'');
   const sort=$('#stockSort')?.value||'az';
 
   // mode toggle
@@ -4358,11 +4432,12 @@ function paintStock(){
     modeBox.innerHTML=`<div class="segtoggle">
       <button data-smode="tab" class="${stockMode==='tab'?'on':''}">Tab</button>
       <button data-smode="route" class="${stockMode==='route'?'on':''}">Route</button>
+      <button data-smode="veh" class="${stockMode==='veh'?'on':''}" title="What is loaded on the Build plan vehicles">In vehicle</button>
     </div>`;
     modeBox.querySelectorAll('[data-smode]').forEach(el=>el.onclick=()=>{
       const m=el.dataset.smode; if(m===stockMode) return;
       stockMode=m;
-      if(m==='tab') stockRoutes.clear(); else stockTabs.clear();
+      stockRoutes.clear(); stockTabs.clear(); stockVehs.clear();
       paintStock();
     });
   }
@@ -4384,6 +4459,19 @@ function paintStock(){
         else stockTabs.has(t)?stockTabs.delete(t):stockTabs.add(t);
         paintStock();
       });
+    }else if(stockMode==='veh'){
+      const lanes=vehLanes();
+      [...stockVehs].forEach(id=>{ if(!lanes.some(l=>l.id===id)) stockVehs.delete(id); });
+      pillBox.innerHTML=lanes.length
+        ? lanes.map(l=>`<span class="pill click ${stockVehs.has(l.id)?'on':''}" data-sveh="${esc(l.id)}">${esc(l.name)} (${num(Math.round(laneWeight(l)))} kg)</span>`).join('')
+            +`<span class="pill click" data-sveh="__all__" style="border-style:dashed">${stockVehs.size?'Clear ('+stockVehs.size+')':'All vehicles'}</span>`
+        : `<span class="hint">No vehicle on the Build plan has anything loaded yet.</span>`;
+      pillBox.querySelectorAll('[data-sveh]').forEach(el=>el.onclick=()=>{
+        const id=el.dataset.sveh;
+        if(id==='__all__') stockVehs.clear();
+        else stockVehs.has(id)?stockVehs.delete(id):stockVehs.add(id);
+        paintStock();
+      });
     }else{
       const counts={};
       S.orders.forEach(o=>{ (S.parties[o.party]?.routes||[]).forEach(r=>{ counts[r]=(counts[r]||0)+1; }); });
@@ -4403,7 +4491,12 @@ function paintStock(){
     }
   }
 
-  let list=stockGroups();
+  const veh=stockMode==='veh';
+  const hintEl=$('#stockHint');
+  if(hintEl) hintEl.textContent=veh
+    ?'Every item loaded on the Build plan vehicles, with the qty going (an edited load qty counts, not the ordered qty). Tick vehicles to see just those. Open a row to see which parties and vehicles.'
+    :'Every distinct item in Orders, A–Z, with qty needed across all parties. Open a row to see which parties.';
+  let list=veh?(vehLanes().length?stockGroups(vehStockLines()):[]):stockGroups();
   if(stockMode==='tab' && stockTabs.size) list=list.map(g=>{
     const parties=g.parties.filter(p=>stockTabs.has(p.tab||'Untagged'));
     if(!parties.length) return null;
@@ -4416,7 +4509,7 @@ function paintStock(){
     const q=new Map(); parties.forEach(p=>p.qty.forEach((n,u)=>q.set(u,(q.get(u)||0)+n)));
     return {...g,parties,qty:q,qtyText:qtyText(q),weight:parties.reduce((a,p)=>a+p.weight,0)};
   }).filter(Boolean);
-  if(q) list=list.filter(g=>g.key.includes(q));
+  if(qi) list=list.filter(g=>qi(g.label));
   const show=$('#stockShow')?.value||'all';
   if(show==='out') list=list.filter(g=>g.stockReady!=null&&g.currentStock<=0);
   else if(show==='short') list=list.filter(g=>g.stockReady!=null&&(g.currentStock<=0||g.shortBy>0));
@@ -4429,20 +4522,23 @@ function paintStock(){
   const totLines=list.reduce((a,g)=>a+g.parties.length,0);
   const totWt=list.reduce((a,g)=>a+g.weight,0);
   const sum=$('#stockSummary');
+  const nVeh=veh?(stockVehs.size||vehLanes().length):0;
   if(sum) sum.textContent=list.length
-    ? `${list.length} distinct item${list.length>1?'s':''} · ${totLines} party line${totLines>1?'s':''} · ${num(totWt)} kg total`
+    ? `${list.length} distinct item${list.length>1?'s':''} · ${totLines} party line${totLines>1?'s':''} · ${num(totWt)} kg total${veh?` · in ${nVeh} vehicle${nVeh===1?'':'s'}`:''}`
     : '';
+  stockLast={list,veh,vehs:veh?vehLanes().filter(l=>!stockVehs.size||stockVehs.has(l.id)).map(l=>l.name):[]};
 
   if(!list.length){
     $('#stockBody').innerHTML=`<div class="card"><p class="hint">${
-      S.orders.length?'No items match that filter.':'Nothing in Orders yet — add a batch in step 1.'}</p></div>`;
+      veh&&!vehLanes().length?'Nothing is loaded on a Build plan vehicle yet. Make the plan in Logistics → Build plan, then come back here.'
+      :S.orders.length?'No items match that filter.':'Nothing in Orders yet — add a batch in step 1.'}</p></div>`;
     return;
   }
 
-  let h='<div class="card"><table class="sheet"><tr class="title">'+
-    '<td style="width:44px"></td><td>Item</td><td style="width:110px">Qty needed</td>'+
+  let h='<div class="card"><table class="sheet"><tr class="title">'+`
+    <td style="width:44px"></td><td>Item</td><td style="width:110px">${veh?'Qty in vehicle':'Qty needed'}</td>`+
     '<td style="width:110px">Unit wt</td><td style="width:120px">Total wt</td>'+
-    '<td style="width:110px">Parties</td><td style="width:170px">Current stock</td></tr>';
+    `<td style="width:110px">Parties</td><td style="width:170px">Current stock</td></tr>`;
   list.forEach(g=>{
     const open=stockOpen.has(g.key);
     const unit=g.units.length===1?num(g.units[0]):(g.units.length?'mixed':'');
@@ -4463,13 +4559,13 @@ function paintStock(){
             ?`<div class="hint" style="color:var(--alert);font-weight:700">out of stock${g.meta&&g.meta.zeroAt?` · ${daysSince(g.meta.zeroAt)}d (since ${dmyOf(g.meta.zeroAt)})`:''}</div>`
             :g.shortBy>0
             ?`<div class="hint" style="color:var(--alert);font-weight:700">short ${num(g.shortBy)} ${esc(unitLabel)}</div>`
-            :`<div class="hint">enough for all orders</div>`):''}
+            :`<div class="hint">${veh?'enough for this load':'enough for all orders'}</div>`):''}
         ${g.meta&&g.meta.at?`<div class="hint" style="font-size:10.5px">given ${dmyOf(g.meta.at)}${g.deliveredOut?` · ${num(g.deliveredOut)} out since`:''}</div>`:''}
       </td></tr>`;
     if(open){
       g.parties.forEach(p=>{
-        h+=`<tr><td></td><td style="padding-left:18px">${esc(p.party)}${
-          p.tab?` <span class="hint">· ${esc(p.tab)}</span>`:''}${
+        h+=`<tr><td></td><td style="padding-left:18px">${pnameHtml(p.party)}${
+          p.lane?` <span class="tag vehtag">${esc(p.lane)}</span>`:p.tab?` <span class="hint">· ${esc(p.tab)}</span>`:''}${
           p.held?' <span class="tag hold">HOLD</span>':''}${
           p.tags.length?` <span class="hint" style="color:#a5670a">(${esc(p.tags.join(', '))})</span>`:''}</td>
           <td class="mono">${esc(p.qtyText)}</td><td></td>
@@ -4568,16 +4664,16 @@ function repPeriodRange(v){
 }
 function repFiltered(mode){
   const [a,b]=repPeriodRange($('#repPeriod').value);
-  const f=$('#repFind').value.trim().toLowerCase(), it=$('#repItem').value.trim().toLowerCase().replace(/\s+/g,'');
+  const f=nameSearch($('#repFind').value), it=itemSearch($('#repItem').value);
   const unconf=$('#repUnconf').checked;
   return reportLines().filter(l=>{
     if(!unconf&&!l.conf) return false;
     if(l.dk&&(l.dk<a||l.dk>b)) return false;
     if(!l.dk&&$('#repPeriod').value!=='all') return false;
-    if(it&&!l.item.toLowerCase().replace(/\s+/g,'').includes(it)) return false;
+    if(it&&!it(l.item)) return false;
     if(f){
       const hay=mode==='party'?l.party:mode==='vehicle'?(l.vehicleNo+' '+l.vehicle):mode==='driver'?l.driver:(l.date+' '+l.party+' '+l.vehicleNo+' '+l.driver);
-      if(!hay.toLowerCase().includes(f)) return false;
+      if(!f(hay)) return false;
     }
     return true;
   });
@@ -4649,11 +4745,11 @@ function paintReports(){
 let repLastCx=[];
 function repCancels(){
   const [a,b]=repPeriodRange($('#repPeriod').value);
-  const f=$('#repFind').value.trim().toLowerCase(), it=$('#repItem').value.trim().toLowerCase().replace(/\s+/g,'');
+  const f=nameSearch($('#repFind').value), it=itemSearch($('#repItem').value);
   return (S.cancels||[]).filter(c=>{ const dk=repDayKey(c.at);
     if(dk&&(dk<a||dk>b)) return false;
-    if(f&&!String(c.party).toLowerCase().includes(f)) return false;
-    if(it&&!String(c.item).toLowerCase().replace(/\s+/g,'').includes(it)) return false;
+    if(f&&!f(c.party)) return false;
+    if(it&&!it(c.item)) return false;
     return true; });
 }
 function cancelHtml(cs){
@@ -4672,8 +4768,10 @@ $('#repCopy').onclick=()=>{
   copy(txt,`Copied ${rows.length} lines`);
 };
 function stockText(){
-  let list=stockGroups().sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true,sensitivity:'base'}));
-  return list.map(g=>`${g.label}\t${g.qtyText}\t${g.weight}`).join('\n');
+  // v3.3: copies what the screen shows (filters, sort, Vehicle view)
+  const L=stockLast&&stockLast.list?stockLast.list:stockGroups().sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true,sensitivity:'base'}));
+  const head=stockLast&&stockLast.veh?`In vehicle: ${stockLast.vehs.join(', ')}\n`:'';
+  return head+L.map(g=>`${g.label}\t${g.qtyText}\t${+(+g.weight).toFixed(3)}`).join('\n');
 }
 
 /* ---------- wiring ---------- */
@@ -4777,6 +4875,7 @@ function gotoView(v){
   $('#logiBtn').hidden=LOGI_STEPS.includes(v); // inside Logistics the header shows ‹ Prev / Next › instead
   if(v==='admin') stale.add('admin');
   if(v==='log') setTimeout(paintSumFields,0);
+  if(v==='stock') stale.add('stock'); // the Vehicle view follows Build plan edits
   currentView=v;
   $$('nav button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   $$('.view').forEach(sec=>sec.classList.toggle('on',sec.id==='v-'+(REPORT_VIEWS[v]?'reports':v)));
@@ -4871,20 +4970,20 @@ function paintUploads(){
   fill($('#upTab'),[...new Set(all.map(u=>u.tab||''))].sort(),'All tabs');
   const days=[...new Set(all.map(u=>u.day))].sort((a,b)=>dmyKey(b)-dmyKey(a));
   fill($('#upDate'),days,'Any day');
-  const q=$('#upSearch').value.trim().toLowerCase(), ft=$('#upTab').value, fd=$('#upDate').value;
-  const hit=l=>!q||String(l.party).toLowerCase().includes(q)||String(l.item).toLowerCase().includes(q);
+  const qn=nameSearch($('#upSearch').value), qi=itemSearch($('#upSearch').value), ft=$('#upTab').value, fd=$('#upDate').value;
+  const hit=l=>!qn||qn(l.party)||qi(l.item);
   const where=upWhere();
-  const list=[...all].reverse().filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)&&(!q||u.lines.some(hit)||u.skipped.some(hit)));
+  const list=[...all].reverse().filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)&&(!qn||u.lines.some(hit)||u.skipped.some(hit)));
   if(!all.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">Nothing uploaded yet. Each paste you add in Orders will be listed here.</p></div>'; return; }
   if(!list.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">No upload matches.</p></div>'; return; }
   $('#upBody').innerHTML=list.map(u=>{
     const parties=[...new Set(u.lines.map(l=>l.party))];
     const wt=u.lines.reduce((a,l)=>a+(wtNum(l.weight)||0),0);
     const stillHere=u.lines.filter(l=>S.orders.some(o=>o.id===l.id));
-    const open=upOpen.has(u.id)||!!q;
-    const lines=q?u.lines.filter(hit):u.lines;
+    const open=upOpen.has(u.id)||!!qn;
+    const lines=qn?u.lines.filter(hit):u.lines;
     const byP=new Map(); lines.forEach(l=>{ if(!byP.has(l.party)) byP.set(l.party,[]); byP.get(l.party).push(l); });
-    const skipped=q?u.skipped.filter(hit):u.skipped;
+    const skipped=qn?u.skipped.filter(hit):u.skipped;
     return `<div class="upent ${open?'open':''}">
       <div class="uphead" data-uptog="${u.id}">
         <span class="caret">▸</span>
@@ -4914,7 +5013,7 @@ function paintUploads(){
   $('#upBody').querySelectorAll('[data-upcopy]').forEach(b=>b.onclick=e=>{
     e.stopPropagation(); // don't open/close the entry
     const u=S.uploads.find(x=>x.id===b.dataset.upcopy); if(!u) return;
-    const ls=q?u.lines.filter(hit):u.lines;
+    const ls=qn?u.lines.filter(hit):u.lines;
     copy(uploadTsv(ls),`Upload #${u.no} copied — ${ls.length} line${ls.length===1?'':'s'}`);
   });
   $('#upBody').querySelectorAll('[data-uptog]').forEach(h=>h.onclick=()=>{
@@ -4951,8 +5050,8 @@ function uploadTsv(lines){
   return [...groups.values()].map(g=>[`${g.date}\t${g.party}`,...g.lines.map(l=>`\t${l.item}\t${l.qty??''}`)].join('\n')).join('\n\n');
 }
 $('#upCopyAll').onclick=()=>{
-  const q=$('#upSearch').value.trim().toLowerCase(), ft=$('#upTab').value, fd=$('#upDate').value;
-  const hit=l=>!q||String(l.party).toLowerCase().includes(q)||String(l.item).toLowerCase().includes(q);
+  const qn=nameSearch($('#upSearch').value), qi=itemSearch($('#upSearch').value), ft=$('#upTab').value, fd=$('#upDate').value;
+  const hit=l=>!qn||qn(l.party)||qi(l.item);
   const ls=(S.uploads||[]).filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)).flatMap(u=>u.lines.filter(hit).map(l=>({...l,_u:u.id})));
   if(!ls.length){ flash('Nothing to copy'); return; }
   const txt=uploadTsv(ls), n=txt.split('\n').filter(x=>x.startsWith('\t')).length;
@@ -5084,8 +5183,8 @@ function paintOutsideForm(){
     body=`<table class="misstab" style="margin-top:8px"><tr><th>Party</th><th>Item</th><th class="n">Qty</th><th>Order date</th></tr>
       ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr><td>${i?'':'<b>'+pnameHtml(p)+'</b>'}</td><td>${esc(l.item)}</td><td class="n mono">${esc(l.qty)}</td><td class="mono">${esc(l.date||'—')}</td></tr>`).join('')).join('')}</table>`;
   } else {
-    const tabs=sheetTabs(), q=F.q.trim().toLowerCase();
-    const ps=outFreeParties().filter(p=>!F.pick[p]&&(!q||p.toLowerCase().includes(q))&&(!F.tab||itemsOf(p).some(o=>(o.tab||'')===F.tab)));
+    const tabs=sheetTabs(), qt=nameSearch(F.q);
+    const ps=outFreeParties().filter(p=>!F.pick[p]&&(!qt||qt(p))&&(!F.tab||itemsOf(p).some(o=>(o.tab||'')===F.tab)));
     const sel=Object.keys(F.pick);
     sel.forEach(p=>{ const k=F.pick[p].ids.size; if(k){ nP++; nL+=k; } });
     const card=p=>{ const on=!!F.pick[p], lines=freeLinesOf(p);
@@ -6480,7 +6579,10 @@ function syncReport(){
   if(!syncLog.length) L.push('  (none since the page was opened)');
   return L.join('\n');
 }
-function setSyncState(s,msg){ syncState={s,at:s==='ok'?Date.now():syncState.at,msg:msg||''}; updateSyncBadge(); paintSync(); }
+function setSyncState(s,msg){ syncState={s,at:s==='ok'?Date.now():syncState.at,msg:msg||''};
+  // v3.3.1: after a good sync, is anything of this device's still not in the sheet's copy?
+  if(s==='ok'){ try{ syncUnsent=!!(syncBase&&!syncFirst&&!same(toModel(),syncBase.model)); }catch(_){} }
+  updateSyncBadge(); paintSync(); }
 function hhmm(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 function paintSyncBadge(el){
   el.style.display='';
@@ -6490,6 +6592,7 @@ function paintSyncBadge(el){
   if(syncHold){ setBadge(el,'failed','cloudx','Sync stopped — check Setup','Check','A save would delete a lot from the sheet — open Setup'); return; }
   if(st.s==='busy'){ setBadge(el,'saving busy','spin','Syncing with sheet…','Syncing','Syncing with the Google Sheet…'); return; }
   if(st.s==='err'){ setBadge(el,'failed','cloudx','Sheet not reached — retry','Retry',st.msg+' — tap to retry'); return; }
+  if(syncUnsent&&syncBase&&syncState.s!=='off') { setBadge(el,'dirty','cloud','Not sent to sheet yet','Unsent','Changes on this device are not in the Google Sheet yet — keep this open for a moment, or tap to send now'); return; }
   const t=st.at?hhmm(st.at):'';
   setBadge(el,'clean','cloud',t?'Sheet synced · '+t:'Sheet',t||'Sheet',(t?'Last synced with the Google Sheet at '+t:'Google Sheet')+' — tap to sync now');
   if(was.indexOf('busy')>=0 && st.at) pulseBadge(el); // a little flash each time a sync lands
@@ -6510,9 +6613,10 @@ async function syncNow(why){
   try{
     let local=toModel();
     // a save that changed nothing the sheet keeps (moving cards in Build Plan, etc.) needs no call at all
-    if(why==='timer'&&syncBase&&!syncFirst&&same(local,syncBase.model)){ if(syncState.s==='busy') setSyncState('ok'); return; }
+    if(why==='timer'&&syncBase&&!syncFirst&&same(local,syncBase.model)){ if(syncState.s==='busy') setSyncState('ok'); else if(syncUnsent){ syncUnsent=false; updateSyncBadge(); } return; }
     // the 30-second background check stays silent unless something changes (no spinning badge all day)
     if(!(why==='poll'&&syncBase&&same(local,syncBase.model))) setSyncState('busy');
+    else if(syncUnsent){ syncUnsent=false; updateSyncBadge(); }
     if(!syncBase){ syncFull=true; paintSync(); try{ await firstSync(local,!localHasData()); } finally{ syncFull=false; } }
     else if(!same(local,syncBase.model)) await pushMerging(local);
     else{
@@ -6890,9 +6994,13 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 load().then(()=>{ ldSeen(); const slim=slimOldLog(); renderAll(); undoReset(); if(slim) save(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit
-window.addEventListener('beforeunload',e=>{ if(dirty||saving){ e.preventDefault(); e.returnValue=''; } });
-// and save promptly whenever the tab goes to the background
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSave(); });
+// v3.3.1: also when the sheet has not got everything yet (a sync running, a change not sent, a sheet not reached)
+window.addEventListener('beforeunload',e=>{
+  const unsent=!!syncCfg&&!syncFirst&&(syncUnsent||syncBusy||syncState.s==='err'||!syncBase);
+  if(dirty||saving||unsent){ e.preventDefault(); e.returnValue=''; } });
+// and save promptly whenever the tab goes to the background - and start sending to the sheet at once
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ flushSave(); if(syncCfg&&!syncFirst&&syncUnsent&&!syncBusy) syncNow('hide'); } });
+window.addEventListener('pagehide',()=>{ flushSave(); if(syncCfg&&!syncFirst&&syncUnsent&&!syncBusy) syncNow('hide'); });
 </script>
 </body>
 </html>
