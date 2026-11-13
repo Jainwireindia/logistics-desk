@@ -48,7 +48,7 @@ header{background:var(--green);border-bottom:2px solid var(--green-dk);position:
 .mver{margin-top:8px;padding:8px 10px 2px;border-top:1px solid rgba(255,255,255,.2);font-size:11px;color:rgba(255,255,255,.6);font-family:ui-monospace,Menlo,monospace}
 .menubtn{flex:0 0 auto;background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;
   font-size:18px;line-height:1;padding:5px 10px}
-.undobar{display:inline-flex;gap:3px;flex:0 0 auto}
+.undobar{display:inline-flex;gap:3px;flex:0 0 auto;margin-right:8px;padding-right:10px;border-right:1px solid rgba(255,255,255,.3)}
 .ubtn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;padding:4px 7px;line-height:0}
 .ubtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ubtn:hover:not(:disabled){background:#fff;color:var(--green-dk)}
@@ -163,6 +163,8 @@ nav button.on{background:#fff;color:var(--green-dk);border-color:#fff}
 .misstab .n{text-align:right}
 .outform{margin-top:10px;border:1px solid var(--edge);border-radius:var(--r);padding:10px 12px;background:var(--panel)}
 .ofparties{margin-top:8px;max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.ofsel{margin-top:8px;display:flex;flex-direction:column;gap:4px;padding:6px;border:1px dashed var(--accent,#1b7a45);border-radius:8px;background:#f3faf5}
+.ofsh{font-size:12px;font-weight:700;color:var(--accent,#1b7a45);text-transform:uppercase;letter-spacing:.04em}
 .ofp{border:1px solid var(--edge);border-radius:8px;padding:5px 8px}
 .ofp.on{border-color:var(--accent,#1b7a45);background:#f3faf5}
 .ofph{display:flex;gap:6px;align-items:center;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);margin:0}
@@ -387,7 +389,7 @@ tr.grp td{background:var(--panel2);font-weight:600}
 .holdform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:#fff6e6;border-top:1px solid #f0d58f}
 .holdform .hchips .pill{font-size:10.5px}
 .holdnote{padding:4px 10px;font-size:12px;color:#7a4d00;background:#fff8ea;border-top:1px solid #f3e1b5}
-.tag.hold{background:var(--hold)} .tag.age{background:#a5670a} .tag.due{background:#0d6e6e}
+.tag.vehtag{background:#2f5d8a} .tag.hold{background:var(--hold)} .tag.age{background:#a5670a} .tag.due{background:#0d6e6e}
 .carddate{font-size:10px;padding:1px 6px;border-radius:2px;background:var(--panel2);border:1px solid var(--edge);
   color:var(--mute);font-family:ui-monospace,Menlo,monospace;font-weight:600}
 .tag.inlog{background:#1d4ed8}
@@ -466,6 +468,10 @@ tr.siterow td{background:rgba(31,95,168,.04)}
 .rlcard{background:var(--card,#fff);border-radius:10px;padding:14px 16px;max-width:860px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
 .rlhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rltbl{margin-top:10px}
+.rltbl tr.rlchg td{background:#fff6d6}
+.rlnote{font-size:11.5px;color:#8a5a00;margin-top:2px}
+.rlpick{width:auto;max-width:100%;font-size:12.5px;padding:3px 6px}
+.rlun{margin-top:4px;color:var(--ink);font-weight:400}.rlun .g{color:var(--mute)}
 .rlsave{display:inline-flex;gap:4px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:inherit;margin:0}
 .rlsave input{width:auto}
 .badge.open{background:var(--amber);color:#211500}
@@ -481,6 +487,45 @@ tr.siterow td{background:rgba(31,95,168,.04)}
   .printonly{display:block}
   .card{border:none;padding:0} .sheet td{border:1px solid #999}
 }
+/* v3.5: on PC and tablet the menu never fully hides - closed it is a narrow strip of icons,
+   ☰ widens it to show the names. Phones keep the slide-in drawer. */
+nav button{display:flex;align-items:center;gap:10px;position:relative}
+nav .mi{flex:0 0 auto;width:22px;height:22px;display:inline-flex;position:relative}
+nav .mi svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+nav .mi[data-n]::after{content:attr(data-n);position:absolute;right:-6px;bottom:-5px;font:800 9.5px/1 system-ui,sans-serif;
+  background:var(--amber);color:#211500;border-radius:99px;padding:2px 4px;border:1.5px solid var(--green-dk)}
+nav button.on .mi[data-n]::after{border-color:#fff}
+nav .ml{overflow:hidden;text-overflow:ellipsis}
+@media (min-width:641px){
+  nav{transform:none;visibility:visible;width:58px;padding:10px 7px 16px;box-shadow:none;overflow-x:hidden;
+    transition:width .18s ease}
+  nav.open{width:270px;box-shadow:6px 0 24px rgba(10,30,20,.3);transition:width .18s ease}
+  nav:not(.open) button{padding:8px 0;justify-content:center;gap:0}
+  nav:not(.open) .ml,nav:not(.open) .mglabel,nav:not(.open) .mver{display:none}
+  nav:not(.open) .mgroup{margin-top:4px;padding-top:4px}
+  nav:not(.open) .mgroup.shut button{display:flex}
+  nav:not(.open) .traybadge{position:absolute;top:1px;right:1px;margin:0!important;font-size:9.5px;padding:1px 4px;min-width:0}
+  .guardbar,main,footer{margin-left:58px}
+  main{margin-left:max(58px,calc((100% - 1500px)/2))}
+}
+@media (min-width:641px) and (prefers-reduced-motion:reduce){ nav,nav.open{transition:none} }
+/* phones: hidden by default; a swipe in from the left edge shows just the icon strip */
+@media (max-width:640px){
+  nav.peek:not(.open){transform:none;visibility:visible;width:58px;padding:10px 7px 16px;overflow-x:hidden;transition:transform .2s ease}
+  nav.peek:not(.open) button{padding:9px 0;justify-content:center;gap:0}
+  nav.peek:not(.open) .ml,nav.peek:not(.open) .mglabel,nav.peek:not(.open) .mver{display:none}
+  nav.peek:not(.open) .mgroup{margin-top:4px;padding-top:4px}
+  nav.peek:not(.open) .mgroup.shut button{display:flex}
+  nav.peek:not(.open) .traybadge{position:absolute;top:1px;right:1px;margin:0!important;font-size:9.5px;padding:1px 4px;min-width:0}
+}
+/* v3.6 party note + Parties & map name/contact/note */
+.pnote{display:inline-block;font-size:11px;font-weight:700;color:#7a4a00;background:#fff1cf;border:1px solid #f0cf86;border-radius:4px;padding:0 5px;margin-left:4px;white-space:normal;line-height:1.35;vertical-align:middle;text-transform:none;letter-spacing:0}
+.pphone{font-size:11.5px;color:var(--mute);white-space:nowrap}
+.pphone a{color:inherit}
+textarea.pnamein{display:block;min-height:0;height:3.1em;width:100%;min-width:200px;padding:3px 6px;font-weight:600;font:inherit;font-weight:600;resize:none;overflow-y:auto;max-height:3.9em;line-height:1.3;white-space:pre-wrap;word-break:break-word}
+.pextra{display:flex;gap:5px;margin-top:4px}
+.pextra input{padding:2px 6px;font-size:12px}
+.pextra .pph{flex:0 0 120px} .pextra .pnt{flex:1 1 auto;min-width:110px}
 /* phone rules last, so they win over the desktop rules above */
 .lanejump{display:none}
 @media (max-width:640px){
@@ -523,42 +568,42 @@ tr.siterow td{background:rgba(31,95,168,.04)}
 <header>
   <div class="hwrap">
     <button id="menuBtn" class="menubtn" aria-expanded="false" aria-controls="mainMenu" title="Menu">☰</button>
-    <span class="undobar">
-      <button id="undoBtn" class="ubtn" disabled aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7"/></svg></button>
-      <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
-    </span>
     <button id="logiBtn" class="logibtn" title="Logistics — back to the step you were on"><svg viewBox="0 0 20 16"><path d="M1.5 3.5h10v8h-10z"/><path d="M11.5 6.5h4l3 3v2h-7"/><circle cx="5" cy="12.5" r="1.6"/><circle cx="15" cy="12.5" r="1.6"/></svg><span class="lbl">Logistics</span></button>
     <div class="stepnav" id="stepNav" hidden></div>
     <div class="brand"><span class="co">JAIN WIRE NETTING CORPORATION</span><small class="loc">EKM</small><span class="tool">Logistics Desk</span></div>
     <div id="curView" class="curview"></div>
     <div class="hbadges">
+      <span class="undobar">
+        <button id="undoBtn" class="ubtn" disabled aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7"/></svg></button>
+        <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
+      </span>
       <button id="saveBadge" class="savebadge clean" title="Saves on its own a moment after each edit — tap to save right now">All saved</button>
       <span id="syncBadge" class="savebadge" style="display:none"></span>
     </div>
   </div>
   <!-- the menu folds away behind ☰ so the header stays one short line on any screen -->
   <nav id="mainMenu" aria-hidden="true">
-    <button data-v="dash" class="on mdash">Dashboard</button>
-    <button data-v="orders" class="mdash">Orders</button>
+    <button data-v="dash" class="on mdash" title="Dashboard"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg></span><span class="ml">Dashboard</span></button>
+    <button data-v="orders" class="mdash" title="Orders"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5H6.5a1.5 1.5 0 0 0-1.5 1.5v14a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-2"/><rect x="8.5" y="3" width="7" height="3.2" rx="1"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg></span><span class="ml">Orders</span></button>
     <div class="mgroup">
       <div class="mglabel">Logistics</div>
-      <button data-v="plan">1 · Build plan</button>
-      <button data-v="out">2 · Final plan</button>
-      <button data-v="log">3 · Plan log</button>
+      <button data-v="plan" title="Build plan"><span class="mi" data-n="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M8 4.5v5M5.5 7h5"/></svg></span><span class="ml">1 · Build plan</span></button>
+      <button data-v="out" title="Final plan"><span class="mi" data-n="2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M5.2 11.2l2 2 3.6-4"/></svg></span><span class="ml">2 · Final plan</span></button>
+      <button data-v="log" title="Plan log"><span class="mi" data-n="3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h10.5a1.5 1.5 0 0 1 1.5 1.5v4"/><path d="M5 3.5A1.5 1.5 0 0 0 3.5 5v14A1.5 1.5 0 0 0 5 20.5h6"/><path d="M7 8h6M7 11.5h4"/><circle cx="16.5" cy="16" r="4.5"/><path d="M16.5 13.8V16l1.6 1.2"/></svg></span><span class="ml">3 · Plan log</span></button>
     </div>
     <div class="mgroup mreport">
       <div class="mglabel">Reports</div>
-      <button data-v="rparty">Party history</button>
-      <button data-v="rveh">Vehicle &amp; driver trips</button>
-      <button data-v="rday">Day-wise</button>
-      <button data-v="stock">Stock required</button>
+      <button data-v="rparty" title="Party history"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 11-4.7"/><circle cx="17.5" cy="16.5" r="4"/><path d="M17.5 14.5v2l1.3 1"/></svg></span><span class="ml">Party history</span></button>
+      <button data-v="rveh" title="Vehicle & driver trips"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M3.8 10.5h6M14.2 10.5h6M12 14.2v6.3"/></svg></span><span class="ml">Vehicle &amp; driver trips</span></button>
+      <button data-v="rday" title="Day-wise"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M7.5 13h2M11 13h2M14.5 13h2M7.5 16.5h2M11 16.5h2"/></svg></span><span class="ml">Day-wise</span></button>
+      <button data-v="stock" title="Stock required"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5h7.5v7H3.5zM13 13.5h7.5v7H13zM8.2 6h7.5v7.5H8.2z"/><path d="M6 13.5v2M16 13.5v2M11 6v2"/></svg></span><span class="ml">Stock required</span></button>
     </div>
     <div class="mgroup mmaster">
       <div class="mglabel">Master</div>
-      <button data-v="routes">Setup</button>
-      <button data-v="parties">Parties &amp; map</button>
-      <button data-v="uploads">Upload log</button>
-      <button data-v="admin">Admin 🔒</button>
+      <button data-v="routes" title="Setup"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="ml">Setup</span></button>
+      <button data-v="parties" title="Parties & map"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.4"/></svg></span><span class="ml">Parties &amp; map</span></button>
+      <button data-v="uploads" title="Upload log"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 13.5v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></span><span class="ml">Upload log</span></button>
+      <button data-v="admin" title="Admin"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3"/></svg></span><span class="ml">Admin 🔒</span></button>
     </div>
     <div class="mver" id="appVer"></div>
   </nav>
@@ -1059,7 +1104,7 @@ Tata MS Wire 10g   350"></textarea>
   </div>
   <div class="card" style="padding-bottom:10px">
     <h2>Stock required</h2>
-    <p class="hint" style="margin:2px 0 8px">Every distinct item in Orders, A–Z, with qty needed across all parties. Open a row to see which parties.</p>
+    <p class="hint" id="stockHint" style="margin:2px 0 8px">Every distinct item in Orders, A–Z, with qty needed across all parties. Open a row to see which parties.</p>
     <div class="row" style="margin-bottom:6px">
       <div><label>Find an item</label><input id="stockSearch" placeholder="Type to filter items"></div>
       <div style="flex:0 0 auto"><label>Sort</label>
@@ -1231,7 +1276,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.2', APP_BUILD='19-10-2026';
+const APP_VERSION='3.6', APP_BUILD='14-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1269,6 +1314,7 @@ let S={
   // still loading; a field missing here (like combos used to be) crashes that early paint.
 };
 let dirty=false, saving=false, saveTimer=null, saveFailed=false;
+let syncUnsent=false; // v3.3.1: a change on this device the Google Sheet has not got yet (badge + close warning)
 // Every edit calls save(); that now only marks the state dirty and schedules one coalesced
 // write ~1.2s later, instead of blocking the screen on a full-state write per keystroke.
 // save() is awaited by nearly every click handler before it re-renders, so it must never
@@ -1308,6 +1354,7 @@ async function undoGo(back){
 let stateRev=0; // goes up on every change, so a save only counts as done if nothing changed while it ran
 function markDirty(){
   stateRev++; dirty=true; saveFailed=false; updateSaveBadge();
+  if(typeof syncCfg!=='undefined'&&syncCfg&&!syncUnsent){ syncUnsent=true; if(typeof updateSyncBadge==='function') updateSyncBadge(); }
   clearTimeout(saveTimer); saveTimer=setTimeout(flushSave,1200);
 }
 async function flushSave(){
@@ -1365,6 +1412,7 @@ async function load(){
   S.finalNotes=S.finalNotes||{}; // {idsKey: "text"} bracketed note typed onto a Final Plan item row
   S.dupOk=(S.dupOk&&typeof S.dupOk==='object'&&!Array.isArray(S.dupOk))?S.dupOk:{};
   S.districts=(S.districts&&typeof S.districts==='object')?S.districts:{};
+  S.sheetCap=(S.sheetCap&&typeof S.sheetCap==='object')?S.sheetCap:{}; // v3.6 {vehicle type: max 12 ft sheets}
   normUploads(!(d&&Array.isArray(d.uploads)));
   S.log.forEach(g=>{ if(!('stockDelta' in g)) g.stockDelta=null; }); // per-entry undo record for stockOut
   S.log.forEach(g=>{ if(!g.notes||typeof g.notes!=='object') g.notes={}; }); // {orderId: "already billed"} per-line bracket note
@@ -1396,6 +1444,49 @@ function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).sli
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---------- v3.4: search like Tally ----------
+   Type any part of a name, spaced or dotted any way: "SN Traders", "S N Traders", "S.N. Traders" and
+   "sntraders" all find S N TRADERS ADOOR, S.N. TRADERS and SN TRADERS. Capitals, dots, dashes, "&" and
+   "and" do not matter; words can be typed in any order; every typed word must match (as the start of
+   a word, or anywhere inside the name once it is run together); a small typo in a longer word is forgiven.
+   nameSearch(q) -> test(text) or null when nothing is typed.   itemSearch(q) -> same, for sizes and item names. */
+const _srchCache=new Map();
+function _srchWords(text){
+  let t=String(text==null?'':text);
+  let c=_srchCache.get(t); if(c) return c;
+  let s=t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  s=s.replace(/[-\/,()+:;|_*&\\#@]+/g,' ').replace(/['’`.]/g,'');
+  const ws=s.split(/\s+/).filter(w=>w&&w!=='and');
+  const m=[]; let run=false;                         // single letters side by side are one word: "s n" -> "sn"
+  ws.forEach(w=>{ if(w.length===1){ if(run) m[m.length-1]+=w; else{ m.push(w); run=true; } } else { m.push(w); run=false; } });
+  c={w:m,c:m.join('')};
+  if(_srchCache.size>6000) _srchCache.clear();
+  _srchCache.set(t,c); return c;
+}
+function _near(a,b){            // one letter wrong / missing / extra / swapped
+  if(Math.abs(a.length-b.length)>1) return false;
+  let i=0; while(i<a.length&&i<b.length&&a[i]===b[i]) i++;
+  if(i===a.length||i===b.length) return Math.abs(a.length-b.length)<=1;
+  if(a.length===b.length){ if(a.slice(i+1)===b.slice(i+1)) return true; return a[i]===b[i+1]&&a[i+1]===b[i]&&a.slice(i+2)===b.slice(i+2); }
+  return a.length>b.length?a.slice(i+1)===b.slice(i):b.slice(i+1)===a.slice(i);
+}
+function nameSearch(q){
+  const Q=_srchWords(q); if(!Q.w.length) return null;
+  return text=>{
+    const H=_srchWords(text);
+    return Q.w.every(t=>H.w.some(w=>w.startsWith(t))||(t.length>=3&&H.c.includes(t))||
+      (t.length>=5&&H.w.some(w=>_near(t,w)||_near(t,w.slice(0,t.length))||_near(t,w.slice(0,t.length+1)))));
+  };
+}
+function _itemWords(text){
+  const s=String(text==null?'':text).toLowerCase().replace(/[×*]/g,'x').replace(/[^a-z0-9./x ]+/g,' ');
+  return {w:s.split(/\s+/).filter(Boolean),c:s.replace(/\s+/g,'')};
+}
+function itemSearch(q){
+  const Q=_itemWords(q); if(!Q.w.length) return null;
+  return text=>{ const H=_itemWords(text); return Q.w.every(t=>H.c.includes(t)); };
+}
+
 const num=n=>Number(n||0).toLocaleString('en-IN');
 function flash(msg){
   const d=document.createElement('div');d.className='flash';d.textContent=msg;
@@ -1609,6 +1700,20 @@ function setLoadTotal(st,ids,T){
 }
 function stopWeight(st){ return stopLines(st).reduce((a,o)=>a+(wtNum(o.weight)||0),0); }
 function laneWeight(l){ return l.stops.reduce((a,st)=>a+stopWeight(st),0); }
+/* v3.6: 12 ft weldmesh sheets per vehicle. A sheet is named <mesh>x<wire>mmx12x<width>
+   (40x40x3.2mmx12x4) or the old way 1x1x12x5: 4+ sizes joined by x, the one before last is 12.
+   Rolls (17x17x2.3mmx3, 12x12x2mmx3) and 6 ft / 8 ft sheets (2x2x6x4, 1/2x1/2x8x4) are not counted. */
+function isSheet12(item){
+  return (String(item||'').match(/[\d./]+(?:\s*mm)?(?:\s*[x×]\s*[\d./]+(?:\s*mm)?){3,}/gi)||[]).some(tok=>{
+    const p=tok.split(/[x×]/i).map(x=>x.replace(/mm/i,'').trim());
+    return p.length>=4&&p[p.length-2]==='12'&&/^\d+(\.\d+)?$/.test(p[p.length-1]); });
+}
+function laneSheets(l){ return l.stops.reduce((a,st)=>a+stopLines(st).filter(o=>isSheet12(o.item)).reduce((b,o)=>b+(parseNum(o.qty)||0),0),0); }
+function sheetCapGuess(name){ const n=String(name||'');
+  return /benz|bharat|\b1[0-9](\.\d)?\s*t/i.test(n)?350:/eicher|6\.5/i.test(n)?300:/jayo/i.test(n)?250:/electric/i.test(n)?200:0; }
+// max sheets for a vehicle type: set in Setup → Vehicle types (0 = no limit); a type never set uses the usual figure
+function sheetCapOf(name){ const c=S.sheetCap||{}; return name in c?(+c[name]||0):sheetCapGuess(name); }
+function laneSheetCap(l){ const t=laneTypeOf(l); return sheetCapOf(t?t.name:String(l.name||'').replace(/\s+#\d+$/,'')); }
 // ids of a party's items that some vehicle is already carrying
 function placedIds(p){
   const s=new Set();
@@ -1681,8 +1786,8 @@ function complementRoutes(selected){
 }
 function poolParties(){
   const all=unassignedParties(), f=poolFilter();
-  const q=($('#poolSearch')?.value||'').trim().toLowerCase();
-  let list=q?all.filter(p=>p.toLowerCase().includes(q)):all.slice();
+  const qt=nameSearch($('#poolSearch')?.value||'');
+  let list=qt?all.filter(qt):all.slice();
   // parties that fit a vehicle already set up (routes picked) float to the top - a stable sort
   // means anything with no match just stays in its original order underneath, untouched
   // urgency first: overdue, then due today, then the rest; batches all on hold sink to the bottom.
@@ -1727,7 +1832,11 @@ const DELIVERY_RE=/^(?:delivery\s*(?:to\b|at\b|[-–:])|site\s*(?:at\b|[-–:]))
 function deliverySite(text){ const m=String(text||'').trim().match(DELIVERY_RE); return m?normName(m[1]):''; }
 const titleCase=s=>String(s||'').toLowerCase().replace(/(^|[\s(\/-])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
 function siteLine(p){ const s=siteOf(p).site; return s?'Delivery - '+titleCase(s):''; }
-function pnameHtml(p){ const {base,site}=siteOf(p); return esc(base)+(site?` <span class="dsite">Delivery - ${esc(titleCase(site))}</span>`:''); }
+// v3.6: a party's contact number and standing note (a delivery location uses its party's when it has none)
+function partyPhone(p){ const r=S.parties[p]||{}; return str(r.phone)||str((S.parties[siteOf(p).base]||{}).phone); }
+function partyNote(p){ const r=S.parties[p]||{}; return str(r.note)||str((S.parties[siteOf(p).base]||{}).note); }
+function pnoteHtml(p){ const n=partyNote(p); return n?` <span class="pnote" title="Party note (Parties &amp; map)">📝 ${esc(n)}</span>`:''; }
+function pnameHtml(p){ const {base,site}=siteOf(p); return esc(base)+(site?` <span class="dsite">Delivery - ${esc(titleCase(site))}</span>`:'')+pnoteHtml(p); }
 function pnameText(p){ const {base,site}=siteOf(p); return site?`${base} (Delivery - ${titleCase(site)})`:base; }
 function sitesOf(base){ base=normName(base); return Object.keys(S.parties).filter(k=>{ const s=siteOf(k); return s.site&&s.base===base; }).sort(); }
 
@@ -1767,20 +1876,32 @@ function partyLocation(p){
 }
 const MAP_DRIVING='/data=!4m2!4m1!3e0'; // Google Maps: travel by car
 function laneMapRoute(l){
-  const missing=[], approx=[], pts=[];
+  const missing=[], approx=[], pts=[], sent=[];
   const start=(S.settings&&S.settings.mapStart)||'';
   if(start) pts.push(start);
   l.stops.forEach(st=>{ const loc=partyLocation(st.party); if(!loc){ missing.push(st.party); return; }
     if(!pinOf(st.party)) approx.push(st.party);
+    sent.push({party:st.party,text:loc});
     if(pts[pts.length-1]!==loc) pts.push(loc); }); // two parties in one place = one stop
   if(start&&S.settings.mapReturn&&pts.length>1) pts.push(start);
   const url='https://www.google.com/maps/dir/'+pts.map(x=>encodeURIComponent(x).replace(/%20/g,'+').replace(/%2C/g,',')).join('/')+MAP_DRIVING;
-  return {url,missing,approx,count:pts.length};
+  return {url,missing,approx,count:pts.length,sent};
+}
+/* v3.2.1: what Map route sent for each party, kept on this device (not synced) so the link
+   pasted back can be matched to it even when a stop was changed in Google Maps. */
+const MAPSENT_KEY='jw-ld-mapsent-v1';
+function mapSentAll(){ try{ return JSON.parse(localStorage.getItem(MAPSENT_KEY)||'{}')||{}; }catch(_){ return {}; } }
+function mapSentOf(laneId){ const r=mapSentAll()[laneId]; return r&&Array.isArray(r.list)?r:null; }
+function rememberMapSent(laneId,list){
+  try{ const all=mapSentAll(); all[laneId]={at:Date.now(),list};
+    const keep=Object.entries(all).sort((a,b)=>b[1].at-a[1].at).slice(0,60);
+    localStorage.setItem(MAPSENT_KEY,JSON.stringify(Object.fromEntries(keep))); }catch(_){}
 }
 function openLaneMap(l){
   const r=laneMapRoute(l);
   if(r.count<2){ flash(r.missing.length?`No place or pincode for: ${r.missing.map(pnameText).join(', ')}`:'Need at least 2 stops'); return; }
   window.open(r.url,'_blank','noopener');
+  if(l.id) rememberMapSent(l.id,r.sent);
   const bits=[];
   if(r.missing.length) bits.push(`left out (no place/pincode): ${r.missing.map(pnameText).join(', ')}`);
   if(r.approx.length) bits.push(`no exact spot, found by place name: ${r.approx.map(pnameText).join(', ')}`);
@@ -1809,21 +1930,56 @@ function readRouteLink(url){
 }
 const rlNorm=t=>String(t||'').toLowerCase().replace(/\b(keralam|kerala|india)\b/g,' ').replace(/[^a-z0-9, ]/g,' ').replace(/\s+/g,' ').trim();
 const rlHead=t=>rlNorm(t).split(',')[0].replace(/\b\d{6}\b/g,'').replace(/\s+/g,' ').trim();
-function matchRouteLink(l,link){
+function matchRouteLink(l,link,sentList,manual){
   const start=rlHead((S.settings&&S.settings.mapStart)||'');
+  const sent=new Map((sentList||[]).map(x=>[x.party,x.text]));
   const stops=l.stops.map((st,idx)=>{ const p=st.party, loc=partyLocation(p), r=S.parties[p]||{};
-    return {st,idx,p,pin:pinOf(p),head:rlHead(parsePin(loc)?(r.place||titleCase(siteOf(p).site)||''):loc)||rlHead(r.place)||rlHead(titleCase(siteOf(p).site)),seg:-1}; });
+    return {st,idx,p,pin:pinOf(p),sent:sent.get(p)||'',head:rlHead(parsePin(loc)?(r.place||titleCase(siteOf(p).site)||''):loc)||rlHead(r.place)||rlHead(titleCase(siteOf(p).site)),seg:-1,changed:false,manual:false}; });
   const segUsed=link.segs.map(()=>[]);
+  const isStart=(h,k)=>start&&h===start&&(k===0||k===link.segs.length-1);
+  const take=(s,k)=>{ s.seg=k; segUsed[k].push(s); };
+  // exactly what Map route sent for this party
+  link.segs.forEach((sg,k)=>{ const n=rlNorm(sg); stops.forEach(s=>{ if(s.seg!==-1||!s.sent) return;
+    const sp=parsePin(s.sent); if((sp&&link.pts[k]&&kmBetween(sp,link.pts[k])<0.3)||(!sp&&rlNorm(s.sent)===n)) take(s,k); }); });
   link.segs.forEach((sg,k)=>{
     const h=rlHead(sg);
-    if(start&&h===start&&(k===0||k===link.segs.length-1)) return; // the godown
-    stops.forEach(s=>{ if(s.seg>=0) return;
+    if(isStart(h,k)) return; // the godown
+    stops.forEach(s=>{ if(s.seg!==-1) return;
       const near=s.pin&&link.pts[k]&&kmBetween(s.pin,link.pts[k])<1.5;
-      if(near||(h&&s.head&&h===s.head)){ s.seg=k; segUsed[k].push(s); } });
+      if(near||(h&&s.head&&h===s.head)){ take(s,k); } });
   });
   // looser second pass: one name inside the other ("sreekaryam" / "sreekaryam junction")
   link.segs.forEach((sg,k)=>{ const h=rlHead(sg); if(!h||h.length<3||(start&&h===start)) return;
-    stops.forEach(s=>{ if(s.seg>=0||!s.head||s.head.length<3) return; if(h.includes(s.head)||s.head.includes(h)){ s.seg=k; segUsed[k].push(s); } }); });
+    stops.forEach(s=>{ if(s.seg!==-1||!s.head||s.head.length<3) return; if(h.includes(s.head)||s.head.includes(h)){ take(s,k); } }); });
+  // a stop changed in Google Maps (another place picked): pair what is left by the stops around it
+  const free=()=>link.segs.map((sg,k)=>k).filter(k=>!segUsed[k].length&&!isStart(rlHead(link.segs[k]),k));
+  const order=(sentList&&sentList.length?sentList.map(x=>x.party):l.stops.map(st=>st.party));
+  const posOf=p=>{ const i=order.indexOf(p); return i<0?1e9:i; };
+  const around=u=>{ const mine=posOf(u.p), m=stops.filter(s=>s.seg>=0&&posOf(s.p)<1e9);
+    const before=m.filter(s=>posOf(s.p)<mine).sort((a,b)=>posOf(b.p)-posOf(a.p))[0], after=m.filter(s=>posOf(s.p)>mine).sort((a,b)=>posOf(a.p)-posOf(b.p))[0];
+    return {b:before?before.p:null,a:after?after.p:null}; };
+  const segAround=k=>{ let b=null,a=null; for(let j=k-1;j>=0&&!b;j--) if(segUsed[j].length) b=segUsed[j].map(s=>s.p); for(let j=k+1;j<link.segs.length&&!a;j++) if(segUsed[j].length) a=segUsed[j].map(s=>s.p);
+    return {b:b||[],a:a||[]}; };
+  for(let guard=0;guard<50;guard++){
+    const left=stops.filter(s=>s.seg===-1), fk=free(); if(!left.length||!fk.length) break;
+    let best=null;
+    left.forEach(u=>{ const nu=around(u); fk.forEach(k=>{ const ns=segAround(k);
+      const sc=(nu.b&&ns.b.includes(nu.b)?1:0)+(nu.a&&ns.a.includes(nu.a)?1:0)+(!nu.b&&k===fk[0]&&!ns.b.length?0.5:0)+(!nu.a&&!ns.a.length?0.5:0);
+      if(!best||sc>best.sc) best={u,k,sc}; }); });
+    if(left.length===1&&fk.length===1) best={u:left[0],k:fk[0],sc:best?best.sc:0};
+    if(!best||best.sc<1) break;
+    take(best.u,best.k); best.u.changed=true;
+    // parties Map route sent as the same stop go with it
+    if(best.u.sent) stops.forEach(s=>{ if(s.seg===-1&&s.sent===best.u.sent){ take(s,best.k); s.changed=true; } });
+  }
+  // your own picks go on top: a stop you give to a party is taken from whoever had it
+  if(manual&&Object.keys(manual).length){
+    stops.forEach(s=>{ const k=manual[s.idx]; if(k==null) return;
+      const was=s.seg; if(was>=0) segUsed[was]=segUsed[was].filter(x=>x!==s);
+      s.manual=true; s.changed=true; s.seg=-1;
+      if(k>=0&&k<link.segs.length){ segUsed[k].filter(x=>manual[x.idx]==null).forEach(x=>{ x.seg=-1; x.changed=false; }); segUsed[k]=segUsed[k].filter(x=>manual[x.idx]!=null); take(s,k); }
+    });
+  }
   const matched=stops.filter(s=>s.seg>=0).sort((a,b)=>a.seg-b.seg||a.idx-b.idx), unmatched=stops.filter(s=>s.seg<0);
   const lostSegs=link.segs.map((sg,k)=>({sg,k})).filter(x=>!segUsed[x.k].length&&!(start&&rlHead(x.sg)===start));
   return {matched,unmatched,lostSegs,order:[...matched,...unmatched].map(s=>s.st)};
@@ -1838,29 +1994,41 @@ function openRoutePanel(laneId){
     <div style="margin-top:6px"><button class="primary tiny" data-rlread>Read the link</button></div>
     <div id="rlOut"></div></div>`;
   box.querySelector('[data-rlclose]').onclick=()=>{ box.hidden=true; };
-  box.querySelector('[data-rlread]').onclick=()=>{
-    const out=box.querySelector('#rlOut'), link=readRouteLink(box.querySelector('#rlLink').value);
-    if(link.err){ out.innerHTML=`<p class="trayerr">${esc(link.err)}</p>`; return; }
-    const m=matchRouteLink(l,link);
+  let manual={}, link=null;
+  const paint=()=>{
+    const out=box.querySelector('#rlOut');
+    const ms=mapSentOf(l.id), m=matchRouteLink(l,link,ms&&ms.list,manual);
     const spots=m.matched.filter(s=>link.pts[s.seg]&&(!s.pin||kmBetween(s.pin,link.pts[s.seg])>0.3));
-    out.innerHTML=`<table class="rltbl"><tr><th>#</th><th>Stop in the link</th><th>Party</th><th>Spot from the link</th></tr>
+    const pickable=s=>[...m.lostSegs.map(x=>x.k),...(s.seg>=0?[s.seg]:[])].sort((a,b)=>a-b);
+    const picker=s=>`<select class="rlpick" data-rlpick="${s.idx}"><option value="-1">— not in the link —</option>${pickable(s).map(k=>`<option value="${k}"${k===s.seg?' selected':''}>${esc(link.segs[k])}</option>`).join('')}</select>`;
+    out.innerHTML=(ms?'':`<p class="hint" style="margin:8px 0 0">Map route was not opened for this vehicle on this device, so stops are matched by place name only.</p>`)+
+      `<table class="rltbl"><tr><th>#</th><th>Stop in the link</th><th>Party</th><th>Spot from the link</th></tr>
       ${m.matched.map((s,i)=>{ const pt=link.pts[s.seg], sv=spots.includes(s);
-        return `<tr><td class="num">${i+1}</td><td>${esc(link.segs[s.seg])}</td><td>${pnameHtml(s.p)}</td>
-          <td>${pt?`<span class="mono">${esc(pt)}</span>${sv?` <label class="rlsave"><input type="checkbox" data-rlspot="${s.idx}" checked> save as exact spot${s.pin?' (replaces '+esc(s.pin)+')':''}</label>`:' <span class="spotok">✓ already saved</span>'}`:'<span class="hint">none in the link</span>'}</td></tr>`; }).join('')}
+        return `<tr${s.changed?' class="rlchg"':''}><td class="num">${i+1}</td><td>${s.changed?picker(s)+`<div class="rlnote">${s.manual?'your pick':'changed in Google Maps'}${s.sent?' · the tool sent: '+esc(s.sent):''}</div>`:esc(link.segs[s.seg])}</td><td>${pnameHtml(s.p)}</td>
+          <td>${pt?`<span class="mono">${esc(pt)}</span>${sv?` <label class="rlsave"><input type="checkbox" data-rlspot="${s.idx}"${s.changed?'':' checked'}> save as exact spot${s.pin?' (replaces '+esc(s.pin)+')':''}</label>`:' <span class="spotok">✓ already saved</span>'}`:'<span class="hint">none in the link</span>'}</td></tr>`; }).join('')}
       </table>
-      ${m.unmatched.length?`<p class="trayerr">Not found in the link (kept at the end, in their current order): ${m.unmatched.map(s=>pnameHtml(s.p)).join(', ')}</p>`:''}
+      ${m.unmatched.length?`<div class="trayerr">Not found in the link (kept at the end, in their current order):${m.unmatched.map(s=>`<div class="rlun">${pnameHtml(s.p)}${s.sent?' <span class="g">· the tool sent: '+esc(s.sent)+'</span>':''} ${m.lostSegs.length?'— it is '+picker(s):''}</div>`).join('')}</div>`:''}
       ${m.lostSegs.length?`<p class="hint">Stops in the link that match no party on this vehicle: ${m.lostSegs.map(x=>esc(x.sg)).join(' · ')}</p>`:''}
+      ${m.matched.some(s=>s.changed)?`<p class="hint">Rows in yellow: a place you changed in Google Maps, matched by the stops around it. Check the party, change it in the box if wrong. Their spot is not ticked - tick it if the place is right.</p>`:''}
       ${link.mode&&link.mode!=='car'?`<p class="trayerr">This link is set to ${esc(link.mode)} — Map route links from this tool are always by car.</p>`:''}
       <div class="traybtns"><button class="primary tiny" data-rlorder>Use this delivery order</button>
-        ${spots.length?`<button class="tiny" data-rlspots>Save the ticked spots (${spots.length})</button>`:''}</div>
+        ${spots.length?`<button class="tiny" data-rlspots>Save the ticked spots</button>`:''}</div>
       <p class="hint" style="margin:4px 0 0">Nothing changes until you press a button. Spots are where Google placed each stop — for a shop, check it is the right place first.</p>`;
+    out.querySelectorAll('[data-rlpick]').forEach(sel=>sel.onchange=()=>{ const idx=+sel.dataset.rlpick, k=+sel.value;
+      Object.keys(manual).forEach(i=>{ if(manual[i]===k&&k>=0) delete manual[i]; }); manual[idx]=k; paint(); });
     const orderBtn=out.querySelector('[data-rlorder]');
     orderBtn.onclick=async()=>{ l.stops=m.order; await save(); renderPlan(); renderOut(); orderBtn.disabled=true; orderBtn.textContent='✓ Delivery order changed'; flash(`${l.name}: delivery order now follows the link`); };
     const spotBtn=out.querySelector('[data-rlspots]');
     if(spotBtn) spotBtn.onclick=async()=>{
       let n=0; out.querySelectorAll('[data-rlspot]').forEach(cb=>{ if(!cb.checked) return; const s=m.matched.find(x=>String(x.idx)===cb.dataset.rlspot); if(!s) return;
         const p=s.p; S.parties[p]=S.parties[p]||{routes:[],place:'',pincode:''}; S.parties[p].pin=link.pts[s.seg]; n++; });
+      if(!n){ flash('Tick at least one spot'); return; }
       await save(); renderPlan(); renderOut(); spotBtn.disabled=true; spotBtn.textContent=`✓ ${n} spot${n===1?'':'s'} saved`; flash(`Saved ${n} exact spot${n===1?'':'s'}`); };
+  };
+  box.querySelector('[data-rlread]').onclick=()=>{
+    const out=box.querySelector('#rlOut'), lk=readRouteLink(box.querySelector('#rlLink').value);
+    if(lk.err){ out.innerHTML=`<p class="trayerr">${esc(lk.err)}</p>`; return; }
+    link=lk; manual={}; paint();
   };
 }
 /* ---------- WhatsApp text for the driver ----------
@@ -1911,6 +2079,8 @@ function partyLocText(p){
   const L=['*'+siteOf(p).base+'*'];
   if(siteLine(p)) L.push(siteLine(p));
   if(where) L.push(where);
+  if(partyPhone(p)) L.push('📞 '+partyPhone(p));
+  if(partyNote(p)) L.push('📝 '+partyNote(p));
   if(pin) L.push('📍 '+pinUrl(pin)); else if(r.loc) L.push('📍 '+r.loc); else if(where) L.push('📍 '+mapsUrl(p));
   return L.join('\n');
 }
@@ -1931,6 +2101,8 @@ function driverText(g){
     if(siteLine(p)) L.push('   '+siteLine(p));
     const where=[r.place,r.pincode].filter(Boolean).join(' '), pin=pinOf(p);
     if(where) L.push('   '+where);
+    if(partyPhone(p)) L.push('   📞 '+partyPhone(p));
+    if(partyNote(p)) L.push('   📝 '+partyNote(p));
     if(pin) L.push('   📍 '+pinUrl(pin)); else if(r.loc) L.push('   📍 '+r.loc); else if(where) L.push('   📍 '+mapsUrl(p));
     items.forEach(x=>L.push(x));
   });
@@ -2265,10 +2437,10 @@ function paintDash(){
       items completely out of stock aren't counted. Combinations are set up in Setup.
     </p>
     <table data-clip="combos"><tr><th></th><th>Combination</th><th>Routes</th><th class="n">Parties</th>
-      <th class="n">Item lines</th><th class="n">Not yet placed</th><th class="n">Total kg</th></tr>
+      <th class="n">Item lines</th><th class="n">Not yet placed</th><th class="n">Total kg</th><th>Send to Build plan</th></tr>
     ${comboRows.map(r=>{
       const open=comboOpen.has(r.c.id);
-      const detail=open?`<tr class="cdet"><td colspan="7" style="background:var(--panel2)">
+      const detail=open?`<tr class="cdet"><td colspan="8" style="background:var(--panel2)">
         ${r.match.length?r.match.map(p=>`
           <div style="margin:6px 0 8px">
             <b>${pnameHtml(p)}</b>${a.has(p)?' <span class="pill">on a vehicle</span>':''}
@@ -2286,7 +2458,11 @@ function paintDash(){
         <td><b>${esc(r.c.name||'unnamed')}</b></td>
         <td class="hint">${esc(r.c.routes.join(' + ')||'no routes')}${(r.c.xroutes||[]).length?` <span style="color:var(--alert);font-weight:600" title="Parties also tagged with these are left out">· not ${esc(r.c.xroutes.join(', '))}</span>`:''}</td>
         <td class="n">${r.match.length}</td><td class="n">${r.lines}</td>
-        <td class="n"><b>${num(r.freeKg)}</b></td><td class="n">${num(r.kg)}</td></tr>${detail}`;
+        <td class="n"><b>${num(r.freeKg)}</b></td><td class="n">${num(r.kg)}</td>
+        <td class="csend" style="white-space:nowrap">${(()=>{ const ts=vehTypes(), fit=fitVehType(r.freeKg);
+          if(!ts.length) return '<span class="hint" style="margin:0">add a vehicle type in Setup</span>';
+          return `<select data-cveh="${r.c.id}" style="width:auto;padding:3px 6px;font-size:12.5px" title="Vehicle to send">${ts.map(t=>`<option value="${esc(t.name)}"${fit&&fit.name===t.name?' selected':''}>${esc(t.label)}</option>`).join('')}</select>
+            <button class="tiny primary" data-csend="${r.c.id}" ${r.free.length?'':'disabled'} title="Adds this vehicle in Build plan with these routes and pulls the ${r.free.length} waiting parties">Send ${r.free.length} →</button>`; })()}</td></tr>${detail}`;
     }).join('')}</table>
   </div>`:'';
 
@@ -2492,6 +2668,21 @@ function paintDash(){
     const id=el.dataset.combotog;
     comboOpen.has(id)?comboOpen.delete(id):comboOpen.add(id);
     paintDash();});
+  box.querySelectorAll('.csend').forEach(td=>td.onclick=e=>e.stopPropagation()); // picking a vehicle doesn't fold the row
+  box.querySelectorAll('[data-csend]').forEach(b=>b.onclick=async e=>{
+    e.stopPropagation();
+    const c=S.combos.find(x=>x.id===b.dataset.csend); if(!c) return;
+    const sel=box.querySelector(`[data-cveh="${c.id}"]`), t=vehTypes().find(v=>v.name===(sel&&sel.value));
+    if(!t){ flash('Pick a vehicle'); return; }
+    const l={id:uid('L'),name:freeLaneName(t.name,null),cap:+t.cap,title:c.name||'',routes:[...c.routes],stops:[]};
+    if((c.xroutes||[]).length) l.xroutes=[...c.xroutes];
+    S.plan.lanes.push(l);
+    const n=pullIntoLane(l);
+    await save(); renderAll(); gotoView('plan'); window.scrollTo(0,0);
+    setTimeout(()=>{ const el=document.querySelector(`[data-jl="${l.id}"]`); if(el) el.scrollIntoView({block:'nearest',inline:'center'}); },60);
+    const w=laneWeight(l);
+    flash(`${l.name} added for ${c.name||c.routes.join(' + ')} — ${n} part${n===1?'y':'ies'}, ${num(w)} kg${w>l.cap?` (over by ${num(w-l.cap)} kg)`:''}`);
+  });
   box.querySelectorAll('[data-shorttog]').forEach(el=>el.onclick=()=>{
     const k=el.dataset.shorttog;
     stockShortOpen.has(k)?stockShortOpen.delete(k):stockShortOpen.add(k);
@@ -2551,8 +2742,8 @@ function paintOrders(){
   const parties=partiesToday();
   setCount(`— ${parties.length} parties, ${S.orders.length} item lines`);
 
-  const q=ordQuery.trim().toLowerCase();
-  let shown=q?parties.filter(p=>p.toLowerCase().includes(q)):parties;
+  const q=ordQuery.trim(), qt=nameSearch(q);
+  let shown=qt?parties.filter(qt):parties;
   if(ordTabs.size) shown=shown.filter(p=>itemsOf(p).some(o=>ordTabs.has(o.tab||'Untagged')));
   if(q||ordTabs.size) setCount(`— showing ${shown.length} of ${parties.length} parties`);
   if(!shown.length){
@@ -2629,12 +2820,12 @@ function paintOrders(){
               <div class="n">${esc(o.unit)}</div><div class="n">${esc(o.weight)}</div><div></div>${dupWarn(o)}`).join('');
         return `<div class="oblock">
           <div class="ohead">
-            <span class="odate">${esc(d||'no date')}</span>
+            ${editing?`<input class="odate odatein" data-bdate="${esc(p)}" data-bdtab="${esc(blockTab)}" data-bdold="${esc(d)}" value="${esc(d)}" placeholder="dd-mm-yyyy" title="Order date of this batch — change it for every line in the batch" style="width:118px">`:`<span class="odate">${esc(d||'no date')}</span>`}
             <select data-tab="${esc(p)}" data-tabdate="${esc(d)}" data-tabold="${esc(blockTab)}" style="width:150px" title="Which sheet tab this batch files under">${tabOptions(blockTab)}</select>
             <span class="oparty">${editing
-              ?`<input data-erename="${esc(p)}" value="${esc(p)}" style="font-weight:700;width:auto;min-width:220px">`
-              :pnameHtml(p)} ${tags}
-              ${placeLine(p)?`<br><span class="opl">${esc(placeLine(p))}</span>`:''}</span>
+              ?`<input data-erename="${esc(p)}" value="${esc(p)}" style="font-weight:700;min-width:220px;max-width:100%;width:${Math.min(64,p.length+4)}ch">`
+              +pnoteHtml(p):pnameHtml(p)} ${tags}
+              ${placeLine(p)||partyPhone(p)?`<br><span class="opl">${esc(placeLine(p))}</span>${partyPhone(p)?`${placeLine(p)?' · ':''}<span class="pphone">📞 <a href="tel:${esc(partyPhone(p).split(/[,/]/)[0].replace(/\s/g,''))}">${esc(partyPhone(p))}</a></span>`:''}`:''}</span>
             <span class="osum">${its.length} item${its.length>1?'s':''} · ${num(blockWt)} kg</span>
             <span class="oact">
               <button class="tiny ${held?'primary':'ghost'}" data-hold="${esc(p)}" data-holdtab="${esc(blockTab)}" data-holddate="${esc(d)}" title="${held?'Tap to take this batch off hold':'Hold just this '+esc(d||'undated')+' batch — with a reason and an until date'}">${held?'On hold ✕':'Hold'}</button>
@@ -2741,6 +2932,17 @@ function wireOrderBox(box){
     if(wasHeld){ setHold(p,oldTab,d,false); setHold(p,newTab,d,true,hi); }
     const due=dueOf(p,oldTab,d); if(due){ setDue(p,oldTab,d,''); setDue(p,newTab,d,due); }
     await save();renderOrders();});
+  // v3.6: the order date of a batch, changed in edit mode for every line of that batch (hold / due date move with it)
+  box.querySelectorAll('[data-bdate]').forEach(el=>{ maskDateInput(el); el.onclick=e=>e.stopPropagation();
+    el.onchange=async()=>{
+      const p=el.dataset.bdate, tab=el.dataset.bdtab, d=el.dataset.bdold, iso=parseDMY(el.value);
+      if(!iso){ flash('Enter the date as dd-mm-yyyy'); el.value=d; return; }
+      const nd=isoToDMY(iso); if(nd===d){ el.value=d; return; }
+      const wasHeld=isHeld(p,tab,d), hi=holdInfo(p,tab,d), due=dueOf(p,tab,d);
+      let n=0; S.orders.forEach(o=>{ if(o.party===p&&(o.date||'')===d&&(o.tab||'')===tab){ o.date=nd; n++; } });
+      if(wasHeld){ setHold(p,tab,d,false); setHold(p,tab,nd,true,hi); }
+      if(due){ setDue(p,tab,d,''); setDue(p,tab,nd,due); }
+      await save(); renderAll(); flash(`Date changed to ${nd} on ${n} line${n===1?'':'s'}`); }; });
   box.querySelectorAll('[data-eedit]').forEach(b=>b.onclick=async()=>{
     const p=b.dataset.eedit;
     editingParties.has(p)?editingParties.delete(p):editingParties.add(p);
@@ -2861,7 +3063,7 @@ function paintRoutes(){
       S.combos=S.combos.filter(x=>x.id!==b.dataset.cdel);
       await save();renderRoutes();renderDash();}));
 
-  const q=$('#pSearch').value.trim().toLowerCase(),f=$('#pFilter').value;
+  const q=$('#pSearch').value.trim(),f=$('#pFilter').value;
   const today=new Set(partiesToday());
   let names=Object.keys(S.parties).sort();
   if(f==='today')names=names.filter(n=>today.has(n));
@@ -2871,7 +3073,7 @@ function paintRoutes(){
   if(f==='sites')names=names.filter(n=>siteOf(n).site);
   // a party's delivery locations sit right under it
   names.sort((a,b)=>{ const x=siteOf(a), y=siteOf(b); return x.base.localeCompare(y.base)||(x.site?1:0)-(y.site?1:0)||x.site.localeCompare(y.site); });
-  if(q)names=names.filter(n=>n.toLowerCase().includes(q));
+  { const qt=nameSearch(q); if(qt) names=names.filter(qt); }
 
   const t=$('#partyTable');
   if(!names.length){t.innerHTML='<tr><td class="hint">No parties match.</td></tr>';return;}
@@ -2879,12 +3081,14 @@ function paintRoutes(){
   if(wd){ const cur=wd.value||waDriverPick;
     wd.innerHTML=`<option value="">— pick in WhatsApp —</option>`+S.fleet.drivers.map(d=>`<option value="${esc(d)}"${d===cur?' selected':''}>${esc(d)}${driverPhone(d)?'':' (no number)'}</option>`).join('');
     wd.onchange=()=>{ waDriverPick=wd.value; }; }
-  t.innerHTML='<tr><th style="width:230px">Party</th><th style="width:130px">Place</th><th style="width:90px">Pincode</th><th style="width:230px">Map link or spot</th><th>Routes it can go on</th><th style="width:200px"></th></tr>'+
+  t.innerHTML='<tr><th style="width:280px">Party · contact · note</th><th style="width:130px">Place</th><th style="width:90px">Pincode</th><th style="width:230px">Map link or spot</th><th>Routes it can go on</th><th style="width:200px"></th></tr>'+
     names.map(n=>{
       const rec=S.parties[n], rs=rec.routes||[], st=siteOf(n), pin=pinOf(n);
       return `<tr${st.site?' class="siterow"':''}>
         <td>${st.site?`<span class="dsite big">↳ Delivery - ${esc(titleCase(st.site))}</span><div class="hint" style="margin:2px 0 0">${esc(st.base)}${rec.homeTab?' · tab '+esc(rec.homeTab):''}</div>`
-          :`<input data-rename="${esc(n)}" value="${esc(n)}" style="padding:3px 6px;font-weight:600">`} ${today.has(n)?'<span class="pill on">on hand</span>':''}</td>
+          :`<textarea class="pnamein" data-rename="${esc(n)}" rows="2" spellcheck="false" title="Party name — Enter saves">${esc(n)}</textarea>`} ${today.has(n)?'<span class="pill on">on hand</span>':''}
+          <div class="pextra"><input class="pph" data-pphone="${esc(n)}" value="${esc(rec.phone||'')}" placeholder="📞 contact no." inputmode="tel" title="Party contact number — goes into the driver's WhatsApp">
+            <input class="pnt" data-pnote="${esc(n)}" value="${esc(rec.note||'')}" placeholder="note — e.g. small vehicle only" title="Shown next to this party on every order, plan and the driver's WhatsApp"></div></td>
         <td><input data-place="${esc(n)}" value="${esc(rec.place||'')}" style="padding:3px 6px" placeholder="town"></td>
         <td><input data-pin="${esc(n)}" value="${esc(rec.pincode||'')}" style="padding:3px 6px" placeholder="6 digits" inputmode="numeric"></td>
         <td><input data-pmap="${esc(n)}" value="${esc(rec.loc||rec.pin||'')}" style="padding:3px 6px" placeholder="Google Maps link or lat, lng" inputmode="url"
@@ -2899,6 +3103,13 @@ function paintRoutes(){
     const p=el.dataset.p,r=el.dataset.r;const arr=S.parties[p].routes||=[];
     const i=arr.indexOf(r); i<0?arr.push(r):arr.splice(i,1);
     await save();renderRoutes();renderPlan();});
+  t.querySelectorAll('[data-pphone]').forEach(el=>el.onchange=async()=>{
+    const rec=S.parties[el.dataset.pphone]; if(!rec) return; const v=el.value.replace(/[^\d+ ,/]/g,'').replace(/\s+/g,' ').trim(); el.value=v;
+    if(v) rec.phone=v; else delete rec.phone; await save(); renderLog(); flash(v?'Contact number saved':'Contact number cleared'); });
+  t.querySelectorAll('[data-pnote]').forEach(el=>el.onchange=async()=>{
+    const rec=S.parties[el.dataset.pnote]; if(!rec) return; const v=el.value.replace(/\s+/g,' ').trim(); el.value=v;
+    if(v) rec.note=v; else delete rec.note; await save(); renderAll(); flash(v?'Note saved — shows on all this party\'s orders':'Note cleared'); });
+  t.querySelectorAll('textarea[data-rename]').forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } }));
   t.querySelectorAll('[data-place]').forEach(el=>el.onchange=async()=>{
     S.parties[el.dataset.place].place=el.value.trim(); await save();renderOrders();renderPlan();renderDash();});
   t.querySelectorAll('[data-pwa]').forEach(el=>el.onclick=()=>{
@@ -2921,7 +3132,7 @@ function paintRoutes(){
   t.querySelectorAll('[data-pin]').forEach(el=>el.onchange=async()=>{
     S.parties[el.dataset.pin].pincode=el.value.trim(); await save();renderOrders();renderPlan();renderDash();});
   t.querySelectorAll('[data-rename]').forEach(el=>el.onchange=()=>
-    tryRenameOrMerge(el,el.dataset.rename,el.value));
+    tryRenameOrMerge(el,el.dataset.rename,el.value.replace(/\s+/g,' ')));
   t.querySelectorAll('[data-pdel]').forEach(el=>el.onclick=()=>armConfirm(el,'Delete party',async()=>{
     const p=el.dataset.pdel;
     delete S.parties[p];
@@ -3070,6 +3281,9 @@ function paintPlan(){
         </div>
         ${rts.length?'':'<div class="lwarn">Pick this vehicle\'s routes above</div>'}
         ${dupHere?`<div class="lwarn bad">${dupHere} party also on another vehicle</div>`:''}
+        ${(()=>{ const n=laneSheets(l), cap=laneSheetCap(l); if(!n) return '';
+          return n>cap&&cap?`<div class="lwarn bad sheetwarn">${num(n)} sheets (12 ft) — over the ${num(cap)} limit for this vehicle by ${num(n-cap)}</div>`
+            :`<div class="hint sheetinfo" style="font-size:11.5px;margin:2px 0">${num(n)} sheets (12 ft)${cap?` of ${num(cap)} max`:''}</div>`; })()}
         <div class="cap"><i class="${w>l.cap?'over':''}" style="width:${pct}%"></i></div>
         <div class="lanemeta"><span>${l.stops.length} stops · ${num(w)} kg</span>
           <span>${w>l.cap?'over by '+num(w-l.cap):num(l.cap-w)+' kg free'}</span></div>
@@ -3116,6 +3330,20 @@ function freeLaneName(base,exceptId){
   let n=2; while(taken.has(`${base} #${n}`)) n++;
   return `${base} #${n}`;
 }
+// parties waiting for a vehicle's routes go onto it (Pull, and Dashboard → Possible plans → Send to plan)
+function pullIntoLane(l){
+  const take=availableForLane(l);          // parties with pullable items matching its routes
+  take.forEach(p=>{
+    const ids=pullableItems(p).map(o=>o.id);   // capture before the stop is added - excludes held tabs
+    const idSet=new Set(ids);
+    const existing=l.stops.find(st=>st.party===p);
+    if(existing) addIdsToStop(existing,ids);
+    else l.stops.push({party:p,urgent:false,exclude:itemsOf(p).filter(o=>!idSet.has(o.id)).map(o=>o.id)});
+  });
+  return take.length;
+}
+// v3.6: the vehicle type that best fits a weight - the smallest that takes it, else the biggest
+function fitVehType(kg){ const ts=vehTypes().slice().sort((a,b)=>a.cap-b.cap); return ts.find(t=>t.cap>=kg)||ts[ts.length-1]||null; }
 function laneTypeOf(l){
   return vehTypes().find(t=>l.cap===t.cap && (l.name===t.name||l.name.startsWith(t.name+' #')));
 }
@@ -3157,16 +3385,9 @@ function wireLaneControls(){
     await save();renderPlan();});
   bays.querySelectorAll('[data-lpull]').forEach(el=>el.onclick=async()=>{
     const l=S.plan.lanes.find(x=>x.id===el.dataset.lpull); if(!l)return;
-    const take=availableForLane(l);          // parties with pullable items matching its routes
-    if(!take.length){flash('Nothing waiting for those routes');return;}
-    take.forEach(p=>{
-      const ids=pullableItems(p).map(o=>o.id);   // capture before the stop is added - excludes held tabs
-      const idSet=new Set(ids);
-      const existing=l.stops.find(st=>st.party===p);
-      if(existing) addIdsToStop(existing,ids);
-      else l.stops.push({party:p,urgent:false,exclude:itemsOf(p).filter(o=>!idSet.has(o.id)).map(o=>o.id)});
-    });
-    await save();renderPlan();flash(`Pulled ${take.length} parties into ${l.name}`);});
+    const n=pullIntoLane(l);
+    if(!n){flash('Nothing waiting for those routes');return;}
+    await save();renderPlan();flash(`Pulled ${n} parties into ${l.name}`);});
   bays.querySelectorAll('[data-lclear]').forEach(el=>el.onclick=()=>{
     const l=S.plan.lanes.find(x=>x.id===el.dataset.lclear); if(!l)return;
     armConfirm(el,`Clear ${l.stops.length}`,async()=>{
@@ -3507,17 +3728,20 @@ function xmlEsc(v){ return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function buildPlanXlsx(lanes){
   const COLS='ABCDEF', rows=[]; let r=3; // rows 1-2 empty
   lanes.forEach((l,li)=>{ laneRows(l).forEach(x=>rows.push({...x,r:r++})); if(li<lanes.length-1) r++; });
+  // text goes in a shared-strings list (iPhone's built-in viewer shows blank cells for inline text)
+  const sst=[], sstIx=new Map(); let sstCount=0;
+  const sIdx=v=>{ const k=String(v); sstCount++; if(!sstIx.has(k)){ sstIx.set(k,sst.length); sst.push(k); } return sstIx.get(k); };
   const cell=(col,row,v,style,f)=>{
     const ref=col+row, sAttr=` s="${style}"`;
     if(f) return `<c r="${ref}"${sAttr}><f>D${row}*E${row}</f><v>${xmlEsc(v)}</v></c>`;
     if(v===''||v==null) return `<c r="${ref}"${sAttr}/>`;
     const t=String(v).trim();
     if(/^-?\d+(\.\d+)?$/.test(t)) return `<c r="${ref}"${sAttr}><v>${t}</v></c>`;
-    return `<c r="${ref}"${sAttr} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+    return `<c r="${ref}"${sAttr} t="s"><v>${sIdx(v)}</v></c>`;
   };
   const sheetRows=rows.map(x=>`<row r="${x.r}">${x.c.map((v,i)=>cell(COLS[i+1],x.r,v,x.bold?2:1,i===4&&x.f)).join('')}</row>`).join('');
   const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" showGridLines="1"/></sheetViews>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="${rows.length?'B3:F'+rows[rows.length-1].r:'A1'}"/><sheetViews><sheetView workbookViewId="0" showGridLines="1"/></sheetViews>
 <cols><col min="1" max="1" width="3" customWidth="1"/><col min="2" max="2" width="6" customWidth="1"/><col min="3" max="3" width="48" customWidth="1"/><col min="4" max="4" width="10" customWidth="1"/><col min="5" max="5" width="10" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/></cols>
 <sheetData>${sheetRows}</sheetData><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/></worksheet>`;
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -3530,15 +3754,21 @@ function buildPlanXlsx(lanes){
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   const files=[
     {name:'[Content_Types].xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`},
     {name:'_rels/.rels',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`},
+    {name:'docProps/core.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>Loading plan</dc:title><dc:creator>Logistics Desk</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString().replace(/\.\d+Z$/,'Z')}</dcterms:created></cp:coreProperties>`},
+    {name:'docProps/app.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Microsoft Excel</Application></Properties>`},
     {name:'xl/workbook.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets><sheet name="Loading plan" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`},
     {name:'xl/_rels/workbook.xml.rels',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>`},
     {name:'xl/styles.xml',text:styles},
-    {name:'xl/worksheets/sheet1.xml',text:sheet}];
+    {name:'xl/worksheets/sheet1.xml',text:sheet},
+    {name:'xl/sharedStrings.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${sstCount}" uniqueCount="${sst.length}">${sst.map(t=>`<si><t xml:space="preserve">${xmlEsc(t)}</t></si>`).join('')}</sst>`}];
   return zipStore(files);
 }
 /* "For Jain Wire Ekm Loading Idukki, Tdpa, Pala 06-10-26 0745.xlsx" - the routes of the plan(s)
@@ -3659,12 +3889,12 @@ function cancelLines(party,pick,reason){
 }
 function linesInOpenLogs(){ return new Set(S.log.filter(g=>!g.resolved).flatMap(g=>g.stops.flatMap(s=>s.orderIds))); }
 function freeLinesOf(p){ const used=linesInOpenLogs(); return itemsOf(p).filter(o=>!used.has(o.id)&&str(o.item)); }
-function linePickHtml(lines,ticked){
+function linePickHtml(lines,ticked,qtys){
   return `<div class="lpick">${lines.map(o=>`<label class="lprow">
     <input type="checkbox" class="chk" data-lpk="${o.id}"${!ticked||ticked.has(o.id)?' checked':''}>
     <span class="lpi">${esc(o.item)}${remHtml(o)} <span class="g">· ${esc(o.date||'no date')}${o.tab?' · '+esc(o.tab):''}</span></span>
     <span class="g">ordered ${esc(o.qty)}</span>
-    <input data-lpq="${o.id}" value="${esc(o.qty)}" inputmode="decimal" title="Change if only part of it goes">
+    <input data-lpq="${o.id}" value="${esc(qtys&&qtys[o.id]!=null?qtys[o.id]:o.qty)}" inputmode="decimal" title="Change if only part of it goes">
   </label>`).join('')}</div>`;
 }
 // ticked lines and any changed qty, or {err}
@@ -3825,14 +4055,13 @@ function paintLog(){
   if(!S.log.length){ box.innerHTML='<div class="card"><p class="hint">Nothing logged yet. Build a plan in step 3, then press "Add this plan to the log" in step 4.</p></div>'; return; }
   S.log.forEach(normalizeGone);
 
-  const q=($('#logSearch')?.value||'').trim().toLowerCase();
+  const q=($('#logSearch')?.value||'').trim();
   const f=$('#logFilter')?.value||'all';
   let list=S.log.slice().reverse();
   if(f==='open') list=list.filter(g=>!g.resolved);
   if(f==='resolved') list=list.filter(g=>g.resolved);
-  if(q) list=list.filter(g=>
-    [g.title,g.vehicle,g.vehicleNo,g.driver,g.createdAt].some(v=>(v||'').toLowerCase().includes(q)) ||
-    g.stops.some(st=>(st.party||'').toLowerCase().includes(q)));
+  { const qt=nameSearch(q);
+    if(qt) list=list.filter(g=>qt([g.title,g.vehicle,g.vehicleNo,g.driver,g.createdAt,...g.stops.map(st=>st.party)].join(' '))); }
   if(!list.length){ box.innerHTML='<div class="card"><p class="hint">No log entries match.</p></div>'; return; }
   const kgs=new Map(list.map(g=>[g.id,logKg(g)]));
   const totGone=list.reduce((a,g)=>a+kgs.get(g.id).gone,0), totLoaded=list.reduce((a,g)=>a+kgs.get(g.id).loaded,0);
@@ -3922,6 +4151,7 @@ function paintLog(){
               : (incPending(g).length?`<button class="danger" disabled>Choose keep or remove for ${incPending(g).length} increased line${incPending(g).length===1?'':'s'} first</button>`
                 : `<button class="danger" data-cleardel="${g.id}" ${changing.length?'':'disabled'}>Apply delivery — updates ${changing.length} line${changing.length===1?'':'s'}</button>`)}
           </div>
+          ${!g.resolved&&live.length<allIds.length?`<div style="flex:0 0 auto"><button class="ghost" data-logclear="${g.id}" title="Marks this log done without changing anything. Lines still in Orders stay as they are (not gone).">Clear log — ${allIds.length-live.length} of ${allIds.length} line${allIds.length===1?'':'s'} already deleted from sheet</button></div>`:''}
           ${g.resolved||g.godown?'':`<div style="flex:0 0 auto"><button class="primary" data-logback="${g.id}" title="Deletes this log entry and puts the vehicle back on Build Plan to edit">Delete &amp; edit again in Build Plan</button></div>`}
           <div style="flex:0 0 auto"><button class="ghost" data-logdel="${g.id}">Delete this log entry</button></div>
         </div>
@@ -4027,6 +4257,15 @@ function paintLog(){
     armConfirm(el,`Yes, update ${changing.length} lines`,async()=>{
       applyLogEntry(g);
       await save(); renderAll(); flash(`Updated ${changing.length} line(s)`);});
+  });
+  // orders already deleted in the sheet: close the entry by hand, nothing in Orders/Stock changes
+  box.querySelectorAll('[data-logclear]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation();
+    const g=S.log.find(x=>x.id===el.dataset.logclear); if(!g||g.resolved)return;
+    const left=g.stops.flatMap(s=>s.orderIds).filter(id=>S.orders.some(o=>o.id===id)).length;
+    armConfirm(el,left?`Yes, clear — ${left} line${left===1?'':'s'} stay in Orders`:'Yes, clear this log',async()=>{
+      g.resolved=true; g.cleared=true; g.snapshot=[]; g.stockDelta=null; g.appliedAt=Date.now();
+      await save(); renderAll(); flash(left?`Log cleared — ${left} line${left===1?'':'s'} left in Orders unchanged`:'Log cleared');});
   });
   box.querySelectorAll('[data-reopen]').forEach(el=>el.onclick=e=>{
     e.stopPropagation();
@@ -4165,9 +4404,11 @@ function qtyText(map){
     .sort((a,b)=>a[0]===''?-1:b[0]===''?1:a[0].localeCompare(b[0]))
     .map(([u,n])=>num(+n.toFixed(3))+(u?' '+u:'')).join(' + ');
 }
-function stockGroups(){
+/* v3.3: lines = S.orders by default; the Vehicle view passes the Build plan's loaded lines,
+   each with _lane (vehicle name) - then a party is kept per vehicle (a party in two lanes = two rows) */
+function stockGroups(lines){
   const g=new Map();
-  S.orders.forEach(o=>{
+  (lines||S.orders).forEach(o=>{
     const k=stockKey(o.item); if(!k) return;
     let e=g.get(k);
     if(!e){ e={key:k,labels:new Map(),qty:new Map(),qtyLines:new Map(),weight:0,parties:new Map(),units:new Set()}; g.set(k,e); }
@@ -4180,9 +4421,10 @@ function stockGroups(){
     e.qtyLines.get(qu).n++;
     addQty(e.qty,o.qty); e.weight+=w;
     if(o.unit!=='' && o.unit!=null) e.units.add(String(o.unit));
-    let p=e.parties.get(o.party);
-    if(!p){ p={party:o.party,qty:new Map(),weight:0,tab:o.tab||'',date:o.date||'',
-               routes:(S.parties[o.party]?.routes)||[],tags:new Set()}; e.parties.set(o.party,p); }
+    const pk=o._lane?o.party+'\u0001'+o._lane:o.party;
+    let p=e.parties.get(pk);
+    if(!p){ p={party:o.party,lane:o._lane||'',qty:new Map(),weight:0,tab:o.tab||'',date:o.date||'',
+               routes:(S.parties[o.party]?.routes)||[],tags:new Set()}; e.parties.set(pk,p); }
     addQty(p.qty,o.qty); p.weight+=w;
     p.held=(p.held!==false)&&lineHeld(o); // HOLD only when every line of this party's item is held
     itemTags(o.item).forEach(t=>p.tags.add(t));
@@ -4282,9 +4524,17 @@ function parseStockPaste(text){
 const stockOpen=new Set();
 const stockTabs=new Set();
 const stockRoutes=new Set();
-let stockMode='tab'; // 'tab' | 'route' — mutually exclusive, matches the toggle
+let stockMode='tab'; // 'tab' | 'route' | 'veh' — mutually exclusive, matches the toggle
+const stockVehs=new Set(); // lane ids ticked in the Vehicle view; empty = every vehicle on the Build plan
+let stockLast=null;        // what the screen shows now, for Copy list
+// the Build plan vehicles' lines as they will be loaded (edited load qty counted), each tagged with its vehicle
+function vehLanes(){ return S.plan.lanes.filter(l=>l.stops.some(st=>stopItems(st).length)); }
+function vehStockLines(){
+  const ls=vehLanes().filter(l=>!stockVehs.size||stockVehs.has(l.id));
+  return ls.flatMap(l=>l.stops.flatMap(st=>stopLines(st).filter(o=>str(o.item)).map(o=>({...o,_lane:l.name}))));
+}
 function paintStock(){
-  const q=stockKey($('#stockSearch')?.value||'');
+  const qi=itemSearch($('#stockSearch')?.value||'');
   const sort=$('#stockSort')?.value||'az';
 
   // mode toggle
@@ -4293,11 +4543,12 @@ function paintStock(){
     modeBox.innerHTML=`<div class="segtoggle">
       <button data-smode="tab" class="${stockMode==='tab'?'on':''}">Tab</button>
       <button data-smode="route" class="${stockMode==='route'?'on':''}">Route</button>
+      <button data-smode="veh" class="${stockMode==='veh'?'on':''}" title="What is loaded on the Build plan vehicles">In vehicle</button>
     </div>`;
     modeBox.querySelectorAll('[data-smode]').forEach(el=>el.onclick=()=>{
       const m=el.dataset.smode; if(m===stockMode) return;
       stockMode=m;
-      if(m==='tab') stockRoutes.clear(); else stockTabs.clear();
+      stockRoutes.clear(); stockTabs.clear(); stockVehs.clear();
       paintStock();
     });
   }
@@ -4319,6 +4570,19 @@ function paintStock(){
         else stockTabs.has(t)?stockTabs.delete(t):stockTabs.add(t);
         paintStock();
       });
+    }else if(stockMode==='veh'){
+      const lanes=vehLanes();
+      [...stockVehs].forEach(id=>{ if(!lanes.some(l=>l.id===id)) stockVehs.delete(id); });
+      pillBox.innerHTML=lanes.length
+        ? lanes.map(l=>`<span class="pill click ${stockVehs.has(l.id)?'on':''}" data-sveh="${esc(l.id)}">${esc(l.name)} (${num(Math.round(laneWeight(l)))} kg)</span>`).join('')
+            +`<span class="pill click" data-sveh="__all__" style="border-style:dashed">${stockVehs.size?'Clear ('+stockVehs.size+')':'All vehicles'}</span>`
+        : `<span class="hint">No vehicle on the Build plan has anything loaded yet.</span>`;
+      pillBox.querySelectorAll('[data-sveh]').forEach(el=>el.onclick=()=>{
+        const id=el.dataset.sveh;
+        if(id==='__all__') stockVehs.clear();
+        else stockVehs.has(id)?stockVehs.delete(id):stockVehs.add(id);
+        paintStock();
+      });
     }else{
       const counts={};
       S.orders.forEach(o=>{ (S.parties[o.party]?.routes||[]).forEach(r=>{ counts[r]=(counts[r]||0)+1; }); });
@@ -4338,7 +4602,12 @@ function paintStock(){
     }
   }
 
-  let list=stockGroups();
+  const veh=stockMode==='veh';
+  const hintEl=$('#stockHint');
+  if(hintEl) hintEl.textContent=veh
+    ?'Every item loaded on the Build plan vehicles, with the qty going (an edited load qty counts, not the ordered qty). Tick vehicles to see just those. Open a row to see which parties and vehicles.'
+    :'Every distinct item in Orders, A–Z, with qty needed across all parties. Open a row to see which parties.';
+  let list=veh?(vehLanes().length?stockGroups(vehStockLines()):[]):stockGroups();
   if(stockMode==='tab' && stockTabs.size) list=list.map(g=>{
     const parties=g.parties.filter(p=>stockTabs.has(p.tab||'Untagged'));
     if(!parties.length) return null;
@@ -4351,7 +4620,7 @@ function paintStock(){
     const q=new Map(); parties.forEach(p=>p.qty.forEach((n,u)=>q.set(u,(q.get(u)||0)+n)));
     return {...g,parties,qty:q,qtyText:qtyText(q),weight:parties.reduce((a,p)=>a+p.weight,0)};
   }).filter(Boolean);
-  if(q) list=list.filter(g=>g.key.includes(q));
+  if(qi) list=list.filter(g=>qi(g.label));
   const show=$('#stockShow')?.value||'all';
   if(show==='out') list=list.filter(g=>g.stockReady!=null&&g.currentStock<=0);
   else if(show==='short') list=list.filter(g=>g.stockReady!=null&&(g.currentStock<=0||g.shortBy>0));
@@ -4364,20 +4633,23 @@ function paintStock(){
   const totLines=list.reduce((a,g)=>a+g.parties.length,0);
   const totWt=list.reduce((a,g)=>a+g.weight,0);
   const sum=$('#stockSummary');
+  const nVeh=veh?(stockVehs.size||vehLanes().length):0;
   if(sum) sum.textContent=list.length
-    ? `${list.length} distinct item${list.length>1?'s':''} · ${totLines} party line${totLines>1?'s':''} · ${num(totWt)} kg total`
+    ? `${list.length} distinct item${list.length>1?'s':''} · ${totLines} party line${totLines>1?'s':''} · ${num(totWt)} kg total${veh?` · in ${nVeh} vehicle${nVeh===1?'':'s'}`:''}`
     : '';
+  stockLast={list,veh,vehs:veh?vehLanes().filter(l=>!stockVehs.size||stockVehs.has(l.id)).map(l=>l.name):[]};
 
   if(!list.length){
     $('#stockBody').innerHTML=`<div class="card"><p class="hint">${
-      S.orders.length?'No items match that filter.':'Nothing in Orders yet — add a batch in step 1.'}</p></div>`;
+      veh&&!vehLanes().length?'Nothing is loaded on a Build plan vehicle yet. Make the plan in Logistics → Build plan, then come back here.'
+      :S.orders.length?'No items match that filter.':'Nothing in Orders yet — add a batch in step 1.'}</p></div>`;
     return;
   }
 
-  let h='<div class="card"><table class="sheet"><tr class="title">'+
-    '<td style="width:44px"></td><td>Item</td><td style="width:110px">Qty needed</td>'+
+  let h='<div class="card"><table class="sheet"><tr class="title">'+`
+    <td style="width:44px"></td><td>Item</td><td style="width:110px">${veh?'Qty in vehicle':'Qty needed'}</td>`+
     '<td style="width:110px">Unit wt</td><td style="width:120px">Total wt</td>'+
-    '<td style="width:110px">Parties</td><td style="width:170px">Current stock</td></tr>';
+    `<td style="width:110px">Parties</td><td style="width:170px">Current stock</td></tr>`;
   list.forEach(g=>{
     const open=stockOpen.has(g.key);
     const unit=g.units.length===1?num(g.units[0]):(g.units.length?'mixed':'');
@@ -4398,13 +4670,13 @@ function paintStock(){
             ?`<div class="hint" style="color:var(--alert);font-weight:700">out of stock${g.meta&&g.meta.zeroAt?` · ${daysSince(g.meta.zeroAt)}d (since ${dmyOf(g.meta.zeroAt)})`:''}</div>`
             :g.shortBy>0
             ?`<div class="hint" style="color:var(--alert);font-weight:700">short ${num(g.shortBy)} ${esc(unitLabel)}</div>`
-            :`<div class="hint">enough for all orders</div>`):''}
+            :`<div class="hint">${veh?'enough for this load':'enough for all orders'}</div>`):''}
         ${g.meta&&g.meta.at?`<div class="hint" style="font-size:10.5px">given ${dmyOf(g.meta.at)}${g.deliveredOut?` · ${num(g.deliveredOut)} out since`:''}</div>`:''}
       </td></tr>`;
     if(open){
       g.parties.forEach(p=>{
-        h+=`<tr><td></td><td style="padding-left:18px">${esc(p.party)}${
-          p.tab?` <span class="hint">· ${esc(p.tab)}</span>`:''}${
+        h+=`<tr><td></td><td style="padding-left:18px">${pnameHtml(p.party)}${
+          p.lane?` <span class="tag vehtag">${esc(p.lane)}</span>`:p.tab?` <span class="hint">· ${esc(p.tab)}</span>`:''}${
           p.held?' <span class="tag hold">HOLD</span>':''}${
           p.tags.length?` <span class="hint" style="color:#a5670a">(${esc(p.tags.join(', '))})</span>`:''}</td>
           <td class="mono">${esc(p.qtyText)}</td><td></td>
@@ -4503,16 +4775,16 @@ function repPeriodRange(v){
 }
 function repFiltered(mode){
   const [a,b]=repPeriodRange($('#repPeriod').value);
-  const f=$('#repFind').value.trim().toLowerCase(), it=$('#repItem').value.trim().toLowerCase().replace(/\s+/g,'');
+  const f=nameSearch($('#repFind').value), it=itemSearch($('#repItem').value);
   const unconf=$('#repUnconf').checked;
   return reportLines().filter(l=>{
     if(!unconf&&!l.conf) return false;
     if(l.dk&&(l.dk<a||l.dk>b)) return false;
     if(!l.dk&&$('#repPeriod').value!=='all') return false;
-    if(it&&!l.item.toLowerCase().replace(/\s+/g,'').includes(it)) return false;
+    if(it&&!it(l.item)) return false;
     if(f){
       const hay=mode==='party'?l.party:mode==='vehicle'?(l.vehicleNo+' '+l.vehicle):mode==='driver'?l.driver:(l.date+' '+l.party+' '+l.vehicleNo+' '+l.driver);
-      if(!hay.toLowerCase().includes(f)) return false;
+      if(!f(hay)) return false;
     }
     return true;
   });
@@ -4584,11 +4856,11 @@ function paintReports(){
 let repLastCx=[];
 function repCancels(){
   const [a,b]=repPeriodRange($('#repPeriod').value);
-  const f=$('#repFind').value.trim().toLowerCase(), it=$('#repItem').value.trim().toLowerCase().replace(/\s+/g,'');
+  const f=nameSearch($('#repFind').value), it=itemSearch($('#repItem').value);
   return (S.cancels||[]).filter(c=>{ const dk=repDayKey(c.at);
     if(dk&&(dk<a||dk>b)) return false;
-    if(f&&!String(c.party).toLowerCase().includes(f)) return false;
-    if(it&&!String(c.item).toLowerCase().replace(/\s+/g,'').includes(it)) return false;
+    if(f&&!f(c.party)) return false;
+    if(it&&!it(c.item)) return false;
     return true; });
 }
 function cancelHtml(cs){
@@ -4607,8 +4879,10 @@ $('#repCopy').onclick=()=>{
   copy(txt,`Copied ${rows.length} lines`);
 };
 function stockText(){
-  let list=stockGroups().sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true,sensitivity:'base'}));
-  return list.map(g=>`${g.label}\t${g.qtyText}\t${g.weight}`).join('\n');
+  // v3.3: copies what the screen shows (filters, sort, Vehicle view)
+  const L=stockLast&&stockLast.list?stockLast.list:stockGroups().sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true,sensitivity:'base'}));
+  const head=stockLast&&stockLast.veh?`In vehicle: ${stockLast.vehs.join(', ')}\n`:'';
+  return head+L.map(g=>`${g.label}\t${g.qtyText}\t${+(+g.weight).toFixed(3)}`).join('\n');
 }
 
 /* ---------- wiring ---------- */
@@ -4661,7 +4935,7 @@ function renderAll(){    invalidate();                         refresh(); }
 
 // ☰ menu: one short header line; the two groups drop down underneath when opened
 const menuOpen=()=>$('#mainMenu').classList.contains('open');
-function setMenu(open){
+function setMenu(open){ if(open) $('#mainMenu').classList.remove('peek');
   setHdrH();
   $('#mainMenu').classList.toggle('open',open); $('#navShade').classList.toggle('open',open);
   $('#mainMenu').setAttribute('aria-hidden',open?'false':'true');
@@ -4684,7 +4958,19 @@ $$('#mainMenu .mgroup').forEach(gp=>{
     try{ localStorage.setItem(MG_KEY,JSON.stringify(navShut)); }catch(e){} };
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') setMenu(false); });
-$$('nav button[data-v]').forEach(b=>b.onclick=()=>{ setMenu(false); gotoView(b.dataset.v); });
+// phones: swipe right from the left edge shows the icon strip, swipe left (or a tap elsewhere) hides it
+const navPeek=on=>$('#mainMenu').classList.toggle('peek',!!on);
+const isPhone=()=>matchMedia('(max-width:640px)').matches;
+let swX=null, swY=0, swFrom='';
+document.addEventListener('touchstart',e=>{ if(!isPhone()||e.touches.length!==1) { swX=null; return; } const t=e.touches[0];
+  const peeked=$('#mainMenu').classList.contains('peek');
+  swFrom=t.clientX<=22?'edge':(peeked&&!menuOpen()?'peek':''); swX=swFrom?t.clientX:null; swY=t.clientY; },{passive:true});
+document.addEventListener('touchend',e=>{ if(swX==null) return; const t=e.changedTouches[0], dx=t.clientX-swX, dy=Math.abs(t.clientY-swY); const from=swFrom; swX=null;
+  if(dy>Math.abs(dx)) return;
+  if(from==='edge'&&dx>35) navPeek(true);
+  else if(from==='peek'&&dx<-35) navPeek(false); },{passive:true});
+document.addEventListener('click',e=>{ if($('#mainMenu').classList.contains('peek')&&!e.target.closest('#mainMenu')) navPeek(false); });
+$$('nav button[data-v]').forEach(b=>b.onclick=()=>{ setMenu(false); navPeek(false); gotoView(b.dataset.v); });
 // every place that switches tabs goes through here, so currentView and the header label stay honest
 /* Prev / Next through the three Logistics steps, at the right end of the bar under the header */
 const STEPS=[['plan','Build plan'],['out','Final plan'],['log','Plan log']]; // v3.1: Orders is its own tab, not a step
@@ -4712,6 +4998,7 @@ function gotoView(v){
   $('#logiBtn').hidden=LOGI_STEPS.includes(v); // inside Logistics the header shows ‹ Prev / Next › instead
   if(v==='admin') stale.add('admin');
   if(v==='log') setTimeout(paintSumFields,0);
+  if(v==='stock') stale.add('stock'); // the Vehicle view follows Build plan edits
   currentView=v;
   $$('nav button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   $$('.view').forEach(sec=>sec.classList.toggle('on',sec.id==='v-'+(REPORT_VIEWS[v]?'reports':v)));
@@ -4806,20 +5093,20 @@ function paintUploads(){
   fill($('#upTab'),[...new Set(all.map(u=>u.tab||''))].sort(),'All tabs');
   const days=[...new Set(all.map(u=>u.day))].sort((a,b)=>dmyKey(b)-dmyKey(a));
   fill($('#upDate'),days,'Any day');
-  const q=$('#upSearch').value.trim().toLowerCase(), ft=$('#upTab').value, fd=$('#upDate').value;
-  const hit=l=>!q||String(l.party).toLowerCase().includes(q)||String(l.item).toLowerCase().includes(q);
+  const qn=nameSearch($('#upSearch').value), qi=itemSearch($('#upSearch').value), ft=$('#upTab').value, fd=$('#upDate').value;
+  const hit=l=>!qn||qn(l.party)||qi(l.item);
   const where=upWhere();
-  const list=[...all].reverse().filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)&&(!q||u.lines.some(hit)||u.skipped.some(hit)));
+  const list=[...all].reverse().filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)&&(!qn||u.lines.some(hit)||u.skipped.some(hit)));
   if(!all.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">Nothing uploaded yet. Each paste you add in Orders will be listed here.</p></div>'; return; }
   if(!list.length){ $('#upBody').innerHTML='<div class="card"><p class="hint" style="margin:0">No upload matches.</p></div>'; return; }
   $('#upBody').innerHTML=list.map(u=>{
     const parties=[...new Set(u.lines.map(l=>l.party))];
     const wt=u.lines.reduce((a,l)=>a+(wtNum(l.weight)||0),0);
     const stillHere=u.lines.filter(l=>S.orders.some(o=>o.id===l.id));
-    const open=upOpen.has(u.id)||!!q;
-    const lines=q?u.lines.filter(hit):u.lines;
+    const open=upOpen.has(u.id)||!!qn;
+    const lines=qn?u.lines.filter(hit):u.lines;
     const byP=new Map(); lines.forEach(l=>{ if(!byP.has(l.party)) byP.set(l.party,[]); byP.get(l.party).push(l); });
-    const skipped=q?u.skipped.filter(hit):u.skipped;
+    const skipped=qn?u.skipped.filter(hit):u.skipped;
     return `<div class="upent ${open?'open':''}">
       <div class="uphead" data-uptog="${u.id}">
         <span class="caret">▸</span>
@@ -4849,7 +5136,7 @@ function paintUploads(){
   $('#upBody').querySelectorAll('[data-upcopy]').forEach(b=>b.onclick=e=>{
     e.stopPropagation(); // don't open/close the entry
     const u=S.uploads.find(x=>x.id===b.dataset.upcopy); if(!u) return;
-    const ls=q?u.lines.filter(hit):u.lines;
+    const ls=qn?u.lines.filter(hit):u.lines;
     copy(uploadTsv(ls),`Upload #${u.no} copied — ${ls.length} line${ls.length===1?'':'s'}`);
   });
   $('#upBody').querySelectorAll('[data-uptog]').forEach(h=>h.onclick=()=>{
@@ -4886,8 +5173,8 @@ function uploadTsv(lines){
   return [...groups.values()].map(g=>[`${g.date}\t${g.party}`,...g.lines.map(l=>`\t${l.item}\t${l.qty??''}`)].join('\n')).join('\n\n');
 }
 $('#upCopyAll').onclick=()=>{
-  const q=$('#upSearch').value.trim().toLowerCase(), ft=$('#upTab').value, fd=$('#upDate').value;
-  const hit=l=>!q||String(l.party).toLowerCase().includes(q)||String(l.item).toLowerCase().includes(q);
+  const qn=nameSearch($('#upSearch').value), qi=itemSearch($('#upSearch').value), ft=$('#upTab').value, fd=$('#upDate').value;
+  const hit=l=>!qn||qn(l.party)||qi(l.item);
   const ls=(S.uploads||[]).filter(u=>(!ft||(u.tab||'')===ft)&&(!fd||u.day===fd)).flatMap(u=>u.lines.filter(hit).map(l=>({...l,_u:u.id})));
   if(!ls.length){ flash('Nothing to copy'); return; }
   const txt=uploadTsv(ls), n=txt.split('\n').filter(x=>x.startsWith('\t')).length;
@@ -4945,7 +5232,7 @@ function paintMissing(){
     <p class="hint" style="margin:10px 0 6px"><b>${list.length}</b> line${list.length===1?'':'s'} of <b>${byP.size}</b> part${byP.size===1?'y':'ies'} missing — ${missPeriodText(missState.days)}.
       Tick what to act on.</p>
     <table class="misstab">
-      <tr><th style="width:28px"></th><th>Party</th><th>Item</th><th class="n">Qty</th><th class="n">Wt</th><th>Order date</th><th>Tab</th><th>Upload</th></tr>
+      <tr><th style="width:28px"><input type="checkbox" class="chk" id="missAll" title="Tick / untick all"${n===list.length?' checked':''}></th><th>Party</th><th>Item</th><th class="n">Qty</th><th class="n">Wt</th><th>Order date</th><th>Tab</th><th>Upload</th></tr>
       ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr>
         <td><input type="checkbox" class="chk" data-mk="${esc(l.id)}"${tick.has(l.id)?' checked':''}></td>
         <td>${i?'':`<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" class="chk" data-mkp="${esc(p)}"${ls.every(x=>tick.has(x.id))?' checked':''}><b>${pnameHtml(p)}</b></label>`}</td>
@@ -4960,6 +5247,7 @@ function paintMissing(){
       Record as gone: they go into the Plan log as a vehicle sent outside the tool, so Party history and reports have them.</p>`;
   box.querySelectorAll('[data-mk]').forEach(c=>c.onchange=()=>{ c.checked?tick.add(c.dataset.mk):tick.delete(c.dataset.mk); missState.done=''; paintMissing(); });
   box.querySelectorAll('[data-mkp]').forEach(c=>c.onchange=()=>{ (byP.get(c.dataset.mkp)||[]).forEach(l=>c.checked?tick.add(l.id):tick.delete(l.id)); missState.done=''; paintMissing(); });
+  const all=$('#missAll'); if(all) all.onchange=()=>{ list.forEach(l=>all.checked?tick.add(l.id):tick.delete(l.id)); missState.done=''; paintMissing(); };
   const back=$('#missBack');
   if(back) back.onclick=()=>armConfirm(back,`Yes, put back ${n} line${n===1?'':'s'}`,async()=>{
     const ls=list.filter(l=>tick.has(l.id)), k=putBackLines(ls);
@@ -4968,7 +5256,7 @@ function paintMissing(){
   const gone=$('#missGone');
   if(gone) gone.onclick=()=>{ outForm=newOutForm(list.filter(l=>tick.has(l.id))); gotoView('log'); window.scrollTo(0,0); };
 }
-function refindMissing(done){ if(!missState) return; const list=findMissing(missState.days); missState={days:missState.days,list,tick:new Set(list.map(l=>l.id)),done:done||''}; paintMissing(); }
+function refindMissing(done){ if(!missState) return; const list=findMissing(missState.days); missState={days:missState.days,list,tick:new Set(),done:done||''}; paintMissing(); } // nothing ticked until chosen
 // a missing line goes back into Orders as it came in - same ID, so the Upload log shows it as on hand again
 function putBackLines(ls){
   let k=0;
@@ -4983,7 +5271,7 @@ function putBackLines(ls){
 }
 $('#missFind').onclick=()=>{
   const days=+$('#missPeriod').value||0, list=findMissing(days);
-  missState={days,list,tick:new Set(list.map(l=>l.id)),done:''}; paintMissing();
+  missState={days,list,tick:new Set(),done:''}; paintMissing(); // nothing ticked by default
 };
 
 /* ---------- v3.1: a vehicle sent outside the tool ----------
@@ -5002,7 +5290,7 @@ function paintOutsideForm(){
   const box=$('#outBox'); if(!box) return;
   $('#outOpen').hidden=!!outForm;
   if(!outForm){ box.innerHTML=''; return; }
-  const F=outForm, dl=(id,vals)=>`<datalist id="${id}">${[...new Set(vals.filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
+  const F=outForm, keepY=window.scrollY, keepL=(box.querySelector('.ofparties')||{}).scrollTop||0, dl=(id,vals)=>`<datalist id="${id}">${[...new Set(vals.filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
   const head=`<div class="outform">
     <h3 style="margin:0 0 4px">${F.missing?'Record the missing lines as gone':'Record a vehicle sent outside the tool'}</h3>
     <p class="hint" style="margin:0 0 8px">${F.missing?'These lines are no longer in Orders. They go into the Plan log as one entry, so Party history and reports have them.':'For a plan made straight in the sheet. The ticked lines leave Orders with a Plan log record (applied at once, like Godown collected). Reopen the entry in the log to undo.'}</p>
@@ -5019,28 +5307,33 @@ function paintOutsideForm(){
     body=`<table class="misstab" style="margin-top:8px"><tr><th>Party</th><th>Item</th><th class="n">Qty</th><th>Order date</th></tr>
       ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr><td>${i?'':'<b>'+pnameHtml(p)+'</b>'}</td><td>${esc(l.item)}</td><td class="n mono">${esc(l.qty)}</td><td class="mono">${esc(l.date||'—')}</td></tr>`).join('')).join('')}</table>`;
   } else {
-    const tabs=sheetTabs(), q=F.q.trim().toLowerCase();
-    const ps=outFreeParties().filter(p=>(!q||p.toLowerCase().includes(q))&&(!F.tab||itemsOf(p).some(o=>(o.tab||'')===F.tab))||F.pick[p]);
-    Object.keys(F.pick).forEach(p=>{ const k=F.pick[p].ids.size; if(k){ nP++; nL+=k; } });
-    body=`<div class="row" style="margin-top:8px;align-items:flex-end;gap:8px">
+    const tabs=sheetTabs(), qt=nameSearch(F.q);
+    const ps=outFreeParties().filter(p=>!F.pick[p]&&(!qt||qt(p))&&(!F.tab||itemsOf(p).some(o=>(o.tab||'')===F.tab)));
+    const sel=Object.keys(F.pick);
+    sel.forEach(p=>{ const k=F.pick[p].ids.size; if(k){ nP++; nL+=k; } });
+    const card=p=>{ const on=!!F.pick[p], lines=freeLinesOf(p);
+      return `<div class="ofp${on?' on':''}"><label class="ofph"><input type="checkbox" class="chk" data-ofp="${esc(p)}"${on?' checked':''}>
+        <b>${pnameHtml(p)}</b> <span class="g">· ${lines.length} line${lines.length===1?'':'s'}${(S.parties[p]?.routes||[]).length?' · '+esc(S.parties[p].routes.join(', ')):''}</span></label>
+        ${on?`<div data-ofbox="${esc(p)}">${linePickHtml(lines,F.pick[p].ids,F.pick[p].qty)}</div>`:''}</div>`; };
+    body=(sel.length?`<div class="ofsel"><div class="ofsh">Selected · ${sel.length} part${sel.length===1?'y':'ies'}</div>${sel.map(card).join('')}</div>`:'')+
+      `<div class="row" style="margin-top:8px;align-items:flex-end;gap:8px">
         <div><label>Find party</label><input id="ofQ" value="${esc(F.q)}" placeholder="Type to filter"></div>
         <div style="flex:0 0 auto"><label>Tab</label><select id="ofTab" style="width:auto"><option value="">All tabs</option>${tabs.map(t=>`<option${t===F.tab?' selected':''}>${esc(t)}</option>`).join('')}</select></div>
       </div>
-      <div class="ofparties">${ps.length?ps.map(p=>{ const on=!!F.pick[p], lines=freeLinesOf(p);
-        return `<div class="ofp${on?' on':''}"><label class="ofph"><input type="checkbox" class="chk" data-ofp="${esc(p)}"${on?' checked':''}>
-          <b>${pnameHtml(p)}</b> <span class="g">· ${lines.length} line${lines.length===1?'':'s'}${(S.parties[p]?.routes||[]).length?' · '+esc(S.parties[p].routes.join(', ')):''}</span></label>
-          ${on?`<div data-ofbox="${esc(p)}">${linePickHtml(lines,F.pick[p].ids)}</div>`:''}</div>`; }).join(''):'<p class="hint">No party with lines on hand matches.</p>'}</div>`;
+      <div class="ofparties">${ps.length?ps.map(card).join(''):'<p class="hint">No more parties with lines on hand match.</p>'}</div>`;
   }
   box.innerHTML=head+body+`<div class="row" style="margin-top:10px;gap:8px">
       <div style="flex:0 0 auto"><span><button class="tiny primary" id="ofSave"${nL?'':' disabled'}>Record ${nL} line${nL===1?'':'s'} of ${nP} part${nP===1?'y':'ies'} as gone</button></span></div>
       <div style="flex:0 0 auto"><button class="tiny ghost" id="ofCancel">Cancel</button></div>
     </div><p class="hint" id="ofErr" style="color:var(--alert);margin:4px 0 0"></p></div>`;
+  box.querySelectorAll('[data-ofbox] [data-lpq]').forEach(i=>i.oninput=()=>{ const p=i.closest('[data-ofbox]').dataset.ofbox; if(F.pick[p]){ F.pick[p].qty=F.pick[p].qty||{}; F.pick[p].qty[i.dataset.lpq]=i.value; } });
+  const ofl=box.querySelector('.ofparties'); if(ofl) ofl.scrollTop=keepL; window.scrollTo(0,keepY);
   const keep=(id,f)=>{ const el=$('#'+id); if(el) el.oninput=()=>{ F[f]=el.value; }; };
   keep('ofDate','date'); keep('ofVeh','veh'); keep('ofVno','vno'); keep('ofDrv','drv');
   const fq=$('#ofQ'); if(fq) fq.oninput=()=>{ F.q=fq.value; const pos=fq.selectionStart; paintOutsideForm(); const n=$('#ofQ'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } };
   const ft=$('#ofTab'); if(ft) ft.onchange=()=>{ F.tab=ft.value; paintOutsideForm(); };
   box.querySelectorAll('[data-ofp]').forEach(c=>c.onchange=()=>{ const p=c.dataset.ofp;
-    if(c.checked) F.pick[p]={ids:new Set(freeLinesOf(p).map(o=>o.id))}; else delete F.pick[p]; paintOutsideForm(); });
+    if(c.checked) F.pick[p]={ids:new Set(freeLinesOf(p).map(o=>o.id)),qty:{}}; else delete F.pick[p]; paintOutsideForm(); });
   box.querySelectorAll('[data-ofbox] [data-lpk]').forEach(c=>c.onchange=()=>{ const p=c.closest('[data-ofbox]').dataset.ofbox;
     if(!F.pick[p]) return; c.checked?F.pick[p].ids.add(c.dataset.lpk):F.pick[p].ids.delete(c.dataset.lpk); paintOutsideForm(); });
   $('#ofCancel').onclick=()=>{ outForm=null; paintOutsideForm(); };
@@ -5286,8 +5579,12 @@ $('#pinSave').onclick=async()=>{
 function paintMasters(){
   const vts=S.vehTypes||[];
   $('#vtList').innerHTML=vts.length?vts.map((t,i)=>`<span class="pill on" style="margin-right:6px">${esc(t.name)} · ${num(t.cap)} kg
+      · max <input class="vtsheet" data-vtsheet="${esc(t.name)}" value="${sheetCapOf(t.name)||''}" placeholder="—" inputmode="numeric" title="Most 12 ft weldmesh sheets this vehicle can take (empty = no limit)" style="width:52px;padding:1px 4px;font-size:12px;display:inline-block"> sheets
       <button class="tiny ghost" style="margin-left:5px;padding:0 4px" data-vtdel="${i}">×</button></span>`).join('')
     :'<span class="hint">No vehicle types yet. Add one to start building plans.</span>';
+  $('#vtList').querySelectorAll('[data-vtsheet]').forEach(el=>el.onchange=async()=>{
+    const v=parseInt(el.value,10); S.sheetCap=S.sheetCap||{}; S.sheetCap[el.dataset.vtsheet]=v>0?v:0;
+    await save(); renderPlan(); flash(v>0?`${el.dataset.vtsheet}: max ${v} sheets`:`${el.dataset.vtsheet}: no sheet limit`); });
   $('#vtList').querySelectorAll('[data-vtdel]').forEach(b=>b.onclick=async()=>{
     S.vehTypes.splice(+b.dataset.vtdel,1); await save(); renderRoutes(); renderPlan(); });
   const tabs=sheetTabs();
@@ -6185,7 +6482,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},delNote:S.delNote||{},
+  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},sheetCap:S.sheetCap||{},delNote:S.delNote||{},
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -6273,7 +6570,7 @@ function mergeModels(b,l,r){
     combos:m3(bm.combos,lm.combos,rm.combos,'Route combinations')||[], settings:m3map(bm.settings,lm.settings,rm.settings,'Setting')};
   const bd=b.data||{}, ld=l.data||{}, rd=r.data||{};
   const data={};
-  const MAPS={delNote:'Deleted in the tool',dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date',districts:'District of route'};
+  const MAPS={delNote:'Deleted in the tool',dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date',districts:'District of route',sheetCap:'Max sheets per vehicle'};
   new Set([...Object.keys(ld),...Object.keys(rd)]).forEach(k=>{
     if(k==='cancels'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||[]; // older versions leave it out - never a wipe
     else if(k==='delNote'&&(rd[k]===undefined||ld[k]===undefined)) data[k]={...(bd[k]||{}),...(rd[k]||{}),...(ld[k]||{})}; // 3.1+: never wiped by a copy that lacks it
@@ -6328,6 +6625,7 @@ function applyModel(m,fromSheet){
   S.sheetLink=d.sheetLink||'';
   if(Array.isArray(d.cancels)) S.cancels=d.cancels; else if(!S.cancels) S.cancels=[]; // older versions don't send it
   if(d.districts&&typeof d.districts==='object') S.districts=d.districts; else if(!S.districts) S.districts={};
+  if(d.sheetCap&&typeof d.sheetCap==='object') S.sheetCap=d.sheetCap; else if(!S.sheetCap) S.sheetCap={};
   if(d.delNote&&typeof d.delNote==='object') S.delNote=d.delNote; else if(!S.delNote) S.delNote={};
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
@@ -6410,7 +6708,10 @@ function syncReport(){
   if(!syncLog.length) L.push('  (none since the page was opened)');
   return L.join('\n');
 }
-function setSyncState(s,msg){ syncState={s,at:s==='ok'?Date.now():syncState.at,msg:msg||''}; updateSyncBadge(); paintSync(); }
+function setSyncState(s,msg){ syncState={s,at:s==='ok'?Date.now():syncState.at,msg:msg||''};
+  // v3.3.1: after a good sync, is anything of this device's still not in the sheet's copy?
+  if(s==='ok'){ try{ syncUnsent=!!(syncBase&&!syncFirst&&!same(toModel(),syncBase.model)); }catch(_){} }
+  updateSyncBadge(); paintSync(); }
 function hhmm(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 function paintSyncBadge(el){
   el.style.display='';
@@ -6420,6 +6721,7 @@ function paintSyncBadge(el){
   if(syncHold){ setBadge(el,'failed','cloudx','Sync stopped — check Setup','Check','A save would delete a lot from the sheet — open Setup'); return; }
   if(st.s==='busy'){ setBadge(el,'saving busy','spin','Syncing with sheet…','Syncing','Syncing with the Google Sheet…'); return; }
   if(st.s==='err'){ setBadge(el,'failed','cloudx','Sheet not reached — retry','Retry',st.msg+' — tap to retry'); return; }
+  if(syncUnsent&&syncBase&&syncState.s!=='off') { setBadge(el,'dirty','cloud','Not sent to sheet yet','Unsent','Changes on this device are not in the Google Sheet yet — keep this open for a moment, or tap to send now'); return; }
   const t=st.at?hhmm(st.at):'';
   setBadge(el,'clean','cloud',t?'Sheet synced · '+t:'Sheet',t||'Sheet',(t?'Last synced with the Google Sheet at '+t:'Google Sheet')+' — tap to sync now');
   if(was.indexOf('busy')>=0 && st.at) pulseBadge(el); // a little flash each time a sync lands
@@ -6440,9 +6742,10 @@ async function syncNow(why){
   try{
     let local=toModel();
     // a save that changed nothing the sheet keeps (moving cards in Build Plan, etc.) needs no call at all
-    if(why==='timer'&&syncBase&&!syncFirst&&same(local,syncBase.model)){ if(syncState.s==='busy') setSyncState('ok'); return; }
+    if(why==='timer'&&syncBase&&!syncFirst&&same(local,syncBase.model)){ if(syncState.s==='busy') setSyncState('ok'); else if(syncUnsent){ syncUnsent=false; updateSyncBadge(); } return; }
     // the 30-second background check stays silent unless something changes (no spinning badge all day)
     if(!(why==='poll'&&syncBase&&same(local,syncBase.model))) setSyncState('busy');
+    else if(syncUnsent){ syncUnsent=false; updateSyncBadge(); }
     if(!syncBase){ syncFull=true; paintSync(); try{ await firstSync(local,!localHasData()); } finally{ syncFull=false; } }
     else if(!same(local,syncBase.model)) await pushMerging(local);
     else{
@@ -6820,9 +7123,13 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 load().then(()=>{ ldSeen(); const slim=slimOldLog(); renderAll(); undoReset(); if(slim) save(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit
-window.addEventListener('beforeunload',e=>{ if(dirty||saving){ e.preventDefault(); e.returnValue=''; } });
-// and save promptly whenever the tab goes to the background
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSave(); });
+// v3.3.1: also when the sheet has not got everything yet (a sync running, a change not sent, a sheet not reached)
+window.addEventListener('beforeunload',e=>{
+  const unsent=!!syncCfg&&!syncFirst&&(syncUnsent||syncBusy||syncState.s==='err'||!syncBase);
+  if(dirty||saving||unsent){ e.preventDefault(); e.returnValue=''; } });
+// and save promptly whenever the tab goes to the background - and start sending to the sheet at once
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ flushSave(); if(syncCfg&&!syncFirst&&syncUnsent&&!syncBusy) syncNow('hide'); } });
+window.addEventListener('pagehide',()=>{ flushSave(); if(syncCfg&&!syncFirst&&syncUnsent&&!syncBusy) syncNow('hide'); });
 </script>
 </body>
 </html>
