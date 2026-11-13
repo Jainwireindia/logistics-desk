@@ -487,6 +487,37 @@ tr.siterow td{background:rgba(31,95,168,.04)}
   .printonly{display:block}
   .card{border:none;padding:0} .sheet td{border:1px solid #999}
 }
+/* v3.5: on PC and tablet the menu never fully hides - closed it is a narrow strip of icons,
+   ☰ widens it to show the names. Phones keep the slide-in drawer. */
+nav button{display:flex;align-items:center;gap:10px;position:relative}
+nav .mi{flex:0 0 auto;width:22px;height:22px;display:inline-flex;position:relative}
+nav .mi svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+nav .mi[data-n]::after{content:attr(data-n);position:absolute;right:-6px;bottom:-5px;font:800 9.5px/1 system-ui,sans-serif;
+  background:var(--amber);color:#211500;border-radius:99px;padding:2px 4px;border:1.5px solid var(--green-dk)}
+nav button.on .mi[data-n]::after{border-color:#fff}
+nav .ml{overflow:hidden;text-overflow:ellipsis}
+@media (min-width:641px){
+  nav{transform:none;visibility:visible;width:58px;padding:10px 7px 16px;box-shadow:none;overflow-x:hidden;
+    transition:width .18s ease}
+  nav.open{width:270px;box-shadow:6px 0 24px rgba(10,30,20,.3);transition:width .18s ease}
+  nav:not(.open) button{padding:8px 0;justify-content:center;gap:0}
+  nav:not(.open) .ml,nav:not(.open) .mglabel,nav:not(.open) .mver{display:none}
+  nav:not(.open) .mgroup{margin-top:4px;padding-top:4px}
+  nav:not(.open) .mgroup.shut button{display:flex}
+  nav:not(.open) .traybadge{position:absolute;top:1px;right:1px;margin:0!important;font-size:9.5px;padding:1px 4px;min-width:0}
+  .guardbar,main,footer{margin-left:58px}
+  main{margin-left:max(58px,calc((100% - 1500px)/2))}
+}
+@media (min-width:641px) and (prefers-reduced-motion:reduce){ nav,nav.open{transition:none} }
+/* phones: hidden by default; a swipe in from the left edge shows just the icon strip */
+@media (max-width:640px){
+  nav.peek:not(.open){transform:none;visibility:visible;width:58px;padding:10px 7px 16px;overflow-x:hidden;transition:transform .2s ease}
+  nav.peek:not(.open) button{padding:9px 0;justify-content:center;gap:0}
+  nav.peek:not(.open) .ml,nav.peek:not(.open) .mglabel,nav.peek:not(.open) .mver{display:none}
+  nav.peek:not(.open) .mgroup{margin-top:4px;padding-top:4px}
+  nav.peek:not(.open) .mgroup.shut button{display:flex}
+  nav.peek:not(.open) .traybadge{position:absolute;top:1px;right:1px;margin:0!important;font-size:9.5px;padding:1px 4px;min-width:0}
+}
 /* phone rules last, so they win over the desktop rules above */
 .lanejump{display:none}
 @media (max-width:640px){
@@ -544,27 +575,27 @@ tr.siterow td{background:rgba(31,95,168,.04)}
   </div>
   <!-- the menu folds away behind ☰ so the header stays one short line on any screen -->
   <nav id="mainMenu" aria-hidden="true">
-    <button data-v="dash" class="on mdash">Dashboard</button>
-    <button data-v="orders" class="mdash">Orders</button>
+    <button data-v="dash" class="on mdash" title="Dashboard"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg></span><span class="ml">Dashboard</span></button>
+    <button data-v="orders" class="mdash" title="Orders"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5H6.5a1.5 1.5 0 0 0-1.5 1.5v14a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-2"/><rect x="8.5" y="3" width="7" height="3.2" rx="1"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg></span><span class="ml">Orders</span></button>
     <div class="mgroup">
       <div class="mglabel">Logistics</div>
-      <button data-v="plan">1 · Build plan</button>
-      <button data-v="out">2 · Final plan</button>
-      <button data-v="log">3 · Plan log</button>
+      <button data-v="plan" title="Build plan"><span class="mi" data-n="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M8 4.5v5M5.5 7h5"/></svg></span><span class="ml">1 · Build plan</span></button>
+      <button data-v="out" title="Final plan"><span class="mi" data-n="2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M5.2 11.2l2 2 3.6-4"/></svg></span><span class="ml">2 · Final plan</span></button>
+      <button data-v="log" title="Plan log"><span class="mi" data-n="3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h10.5a1.5 1.5 0 0 1 1.5 1.5v4"/><path d="M5 3.5A1.5 1.5 0 0 0 3.5 5v14A1.5 1.5 0 0 0 5 20.5h6"/><path d="M7 8h6M7 11.5h4"/><circle cx="16.5" cy="16" r="4.5"/><path d="M16.5 13.8V16l1.6 1.2"/></svg></span><span class="ml">3 · Plan log</span></button>
     </div>
     <div class="mgroup mreport">
       <div class="mglabel">Reports</div>
-      <button data-v="rparty">Party history</button>
-      <button data-v="rveh">Vehicle &amp; driver trips</button>
-      <button data-v="rday">Day-wise</button>
-      <button data-v="stock">Stock required</button>
+      <button data-v="rparty" title="Party history"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 11-4.7"/><circle cx="17.5" cy="16.5" r="4"/><path d="M17.5 14.5v2l1.3 1"/></svg></span><span class="ml">Party history</span></button>
+      <button data-v="rveh" title="Vehicle & driver trips"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M3.8 10.5h6M14.2 10.5h6M12 14.2v6.3"/></svg></span><span class="ml">Vehicle &amp; driver trips</span></button>
+      <button data-v="rday" title="Day-wise"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M7.5 13h2M11 13h2M14.5 13h2M7.5 16.5h2M11 16.5h2"/></svg></span><span class="ml">Day-wise</span></button>
+      <button data-v="stock" title="Stock required"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5h7.5v7H3.5zM13 13.5h7.5v7H13zM8.2 6h7.5v7.5H8.2z"/><path d="M6 13.5v2M16 13.5v2M11 6v2"/></svg></span><span class="ml">Stock required</span></button>
     </div>
     <div class="mgroup mmaster">
       <div class="mglabel">Master</div>
-      <button data-v="routes">Setup</button>
-      <button data-v="parties">Parties &amp; map</button>
-      <button data-v="uploads">Upload log</button>
-      <button data-v="admin">Admin 🔒</button>
+      <button data-v="routes" title="Setup"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="ml">Setup</span></button>
+      <button data-v="parties" title="Parties & map"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.4"/></svg></span><span class="ml">Parties &amp; map</span></button>
+      <button data-v="uploads" title="Upload log"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 13.5v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></span><span class="ml">Upload log</span></button>
+      <button data-v="admin" title="Admin"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3"/></svg></span><span class="ml">Admin 🔒</span></button>
     </div>
     <div class="mver" id="appVer"></div>
   </nav>
@@ -1237,7 +1268,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.4.1', APP_BUILD='09-11-2026';
+const APP_VERSION='3.5', APP_BUILD='14-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -4824,7 +4855,7 @@ function renderAll(){    invalidate();                         refresh(); }
 
 // ☰ menu: one short header line; the two groups drop down underneath when opened
 const menuOpen=()=>$('#mainMenu').classList.contains('open');
-function setMenu(open){
+function setMenu(open){ if(open) $('#mainMenu').classList.remove('peek');
   setHdrH();
   $('#mainMenu').classList.toggle('open',open); $('#navShade').classList.toggle('open',open);
   $('#mainMenu').setAttribute('aria-hidden',open?'false':'true');
@@ -4847,7 +4878,19 @@ $$('#mainMenu .mgroup').forEach(gp=>{
     try{ localStorage.setItem(MG_KEY,JSON.stringify(navShut)); }catch(e){} };
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') setMenu(false); });
-$$('nav button[data-v]').forEach(b=>b.onclick=()=>{ setMenu(false); gotoView(b.dataset.v); });
+// phones: swipe right from the left edge shows the icon strip, swipe left (or a tap elsewhere) hides it
+const navPeek=on=>$('#mainMenu').classList.toggle('peek',!!on);
+const isPhone=()=>matchMedia('(max-width:640px)').matches;
+let swX=null, swY=0, swFrom='';
+document.addEventListener('touchstart',e=>{ if(!isPhone()||e.touches.length!==1) { swX=null; return; } const t=e.touches[0];
+  const peeked=$('#mainMenu').classList.contains('peek');
+  swFrom=t.clientX<=22?'edge':(peeked&&!menuOpen()?'peek':''); swX=swFrom?t.clientX:null; swY=t.clientY; },{passive:true});
+document.addEventListener('touchend',e=>{ if(swX==null) return; const t=e.changedTouches[0], dx=t.clientX-swX, dy=Math.abs(t.clientY-swY); const from=swFrom; swX=null;
+  if(dy>Math.abs(dx)) return;
+  if(from==='edge'&&dx>35) navPeek(true);
+  else if(from==='peek'&&dx<-35) navPeek(false); },{passive:true});
+document.addEventListener('click',e=>{ if($('#mainMenu').classList.contains('peek')&&!e.target.closest('#mainMenu')) navPeek(false); });
+$$('nav button[data-v]').forEach(b=>b.onclick=()=>{ setMenu(false); navPeek(false); gotoView(b.dataset.v); });
 // every place that switches tabs goes through here, so currentView and the header label stay honest
 /* Prev / Next through the three Logistics steps, at the right end of the bar under the header */
 const STEPS=[['plan','Build plan'],['out','Final plan'],['log','Plan log']]; // v3.1: Orders is its own tab, not a step
@@ -5109,7 +5152,7 @@ function paintMissing(){
     <p class="hint" style="margin:10px 0 6px"><b>${list.length}</b> line${list.length===1?'':'s'} of <b>${byP.size}</b> part${byP.size===1?'y':'ies'} missing — ${missPeriodText(missState.days)}.
       Tick what to act on.</p>
     <table class="misstab">
-      <tr><th style="width:28px"></th><th>Party</th><th>Item</th><th class="n">Qty</th><th class="n">Wt</th><th>Order date</th><th>Tab</th><th>Upload</th></tr>
+      <tr><th style="width:28px"><input type="checkbox" class="chk" id="missAll" title="Tick / untick all"${n===list.length?' checked':''}></th><th>Party</th><th>Item</th><th class="n">Qty</th><th class="n">Wt</th><th>Order date</th><th>Tab</th><th>Upload</th></tr>
       ${[...byP].map(([p,ls])=>ls.map((l,i)=>`<tr>
         <td><input type="checkbox" class="chk" data-mk="${esc(l.id)}"${tick.has(l.id)?' checked':''}></td>
         <td>${i?'':`<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" class="chk" data-mkp="${esc(p)}"${ls.every(x=>tick.has(x.id))?' checked':''}><b>${pnameHtml(p)}</b></label>`}</td>
@@ -5124,6 +5167,7 @@ function paintMissing(){
       Record as gone: they go into the Plan log as a vehicle sent outside the tool, so Party history and reports have them.</p>`;
   box.querySelectorAll('[data-mk]').forEach(c=>c.onchange=()=>{ c.checked?tick.add(c.dataset.mk):tick.delete(c.dataset.mk); missState.done=''; paintMissing(); });
   box.querySelectorAll('[data-mkp]').forEach(c=>c.onchange=()=>{ (byP.get(c.dataset.mkp)||[]).forEach(l=>c.checked?tick.add(l.id):tick.delete(l.id)); missState.done=''; paintMissing(); });
+  const all=$('#missAll'); if(all) all.onchange=()=>{ list.forEach(l=>all.checked?tick.add(l.id):tick.delete(l.id)); missState.done=''; paintMissing(); };
   const back=$('#missBack');
   if(back) back.onclick=()=>armConfirm(back,`Yes, put back ${n} line${n===1?'':'s'}`,async()=>{
     const ls=list.filter(l=>tick.has(l.id)), k=putBackLines(ls);
@@ -5132,7 +5176,7 @@ function paintMissing(){
   const gone=$('#missGone');
   if(gone) gone.onclick=()=>{ outForm=newOutForm(list.filter(l=>tick.has(l.id))); gotoView('log'); window.scrollTo(0,0); };
 }
-function refindMissing(done){ if(!missState) return; const list=findMissing(missState.days); missState={days:missState.days,list,tick:new Set(list.map(l=>l.id)),done:done||''}; paintMissing(); }
+function refindMissing(done){ if(!missState) return; const list=findMissing(missState.days); missState={days:missState.days,list,tick:new Set(),done:done||''}; paintMissing(); } // nothing ticked until chosen
 // a missing line goes back into Orders as it came in - same ID, so the Upload log shows it as on hand again
 function putBackLines(ls){
   let k=0;
@@ -5147,7 +5191,7 @@ function putBackLines(ls){
 }
 $('#missFind').onclick=()=>{
   const days=+$('#missPeriod').value||0, list=findMissing(days);
-  missState={days,list,tick:new Set(list.map(l=>l.id)),done:''}; paintMissing();
+  missState={days,list,tick:new Set(),done:''}; paintMissing(); // nothing ticked by default
 };
 
 /* ---------- v3.1: a vehicle sent outside the tool ----------
