@@ -483,6 +483,7 @@ tr.siterow td{background:rgba(31,95,168,.04)}
 .lgf label{margin-bottom:3px}
 
 @media print{
+  .pnote{display:none!important} /* party notes are for the screen only */
   body{background:#fff} header,.guard,.guardbar,nav,.noprint{display:none!important}
   .printonly{display:block}
   .card{border:none;padding:0} .sheet td{border:1px solid #999}
@@ -495,6 +496,16 @@ nav .mi svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.
 nav .mi[data-n]::after{content:attr(data-n);position:absolute;right:-6px;bottom:-5px;font:800 9.5px/1 system-ui,sans-serif;
   background:var(--amber);color:#211500;border-radius:99px;padding:2px 4px;border:1.5px solid var(--green-dk)}
 nav button.on .mi[data-n]::after{border-color:#fff}
+/* v3.6.2: the Logistics steps sit on a light panel with dark green icons; their 1-2-3 badges are
+   dark green (amber stays only for the Orders tray badge, so a notification never looks like a step) */
+nav .mgroup.mlogi{background:#e3f3e8;border-radius:10px;border-top-color:transparent;padding:4px 4px 5px;margin-top:8px}
+nav .mlogi .mglabel{color:var(--green-dk)}
+nav .mlogi button{color:var(--green-dk)}
+nav .mlogi button:hover{background:#fff;border-color:#fff;color:var(--green-dk)}
+nav .mlogi button.on{background:var(--green-dk);border-color:var(--green-dk);color:#fff}
+nav .mlogi .mi[data-n]::after{background:var(--green-dk);color:#fff;border-color:#e3f3e8}
+nav .mlogi button:hover .mi[data-n]::after{border-color:#fff}
+nav .mlogi button.on .mi[data-n]::after{background:#fff;color:var(--green-dk);border-color:var(--green-dk)}
 nav .ml{overflow:hidden;text-overflow:ellipsis}
 @media (min-width:641px){
   nav{transform:none;visibility:visible;width:58px;padding:10px 7px 16px;box-shadow:none;overflow-x:hidden;
@@ -526,6 +537,29 @@ textarea.pnamein{display:block;min-height:0;height:3.1em;width:100%;min-width:20
 .pextra{display:flex;gap:5px;margin-top:4px}
 .pextra input{padding:2px 6px;font-size:12px}
 .pextra .pph{flex:0 0 120px} .pextra .pnt{flex:1 1 auto;min-width:110px}
+/* v3.7 Build plan selection mode */
+.pc.selmode{cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.pc .selbox{flex:0 0 22px;width:22px;height:22px;border:2px solid var(--edge2);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#fff;margin:2px 8px 0 0;background:#fff}
+.pc.picked{outline:3px solid var(--green);outline-offset:-1px;background:#eef8f1}
+.pc.picked .selbox{background:var(--green);border-color:var(--green)}
+#selBar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--green-dk);color:#fff;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 14px;box-shadow:0 -4px 18px rgba(0,0,0,.25)}
+#selBar .selsum{font-size:14px;margin-right:4px}
+#selBar select{width:auto;max-width:300px;padding:5px 8px}
+#selBar button{padding:6px 12px}
+#selBar .ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.55)}
+#selBar button:disabled{opacity:.5}
+@media (min-width:641px){ #selBar{left:58px} }
+@media (max-width:640px){ #selBar{padding:7px 10px;gap:6px} #selBar .selsum{flex:1 1 100%;font-size:13.5px}
+  #selBar select{flex:1 1 100%;max-width:none} #selBar button{padding:5px 9px;font-size:13px} }
+body.selpad main{padding-bottom:90px}
+/* v3.7 party filters */
+.pfbox{border:1px solid var(--edge);border-radius:8px;padding:8px 10px;margin:0 0 10px;background:var(--panel2)}
+.pfhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.pfchips{display:flex;flex-wrap:wrap;gap:6px}
+.pfchip{border:1px solid var(--edge2);border-radius:99px;background:#fff;color:var(--ink);font-size:12.5px;font-weight:600;padding:4px 11px;cursor:pointer}
+.pfchip:hover{border-color:var(--green)}
+.pfchip.on{border-color:var(--green);background:var(--green);color:#fff}
+.pfchip.not{border-color:var(--alert);background:var(--alert);color:#fff}
 /* phone rules last, so they win over the desktop rules above */
 .lanejump{display:none}
 @media (max-width:640px){
@@ -585,7 +619,7 @@ textarea.pnamein{display:block;min-height:0;height:3.1em;width:100%;min-width:20
   <nav id="mainMenu" aria-hidden="true">
     <button data-v="dash" class="on mdash" title="Dashboard"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg></span><span class="ml">Dashboard</span></button>
     <button data-v="orders" class="mdash" title="Orders"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5H6.5a1.5 1.5 0 0 0-1.5 1.5v14a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-2"/><rect x="8.5" y="3" width="7" height="3.2" rx="1"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg></span><span class="ml">Orders</span></button>
-    <div class="mgroup">
+    <div class="mgroup mlogi">
       <div class="mglabel">Logistics</div>
       <button data-v="plan" title="Build plan"><span class="mi" data-n="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M8 4.5v5M5.5 7h5"/></svg></span><span class="ml">1 · Build plan</span></button>
       <button data-v="out" title="Final plan"><span class="mi" data-n="2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M5.2 11.2l2 2 3.6-4"/></svg></span><span class="ml">2 · Final plan</span></button>
@@ -847,16 +881,11 @@ textarea.pnamein{display:block;min-height:0;height:3.1em;width:100%;min-width:20
     <p class="hint" style="margin-top:0;margin-bottom:10px">Routes each party can go on, and where it is. The <b>location link</b> (a Google Maps link to the shop) goes into the WhatsApp text for the driver.</p>
     <div class="row" style="margin-bottom:10px">
       <div><label>Find party</label><input id="pSearch" placeholder="Type to filter"></div>
-      <div style="flex:0 0 auto"><label>Show</label>
-        <select id="pFilter" style="width:auto">
-          <option value="all">All parties</option>
-          <option value="today">Only parties with orders on hand</option>
-          <option value="untagged">Only parties with no route</option>
-          <option value="nospot">Only parties on hand with no exact map spot</option>
-          <option value="linknospot">Only parties with a map link but no exact spot</option>
-          <option value="sites">Only delivery locations</option>
-        </select></div>
     </div>
+    <div class="pfbox"><div class="pfhead"><label style="margin:0">Filters</label>
+      <span class="hint" style="margin:0">Click once = only those (<b style="color:var(--green)">green</b>), again = NOT those (<b style="color:var(--alert)">red</b>), again = off. All chosen filters must match.</span>
+      <span id="pfCount" class="hint" style="margin:0 0 0 auto"></span><button class="tiny ghost" id="pfClear" style="display:none">Clear filters</button></div>
+      <div id="pFilters" class="pfchips"></div></div>
     <div class="row" style="margin:-2px 0 10px;align-items:center">
       <div style="flex:0 0 auto"><label style="margin:0">Send locations to driver</label></div>
       <div style="flex:0 0 220px"><select id="waDriver"></select></div>
@@ -1276,7 +1305,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.6.1', APP_BUILD='17-11-2026';
+const APP_VERSION='3.7', APP_BUILD='18-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1835,6 +1864,34 @@ function siteLine(p){ const s=siteOf(p).site; return s?'Delivery - '+titleCase(s
 // v3.6: a party's contact number and standing note (a delivery location uses its party's when it has none)
 function partyPhone(p){ const r=S.parties[p]||{}; return str(r.phone)||str((S.parties[siteOf(p).base]||{}).phone); }
 function partyNote(p){ const r=S.parties[p]||{}; return str(r.note)||str((S.parties[siteOf(p).base]||{}).note); }
+/* v3.7: Parties & map filters - each one off, on (1) or "not" (-1); all ticked ones must match.
+   Kept per device (a convenience, so a blocked storage just means no memory). */
+const PFILTERS=[
+  ['onhand','Orders on hand',(n,t)=>t.has(n),'No orders on hand'],
+  ['route','Has a route',n=>(S.parties[n].routes||[]).length>0,'No route'],
+  ['place','Has a place',n=>!!str(S.parties[n].place),'No place'],
+  ['pincode','Has a pincode',n=>!!str(S.parties[n].pincode),'No pincode'],
+  ['link','Has a map link',n=>!!str(S.parties[n].loc),'No map link'],
+  ['spot','Has an exact map spot',n=>!!pinOf(n),'No exact map spot'],
+  ['site','Is a delivery location',n=>!!siteOf(n).site,'Not a delivery location'],
+  ['phone','Has a contact number',n=>!!partyPhone(n),'No contact number'],
+  ['note','Has a note',n=>!!partyNote(n),'No note']];
+let pfState=(()=>{ try{ const v=JSON.parse(localStorage.getItem('jw-ld-pfilters-v1')||'{}'); return v&&typeof v==='object'?v:{}; }catch(_){ return {}; } })();
+function pfSave(){ try{ localStorage.setItem('jw-ld-pfilters-v1',JSON.stringify(pfState)); }catch(_){} }
+function partyFilterOk(n,today){
+  return PFILTERS.every(([k,,fn])=>{ const v=pfState[k]; if(!v) return true; const hit=!!fn(n,today); return v>0?hit:!hit; });
+}
+function paintPartyFilters(all,shown){
+  const box=$('#pFilters'); if(!box) return;
+  // one chip per filter: first click = green (has it), second = red (does NOT have it), third = off
+  box.innerHTML=PFILTERS.map(([k,label,,notLabel])=>{ const v=pfState[k]||0;
+    return `<button type="button" class="pfchip${v>0?' on':v<0?' not':''}" data-pf="${k}" title="${v>0?'Showing only these - click again for NOT':v<0?'Showing only parties WITHOUT this - click again to switch off':'Click: only these · twice: NOT these'}">${v>0?'✓ '+esc(label):v<0?'✗ '+esc(notLabel):esc(label)}</button>`; }).join('');
+  const active=PFILTERS.filter(([k])=>pfState[k]).length;
+  $('#pfCount').textContent=active?`${shown} of ${all} parties`:`${all} parties`;
+  $('#pfClear').style.display=active?'':'none';
+  box.querySelectorAll('[data-pf]').forEach(el=>el.onclick=()=>{ const k=el.dataset.pf, v=pfState[k]||0;
+    if(v===0) pfState[k]=1; else if(v>0) pfState[k]=-1; else delete pfState[k]; pfSave(); renderRoutes(); });
+}
 function pnoteHtml(p){ const n=partyNote(p); return n?` <span class="pnote" title="Party note (Parties &amp; map)">📝 ${esc(n)}</span>`:''; }
 function pnameHtml(p){ const {base,site}=siteOf(p); return esc(base)+(site?` <span class="dsite">Delivery - ${esc(titleCase(site))}</span>`:'')+pnoteHtml(p); }
 function pnameText(p){ const {base,site}=siteOf(p); return site?`${base} (Delivery - ${titleCase(site)})`:base; }
@@ -3063,14 +3120,12 @@ function paintRoutes(){
       S.combos=S.combos.filter(x=>x.id!==b.dataset.cdel);
       await save();renderRoutes();renderDash();}));
 
-  const q=$('#pSearch').value.trim(),f=$('#pFilter').value;
+  const q=$('#pSearch').value.trim();
   const today=new Set(partiesToday());
   let names=Object.keys(S.parties).sort();
-  if(f==='today')names=names.filter(n=>today.has(n));
-  if(f==='untagged')names=names.filter(n=>!(S.parties[n].routes||[]).length);
-  if(f==='nospot')names=names.filter(n=>today.has(n)&&!pinOf(n));
-  if(f==='linknospot')names=names.filter(n=>str(S.parties[n].loc)&&!pinOf(n));
-  if(f==='sites')names=names.filter(n=>siteOf(n).site);
+  const allCount=names.length;
+  names=names.filter(n=>partyFilterOk(n,today));
+  paintPartyFilters(allCount,names.length);
   // a party's delivery locations sit right under it
   names.sort((a,b)=>{ const x=siteOf(a), y=siteOf(b); return x.base.localeCompare(y.base)||(x.site?1:0)-(y.site?1:0)||x.site.localeCompare(y.site); });
   { const qt=nameSearch(q); if(qt) names=names.filter(qt); }
@@ -3157,8 +3212,9 @@ function partyCard(p,laneId,idx,total){
   const fits=inPool?lanesFitting(p):[];
   const elsewhere=itemsOf(p).length-its.length; // this party's other items, loaded or waiting
   const cardDate=oldestDate(its);
-  return `<div class="pc ${urgent||isOverdueItems(its)?'urgent':''} ${its.some(lineHeld)?'onhold':''} ${dup?'dup':''}" ${inPool?'draggable="true"':''} data-p="${esc(p)}" data-lane="${laneId}" data-i="${idx}">
-    <div class="top">
+  const selOn=inPool&&selMode, picked=selOn&&selSet.has(p);
+  return `<div class="pc ${urgent||isOverdueItems(its)?'urgent':''} ${its.some(lineHeld)?'onhold':''} ${dup?'dup':''}${selOn?' selmode':''}${picked?' picked':''}" ${inPool&&!selOn?'draggable="true"':''} data-p="${esc(p)}" data-lane="${laneId}" data-i="${idx}">
+    <div class="top">${selOn?`<span class="selbox" aria-hidden="true">${picked?'✓':''}</span>`:''}
       ${inPool?'':`<span class="drag" title="Drag here to move this party">⠿</span>
         <input class="seqin" data-seq="${laneId}" data-from="${idx}" value="${idx+1}" title="Type a position to move this party there">`}
       <div style="flex:1">
@@ -3194,7 +3250,7 @@ function partyCard(p,laneId,idx,total){
     }).join('')}</div>
     <div class="pctl">
       ${inPool
-        ? S.plan.lanes.map(l=>`<button class="tiny" data-sendto="${l.id}" data-sp="${esc(p)}">→ ${esc(l.name)}</button>`).join('')
+        ? (selOn?'':S.plan.lanes.map(l=>`<button class="tiny" data-sendto="${l.id}" data-sp="${esc(p)}">→ ${esc(l.name)}</button>`).join(''))
         : `<button class="tiny" data-mv="up" ${idx===0?'disabled':''}>↑</button>
            <button class="tiny" data-mv="down" ${idx===total-1?'disabled':''}>↓</button>
            <button class="tiny" data-mv="urgent">${urgent?'Not urgent':'Urgent'}</button>
@@ -3239,7 +3295,8 @@ function paintPlan(){
   const hiddenByView=poolEmpty&&total>0; // parties exist, but the search box or route pills hide all of them
   const searchTerm=($('#poolSearch')?.value||'').trim();
   let h=`<div class="lane pool ${poolEmpty&&!hiddenByView?'clear':''}" data-jl="pool">
-    <div class="lanehead"><div class="t"><h3>Not placed yet</h3><span class="seqbox">${inR.length+outR.length}</span></div>
+    <div class="lanehead"><div class="t"><h3>Not placed yet</h3><span class="seqbox">${inR.length+outR.length}</span>
+      <button class="tiny ${selMode?'primary':'ghost'}" id="selToggle" style="margin-left:auto" title="Tap parties to pick them, then put them all on one vehicle">${selMode?'✓ Selecting — Done':'☐ Select parties'}</button></div>
       <div class="lanemeta"><span>${hiddenByView?`${total} waiting, hidden by ${searchTerm?'your search':'the route filter'}`:poolEmpty?'Every party is on a vehicle':'Waiting to be placed'}</span></div></div>
     <div class="drop" data-lane="pool">
       ${hiddenByView?`<div class="empty">No waiting party matches ${searchTerm?`"${esc(searchTerm)}"`:'the selected routes'} — ${total} ${total===1?'is':'are'} actually still waiting.
@@ -3308,6 +3365,8 @@ function paintPlan(){
   $('#laneJump').querySelectorAll('[data-jump]').forEach(c=>c.onclick=()=>{
     const el=$(`#bays [data-jl="${c.dataset.jump}"]`); if(el) $('#bays').scrollTo({left:el.offsetLeft-$('#bays').offsetLeft,behavior:'smooth'}); });
   wireCards();
+  { const t=$('#selToggle'); if(t) t.onclick=()=>{ selMode=!selMode; if(!selMode){ selSet.clear(); selTarget=''; } renderPlan(); }; }
+  document.body.classList.toggle('selpad',selMode); paintSelBar();
   wireLaneControls();
   renderGuard();
 
@@ -3329,6 +3388,46 @@ function freeLaneName(base,exceptId){
   if(!taken.has(base)) return base;
   let n=2; while(taken.has(`${base} #${n}`)) n++;
   return `${base} #${n}`;
+}
+/* v3.7 Build plan selection mode: pick waiting parties one tap at a time (scroll freely, a scroll
+   never picks), see the total, then put them all on one vehicle - a new one or one already in the plan.
+   Routes, Pull, map order and the rest work on that vehicle as usual afterwards. */
+let selMode=false, selTarget='';
+const selSet=new Set();
+function selKg(){ return [...selSet].reduce((a,p)=>a+(unplacedWeight(p)||0),0); }
+function paintSelBar(){
+  let bar=$('#selBar');
+  if(!selMode||currentView!=='plan'){ if(bar) bar.remove(); return; }
+  if(!bar){ bar=document.createElement('div'); bar.id='selBar'; document.body.appendChild(bar); }
+  const pool=new Set(unassignedParties()); [...selSet].forEach(p=>{ if(!pool.has(p)) selSet.delete(p); });
+  const n=selSet.size, kg=selKg(), fit=fitVehType(kg);
+  const opts=vehTypes().map(t=>[`new:${t.name}`,`New ${t.label}`]).concat(S.plan.lanes.map(l=>[l.id,`Add to ${l.name} (${num(laneWeight(l))} of ${num(l.cap)} kg)`]));
+  const val=opts.some(o=>o[0]===selTarget)?selTarget:(fit?`new:${fit.name}`:(opts[0]||[''])[0]);
+  bar.innerHTML=`<div class="selsum"><b>${n}</b> part${n===1?'y':'ies'} selected · <b>${num(Math.round(kg))} kg</b>${kg>=1000?` (${fmtN(Math.round(kg/10)/100)} t)`:''}</div>
+    <select id="selTo" title="Where the selected parties go">${opts.map(([v,t])=>`<option value="${esc(v)}"${v===val?' selected':''}>${esc(t)}</option>`).join('')}</select>
+    <button class="primary" id="selAdd" ${n&&opts.length?'':'disabled'}>Add ${n||''} to vehicle</button>
+    <button class="ghost" id="selAll" title="Pick every party now shown in Not placed yet">Select all shown</button>
+    <button class="ghost" id="selNone" ${n?'':'disabled'}>Clear</button>
+    <button class="ghost" id="selDone">Done</button>`;
+  $('#selTo').onchange=e=>{ selTarget=e.target.value; };
+  $('#selAll').onclick=()=>{ poolParties().inR.forEach(p=>selSet.add(p)); renderPlan(); };
+  $('#selNone').onclick=()=>{ selSet.clear(); renderPlan(); };
+  $('#selDone').onclick=()=>{ selMode=false; selSet.clear(); selTarget=''; renderPlan(); };
+  $('#selAdd').onclick=async()=>{
+    const to=$('#selTo').value, picked=poolParties().inR.concat(poolParties().outR).filter(p=>selSet.has(p)); // keep the on-screen order
+    if(!picked.length) return;
+    let l;
+    if(to.startsWith('new:')){ const t=vehTypes().find(v=>v.name===to.slice(4)); if(!t) return;
+      l={id:uid('L'),name:freeLaneName(t.name,null),cap:+t.cap,routes:[],stops:[]}; S.plan.lanes.push(l); }
+    else l=S.plan.lanes.find(x=>x.id===to);
+    if(!l) return;
+    picked.forEach(p=>{ const ids=unplacedItems(p).map(o=>o.id); if(!ids.length) return;
+      const ex=l.stops.find(st=>st.party===p); if(ex) addIdsToStop(ex,ids); else l.stops.push({party:p,urgent:false,exclude:excludeForUnplaced(p)}); });
+    selSet.clear(); selTarget='';
+    await save(); renderPlan();
+    setTimeout(()=>{ const el=document.querySelector(`[data-jl="${l.id}"]`); if(el) el.scrollIntoView({block:'nearest',inline:'center'}); },60);
+    const w=laneWeight(l); flash(`${picked.length} part${picked.length===1?'y':'ies'} on ${l.name} — ${num(w)} kg${w>l.cap?` (over by ${num(w-l.cap)} kg)`:''}`);
+  };
 }
 // parties waiting for a vehicle's routes go onto it (Pull, and Dashboard → Possible plans → Send to plan)
 function pullIntoLane(l){
@@ -3406,6 +3505,14 @@ function wireLaneControls(){
 function wireCards(){
   $$('.pc').forEach(c=>{
     const inPool=c.dataset.lane==='pool';
+    // v3.7 selection mode: a tap / click on a waiting party picks it (a scroll is not a tap, so it never picks)
+    if(inPool&&selMode){
+      c.onclick=e=>{ if(e.target.closest('a,input,select,textarea,button,.qedit')) return;
+        const p=c.dataset.p; selSet.has(p)?selSet.delete(p):selSet.add(p);
+        const on=selSet.has(p); c.classList.toggle('picked',on); const b=c.querySelector('.selbox'); if(b) b.textContent=on?'✓':'';
+        paintSelBar(); };
+      return;
+    }
     // a card on a vehicle is only draggable while the handle is held; pool cards drag from anywhere
     if(!inPool){
       const h=c.querySelector('.drag');
@@ -5016,6 +5123,7 @@ function gotoView(v){
   $('#curView').textContent=grp?`${grp} · ${nm}`:nm;
   paintStepNav(v);
   refresh();
+  paintSelBar(); // the selection bar belongs to Build plan only
 }
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-goto]'); if(!a) return; e.preventDefault(); gotoView(a.dataset.goto); });
 
@@ -6211,7 +6319,7 @@ $('#followPasteTab').onchange=()=>{
 $('#pasteTab').onchange=()=>{
   if(ordFollowPaste){ ordTabs=new Set([$('#pasteTab').value]); renderOrders(); }
 };
-$('#pFilter').onchange=renderRoutes;
+$('#pfClear').onclick=()=>{ pfState={}; pfSave(); renderRoutes(); };
 $('#addVehNo').onclick=async()=>{
   const v=$('#newVehNo').value.trim().toUpperCase(); if(!v)return;
   if(!S.fleet.vehicles.includes(v))S.fleet.vehicles.push(v);
