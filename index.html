@@ -483,7 +483,7 @@ tr.siterow td{background:rgba(31,95,168,.04)}
 .lgf label{margin-bottom:3px}
 
 @media print{
-  .pnote{display:none!important} /* party notes are for the screen only */
+  .pnote,.onote{display:none!important} /* party and order notes are for the screen only */
   body{background:#fff} header,.guard,.guardbar,nav,.noprint{display:none!important}
   .printonly{display:block}
   .card{border:none;padding:0} .sheet td{border:1px solid #999}
@@ -537,6 +537,13 @@ textarea.pnamein{display:block;min-height:0;height:3.1em;width:100%;min-width:20
 .pextra{display:flex;gap:5px;margin-top:4px}
 .pextra input{padding:2px 6px;font-size:12px}
 .pextra .pph{flex:0 0 120px} .pextra .pnt{flex:1 1 auto;min-width:110px}
+/* v3.8 duplicate parties */
+.duptbl{width:100%;border-collapse:collapse;font-size:13px}
+.duptbl td,.duptbl th{border-bottom:1px solid var(--edge);padding:6px 8px;vertical-align:top;text-align:left}
+.duptbl .dupname{font-weight:700;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;word-break:break-word}
+/* v3.8 order note */
+.onote{display:inline-block;font-size:11px;font-weight:700;color:#0b4f8a;background:#e3effc;border:1px solid #a9c9ee;border-radius:4px;padding:0 5px;margin-left:4px;white-space:normal;line-height:1.35;vertical-align:middle;text-transform:none;letter-spacing:0}
+input.onotein{display:block;margin-top:4px;width:min(420px,100%);padding:3px 7px;font-size:12.5px;border-color:#a9c9ee;background:#f4f9ff}
 /* v3.7 Build plan selection mode */
 .pc.selmode{cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .pc .selbox{flex:0 0 22px;width:22px;height:22px;border:2px solid var(--edge2);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#fff;margin:2px 8px 0 0;background:#fff}
@@ -554,7 +561,11 @@ textarea.pnamein{display:block;min-height:0;height:3.1em;width:100%;min-width:20
 body.selpad main{padding-bottom:90px}
 /* v3.7 party filters */
 .pfbox{border:1px solid var(--edge);border-radius:8px;padding:8px 10px;margin:0 0 10px;background:var(--panel2)}
-.pfhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.pfhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 6px}
+.pfbox summary{cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);list-style-position:inside}
+.pfbox:not([open]){padding:6px 10px}
+.pfon{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;text-transform:none;letter-spacing:0;color:#fff;background:var(--green);border-radius:99px;padding:1px 8px}
+.pfon:empty{display:none}
 .pfchips{display:flex;flex-wrap:wrap;gap:6px}
 .pfchip{border:1px solid var(--edge2);border-radius:99px;background:#fff;color:var(--ink);font-size:12.5px;font-weight:600;padding:4px 11px;cursor:pointer}
 .pfchip:hover{border-color:var(--green)}
@@ -882,10 +893,10 @@ body.selpad main{padding-bottom:90px}
     <div class="row" style="margin-bottom:10px">
       <div><label>Find party</label><input id="pSearch" placeholder="Type to filter"></div>
     </div>
-    <div class="pfbox"><div class="pfhead"><label style="margin:0">Filters</label>
+    <details class="pfbox" id="pfDetails"><summary><span class="pfsum">Advanced filters</span> <span id="pfOn" class="pfon"></span></summary><div class="pfhead">
       <span class="hint" style="margin:0">Click once = only those (<b style="color:var(--green)">green</b>), again = NOT those (<b style="color:var(--alert)">red</b>), again = off. All chosen filters must match.</span>
       <span id="pfCount" class="hint" style="margin:0 0 0 auto"></span><button class="tiny ghost" id="pfClear" style="display:none">Clear filters</button></div>
-      <div id="pFilters" class="pfchips"></div></div>
+      <div id="pFilters" class="pfchips"></div></details>
     <div class="row" style="margin:-2px 0 10px;align-items:center">
       <div style="flex:0 0 auto"><label style="margin:0">Send locations to driver</label></div>
       <div style="flex:0 0 220px"><select id="waDriver"></select></div>
@@ -939,6 +950,16 @@ body.selpad main{padding-bottom:90px}
       <button class="tiny" id="clrBackup" style="margin-left:6px">Download backup now</button>
     </p>
     <div id="clearList"></div>
+  </div>
+
+  <div class="card">
+    <h2>Possible duplicate parties</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:8px">Finds names that look like the same party: extra spaces or dots, &amp; / AND, or one or two letters different
+      (SUNIDAS STEELS / SUNIDHAS STEELS). Pick the right name to merge the other into it - orders, plans, Plan log, routes, map spot, contact number
+      and note all come along. <b>Not the same</b> hides a pair for good (on every device).</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><button class="primary" id="dupFind">Check for duplicates</button><span class="hint" id="dupSum" style="margin:0"></span>
+      <button class="tiny ghost" id="dupShowHidden" hidden></button></div>
+    <div id="dupList"></div>
   </div>
 
   <div class="card">
@@ -1305,7 +1326,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.7', APP_BUILD='18-11-2026';
+const APP_VERSION='3.8', APP_BUILD='20-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1442,6 +1463,7 @@ async function load(){
   S.dupOk=(S.dupOk&&typeof S.dupOk==='object'&&!Array.isArray(S.dupOk))?S.dupOk:{};
   S.districts=(S.districts&&typeof S.districts==='object')?S.districts:{};
   S.sheetCap=(S.sheetCap&&typeof S.sheetCap==='object')?S.sheetCap:{}; // v3.6 {vehicle type: max 12 ft sheets}
+  S.dupNot=(S.dupNot&&typeof S.dupNot==='object')?S.dupNot:{}; // v3.8 {"A|B":1} pairs marked not the same party
   normUploads(!(d&&Array.isArray(d.uploads)));
   S.log.forEach(g=>{ if(!('stockDelta' in g)) g.stockDelta=null; }); // per-entry undo record for stockOut
   S.log.forEach(g=>{ if(!g.notes||typeof g.notes!=='object') g.notes={}; }); // {orderId: "already billed"} per-line bracket note
@@ -1889,9 +1911,22 @@ function paintPartyFilters(all,shown){
   const active=PFILTERS.filter(([k])=>pfState[k]).length;
   $('#pfCount').textContent=active?`${shown} of ${all} parties`:`${all} parties`;
   $('#pfClear').style.display=active?'':'none';
+  $('#pfOn').textContent=active?`${active} on · ${shown} of ${all} parties`:''; // seen even while folded
   box.querySelectorAll('[data-pf]').forEach(el=>el.onclick=()=>{ const k=el.dataset.pf, v=pfState[k]||0;
     if(v===0) pfState[k]=1; else if(v>0) pfState[k]=-1; else delete pfState[k]; pfSave(); renderRoutes(); });
 }
+/* v3.8 order note: a party name typed in the sheet as "ABC TRADERS (tomorrow need)" is read as
+   ABC TRADERS with the order note "tomorrow need" (the script cleans the sheet cell and puts the note
+   in column G of the party row). It belongs to that order only, on every line of it (o.onote),
+   so it goes when the order goes. A known party's own name (XYZ (KOLLAM)) is never split. */
+function splitPartyNote(text){
+  const t=String(text||'').trim(); const m=t.match(/^(.*?\S)\s*[(\[]([^()\[\]]+)[)\]]\s*$/);
+  if(!m||S.parties[t.toUpperCase()]) return null;
+  const inner=splitPartyNote(m[1]);
+  return inner?{name:inner.name,note:inner.note+'; '+m[2].trim()}:{name:m[1].trim(),note:m[2].trim()};
+}
+function onotesOf(lines){ return [...new Set((lines||[]).map(o=>str(o&&o.onote)).filter(Boolean))]; }
+function onoteHtml(lines){ const n=onotesOf(lines); return n.length?` <span class="onote" title="Note for this order (column G of the party row)">🕒 ${esc(n.join(' · '))}</span>`:''; }
 function pnoteHtml(p){ const n=partyNote(p); return n?` <span class="pnote" title="Party note (Parties &amp; map)">📝 ${esc(n)}</span>`:''; }
 function pnameHtml(p){ const {base,site}=siteOf(p); return esc(base)+(site?` <span class="dsite">Delivery - ${esc(titleCase(site))}</span>`:'')+pnoteHtml(p); }
 function pnameText(p){ const {base,site}=siteOf(p); return site?`${base} (Delivery - ${titleCase(site)})`:base; }
@@ -2324,7 +2359,10 @@ function mergeParty(oldN,newN){
     place:np.place||op.place||'',
     pincode:np.pincode||op.pincode||'',
     loc:np.loc||op.loc||'', pin:np.pin||op.pin||'',
-    ...((np.homeTab||op.homeTab)?{homeTab:np.homeTab||op.homeTab}:{})
+    ...((np.homeTab||op.homeTab)?{homeTab:np.homeTab||op.homeTab}:{}),
+    // v3.8: contact number and note come along (both kept when they differ)
+    ...((()=>{ const j=(a,b)=>{ a=str(a); b=str(b); return a&&b&&a.toUpperCase()!==b.toUpperCase()?a+' / '+b:(a||b); };
+      const ph=j(np.phone,op.phone), nt=j(np.note,op.note); return {...(ph?{phone:ph}:{}),...(nt?{note:nt}:{})}; })())
   };
   delete S.parties[oldN];
   S.orders.forEach(o=>{ if(o.party===oldN) o.party=newN; });
@@ -2374,10 +2412,11 @@ function parsePaste(text,tab){
   if(!lines.length) return {rows:[],note:'Nothing to read — the box was empty.'};
   const split=l=>l.includes('\t')?l.split('\t'):l.split(/\s{2,}/);
   const rows=[];
-  let curParty=null,curBase=null,curDate='',curRoute='';
+  let curParty=null,curBase=null,curDate='',curRoute='',curNote='';
   lines.forEach(line=>{
     const c=split(line).map(x=>x.trim());
-    const date=c[0]||'',route=c[1]||'',text=c[2]||'',n1=c[3]||'',n2=c[4]||'',n3=c[5]||'',rem=c[6]||'';
+    const date=c[0]||'',route=c[1]||'',n1=c[3]||'',n2=c[4]||'',n3=c[5]||'',rem=c[6]||'';
+    let text=c[2]||'';
     if(date) curDate=date;
     if(route) curRoute=route;
     if(!text) return;
@@ -2385,9 +2424,11 @@ function parsePaste(text,tab){
       // v3.0: "Delivery - Kallara" under a party = that party's order for that site
       const site=curBase?deliverySite(text):'';
       if(site){ curParty=siteKey(curBase,site); return; }
+      const sp=splitPartyNote(text); curNote=rem||''; // v3.8: party row G / "(note)" = order note
+      if(sp){ text=sp.name; curNote=curNote&&curNote.toUpperCase()!==sp.note.toUpperCase()?curNote+'; '+sp.note:(curNote||sp.note); }
       curBase=curParty=text.toUpperCase(); return; }
-    if(!curParty){ curBase=curParty=text.toUpperCase(); return; }
-    rows.push({party:curParty,item:text,qty:n1,unit:n2,weight:n3,date:curDate,route:curRoute,tab,...(rem?{remark:rem}:{})});
+    if(!curParty){ curBase=curParty=text.toUpperCase(); curNote=''; return; }
+    rows.push({party:curParty,item:text,qty:n1,unit:n2,weight:n3,date:curDate,route:curRoute,tab,...(rem?{remark:rem}:{}),...(curNote?{onote:curNote}:{})});
   });
   const ps=new Set(rows.map(r=>r.party));
   return {rows,note:`Read ${rows.length} item line${rows.length===1?'':'s'} across ${ps.size} part${ps.size===1?'y':'ies'}.`};
@@ -2881,7 +2922,8 @@ function paintOrders(){
             <select data-tab="${esc(p)}" data-tabdate="${esc(d)}" data-tabold="${esc(blockTab)}" style="width:150px" title="Which sheet tab this batch files under">${tabOptions(blockTab)}</select>
             <span class="oparty">${editing
               ?`<input data-erename="${esc(p)}" value="${esc(p)}" style="font-weight:700;min-width:220px;max-width:100%;width:${Math.min(64,p.length+4)}ch">`
-              +pnoteHtml(p):pnameHtml(p)} ${tags}
+              +pnoteHtml(p)+`<input class="onotein" data-onote="${esc(p)}" data-ontab="${esc(blockTab)}" data-ondate="${esc(d)}" value="${esc(onotesOf(its).join('; '))}" placeholder="🕒 order note — e.g. tomorrow need" title="Note for this order only (column G of the party row); goes when the order goes">`
+              :pnameHtml(p)+onoteHtml(its)} ${tags}
               ${placeLine(p)||partyPhone(p)?`<br><span class="opl">${esc(placeLine(p))}</span>${partyPhone(p)?`${placeLine(p)?' · ':''}<span class="pphone">📞 <a href="tel:${esc(partyPhone(p).split(/[,/]/)[0].replace(/\s/g,''))}">${esc(partyPhone(p))}</a></span>`:''}`:''}</span>
             <span class="osum">${its.length} item${its.length>1?'s':''} · ${num(blockWt)} kg</span>
             <span class="oact">
@@ -2989,6 +3031,11 @@ function wireOrderBox(box){
     if(wasHeld){ setHold(p,oldTab,d,false); setHold(p,newTab,d,true,hi); }
     const due=dueOf(p,oldTab,d); if(due){ setDue(p,oldTab,d,''); setDue(p,newTab,d,due); }
     await save();renderOrders();});
+  // v3.8: the order note of a batch (every line of it carries it)
+  box.querySelectorAll('[data-onote]').forEach(el=>{ el.onclick=e=>e.stopPropagation();
+    el.onchange=async()=>{ const p=el.dataset.onote, tab=el.dataset.ontab, d=el.dataset.ondate, v=el.value.replace(/\s+/g,' ').trim();
+      S.orders.forEach(o=>{ if(o.party===p&&(o.date||'')===d&&(o.tab||'')===tab){ if(v) o.onote=v; else delete o.onote; } });
+      await save(); renderAll(); flash(v?'Order note saved':'Order note cleared'); }; });
   // v3.6: the order date of a batch, changed in edit mode for every line of that batch (hold / due date move with it)
   box.querySelectorAll('[data-bdate]').forEach(el=>{ maskDateInput(el); el.onclick=e=>e.stopPropagation();
     el.onchange=async()=>{
@@ -3218,7 +3265,7 @@ function partyCard(p,laneId,idx,total){
       ${inPool?'':`<span class="drag" title="Drag here to move this party">⠿</span>
         <input class="seqin" data-seq="${laneId}" data-from="${idx}" value="${idx+1}" title="Type a position to move this party there">`}
       <div style="flex:1">
-        <div class="pname">${pnameHtml(p)}
+        <div class="pname">${pnameHtml(p)}${onoteHtml(its)}
           ${dup?' <span class="tag">ON 2 VEHICLES</span>':''}
           ${hasDupLines(its)?' <span class="tag" title="This card holds the same order line twice - check Orders">DUPLICATE</span>':''}
           ${urgent?' <span class="tag">URGENT</span>':''}
@@ -3698,7 +3745,7 @@ function paintOut(){
     const w=laneWeight(l);
     let rows=`<tr class="title"><td></td><td colspan="4"><input data-title="${l.id}" value="${esc(laneTitle(l))}" style="font-weight:700;border:none;background:transparent;padding:2px"></td></tr>`;
     stops.forEach((s,i)=>{
-      rows+=`<tr class="pty"><td class="num">${i+1}</td><td colspan="4">${pnameHtml(s.party)}${s.urgent?' <span class="tag">URGENT</span>':''}${holdTag(stopItems(s))?' '+holdTag(stopItems(s)):''}${dueTagFor(stopItems(s))?' '+dueTagFor(stopItems(s)):''}${placeLine(s.party)?`<span class="ponly"> — ${esc(placeLine(s.party))}</span>`:''}</td></tr>`;
+      rows+=`<tr class="pty"><td class="num">${i+1}</td><td colspan="4">${pnameHtml(s.party)}${onoteHtml(stopItems(s))}${s.urgent?' <span class="tag">URGENT</span>':''}${holdTag(stopItems(s))?' '+holdTag(stopItems(s)):''}${dueTagFor(stopItems(s))?' '+dueTagFor(stopItems(s)):''}${placeLine(s.party)?`<span class="ponly"> — ${esc(placeLine(s.party))}</span>`:''}</td></tr>`;
       mergedItems(stopLines(s)).forEach(o=>{
         const short=isItemShort(o.item);
         const nk=noteKeyFor(o.ids);
@@ -5670,6 +5717,59 @@ let adminOpenUntil=0;
 function pinHash(p){ let h=2166136261; for(const ch of 'ld-admin|'+p){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619)>>>0; } return 'p1:'+h.toString(36); }
 function pinOk(p){ return pinHash(p)===(S.adminPin||pinHash(DEFAULT_PIN)); }
 const adminUnlocked=()=>Date.now()<adminOpenUntil;
+/* v3.8 duplicate parties: same letters once spaces / dots / & are ignored, or a near spelling
+   (1 letter off from 10 letters, 2 letters off from 16). Run only when asked - not on every screen. */
+function dupNameKey(n){ return String(n||'').toUpperCase().replace(/&/g,'AND').replace(/[^A-Z0-9@]/g,''); }
+function editDist(a,b,max){ // letters added / dropped / changed / swapped, stops early past max
+  if(Math.abs(a.length-b.length)>max) return max+1;
+  let p2=null, p1=Array.from({length:b.length+1},(_,j)=>j);
+  for(let i=1;i<=a.length;i++){ const c=[i]; let best=i;
+    for(let j=1;j<=b.length;j++){
+      let v=Math.min(p1[j]+1,c[j-1]+1,p1[j-1]+(a[i-1]===b[j-1]?0:1));
+      if(p2&&i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]) v=Math.min(v,p2[j-2]+1);
+      c[j]=v; if(v<best) best=v; }
+    if(best>max) return max+1; p2=p1; p1=c; }
+  return p1[b.length]; }
+const dupPairKey=(a,b)=>[a,b].sort().join('|');
+function findDupParties(){
+  const names=Object.keys(S.parties), K=names.map(n=>({n,k:dupNameKey(n)})).filter(x=>x.k.length>=4);
+  const pairs=new Map();
+  const add=(a,b,why)=>{ if(a===b) return; const sa=siteOf(a), sb=siteOf(b);
+    if(!!sa.site!==!!sb.site) return;                              // a party and a delivery location are different things
+    const key=dupPairKey(a,b); if(!pairs.has(key)) pairs.set(key,{a:[a,b].sort()[0],b:[a,b].sort()[1],why}); };
+  const byKey=new Map(); K.forEach(x=>{ const g=byKey.get(x.k)||[]; g.push(x.n); byKey.set(x.k,g); });
+  byKey.forEach(g=>{ for(let i=0;i<g.length;i++) for(let j=i+1;j<g.length;j++) add(g[i],g[j],'same letters'); });
+  // near spellings: compare within buckets of the first 3 and of the last 3 letters (a slip anywhere is caught by one of them)
+  const keys=[...byKey.keys()];
+  [k=>k.slice(0,3),k=>k.slice(-3)].forEach(bk=>{
+    const B=new Map(); keys.forEach(k=>{ const b=bk(k); const g=B.get(b)||[]; g.push(k); B.set(b,g); });
+    B.forEach(g=>{ for(let i=0;i<g.length;i++) for(let j=i+1;j<g.length;j++){ const x=g[i], y=g[j], L=Math.min(x.length,y.length);
+      if(L<10) continue; const max=L>=16?2:1; if(Math.abs(x.length-y.length)>max) continue;
+      const d=editDist(x,y,max); if(d<=max) byKey.get(x).forEach(a=>byKey.get(y).forEach(b=>add(a,b,d===1?'1 letter different':'2 letters different'))); } });
+  });
+  return [...pairs.values()];
+}
+let dupShowHidden=false;
+function paintDupList(list){
+  const box=$('#dupList'); if(!box) return;
+  const hid=list.filter(p=>S.dupNot[dupPairKey(p.a,p.b)]), show=dupShowHidden?list:list.filter(p=>!S.dupNot[dupPairKey(p.a,p.b)]);
+  $('#dupSum').textContent=list.length?`${list.length-hid.length} possible pair${list.length-hid.length===1?'':'s'}${hid.length?` · ${hid.length} marked not the same`:''}`:'No possible duplicates found.';
+  const sh=$('#dupShowHidden'); sh.hidden=!hid.length; sh.textContent=dupShowHidden?'Hide the "not the same" pairs':`Show the ${hid.length} "not the same" pair${hid.length===1?'':'s'}`;
+  const info=n=>{ const p=S.parties[n]||{}, its=itemsOf(n).length, logs=S.log.filter(g=>g.stops.some(s=>s.party===n)).length;
+    return `<div class="dupname">${esc(n)}</div><div class="hint" style="margin:0">${its} order line${its===1?'':'s'} · ${logs} plan log${logs===1?'':'s'}${(p.routes||[]).length?' · '+esc(p.routes.join(', ')):''}${p.place?' · '+esc(p.place):''}${pinOf(n)?' · exact spot':''}</div>`; };
+  box.innerHTML=show.length?`<table class="duptbl"><tr><th>Name 1</th><th>Name 2</th><th></th></tr>${show.map((p,i)=>{ const k=dupPairKey(p.a,p.b), off=!!S.dupNot[k];
+    return `<tr${off?' style="opacity:.55"':''}><td>${info(p.a)}</td><td>${info(p.b)}</td><td style="white-space:nowrap"><span class="hint" style="margin:0 6px 0 0">${esc(p.why)}</span>
+      <span><button class="tiny" data-dupkeep="${i}" data-side="a" title="Merge name 2 into name 1">◀ Keep name 1</button></span>
+      <span><button class="tiny" data-dupkeep="${i}" data-side="b" title="Merge name 1 into name 2">Keep name 2 ▶</button></span>
+      <button class="tiny ghost" data-dupnot="${i}">${off?'Show again':'Not the same'}</button></td></tr>`; }).join('')}</table>`:'';
+  box.querySelectorAll('[data-dupkeep]').forEach(b=>b.onclick=()=>{ const p=show[+b.dataset.dupkeep], keep=b.dataset.side==='a'?p.a:p.b, drop=keep===p.a?p.b:p.a;
+    armConfirm(b,`Yes, merge "${drop}" into it`,async()=>{ if(!S.parties[drop]||!S.parties[keep]) return;
+      mergeParty(drop,keep); delete S.dupNot[dupPairKey(p.a,p.b)]; await save(); renderAll(); paintDupList(findDupParties()); flash(`Merged into ${keep}`); }); });
+  box.querySelectorAll('[data-dupnot]').forEach(b=>b.onclick=async()=>{ const p=show[+b.dataset.dupnot], k=dupPairKey(p.a,p.b);
+    if(S.dupNot[k]) delete S.dupNot[k]; else S.dupNot[k]=1; await save(); paintDupList(list); });
+}
+$('#dupFind').onclick=()=>paintDupList(findDupParties());
+$('#dupShowHidden').onclick=()=>{ dupShowHidden=!dupShowHidden; paintDupList(findDupParties()); };
 function paintAdmin(){
   paintRestorePoints(); paintClashes();
   const ok=adminUnlocked();
@@ -5742,7 +5842,7 @@ function commitPasteRows(rows){
   const added=[];
   rows.forEach(r=>{
     const o={id:uid('o'),party:r.party,item:r.item,qty:r.qty,unit:r.unit,
-      weight:r.weight,date:r.date,tab:r.tab,addedOn:today10(),...(r.remark?{remark:r.remark}:{})};
+      weight:r.weight,date:r.date,tab:r.tab,addedOn:today10(),...(r.remark?{remark:r.remark}:{}),...(r.onote?{onote:r.onote}:{})};
     S.orders.push(o); added.push(o);
     const rec=S.parties[r.party]=S.parties[r.party]||{routes:[],hold:false,dueDate:'',place:'',pincode:''};
     if(siteOf(r.party).site){ if(r.tab) rec.homeTab=r.tab; // a delivery location remembers its tab
@@ -6169,7 +6269,8 @@ $('#manSite').onchange=manSiteChanged;
 $('#manAddLine').onclick=()=>manAddRow(true);
 $('#manClear').onclick=()=>manClear();
 $('#manSave').onclick=async()=>{
-  const note=$('#manNote'), tab=$('#manTab').value, base=manPartyName($('#manParty').value), site=normName($('#manSite').value);
+  const note=$('#manNote'), tab=$('#manTab').value, spn=splitPartyNote($('#manParty').value); // v3.8 "ABC (tomorrow need)"
+  const base=manPartyName(spn?spn.name:$('#manParty').value), site=normName($('#manSite').value), onote=spn?spn.note:'';
   const party=base?siteKey(base,site):'';
   const dRaw=$('#manDate').value.trim(), iso=parseDMY(dRaw);
   if(sheetTabs().length&&!tab){ note.textContent='Pick the sheet tab first.'; return; }
@@ -6183,7 +6284,7 @@ $('#manSave').onclick=async()=>{
     if(!v('item')){ bad='An item line has a qty but no item name.'; return; }
     if(!v('qty')){ bad=`"${v('item')}" has no qty.`; return; }
     rows.push({party,item:v('item'),qty:v('qty'),unit:v('unit'),weight:v('weight'),date:isoToDMY(iso),
-      route:[...manRoutes].join(', '),tab,...(v('remark')?{remark:v('remark')}:{})});
+      route:[...manRoutes].join(', '),tab,...(v('remark')?{remark:v('remark')}:{}),...(onote?{onote}:{})});
   });
   if(bad){ note.textContent=bad; return; }
   if(!rows.length){ note.textContent='Add at least one item with its qty.'; return; }
@@ -6579,14 +6680,14 @@ function stable(v){
 }
 const same=(a,b)=>stable(a)===stable(b);
 const PARTY_SHEET_FIELDS=['routes','place','pincode','loc','pin'];
-const ordKey=o=>o?stable({tab:o.tab||'',date:o.date||'',party:o.party,item:o.item,qty:str(o.qty),unit:str(o.unit),weight:str(o.weight),remark:str(o.remark)}):'-';
+const ordKey=o=>o?stable({tab:o.tab||'',date:o.date||'',party:o.party,item:o.item,qty:str(o.qty),unit:str(o.unit),weight:str(o.weight),remark:str(o.remark),onote:str(o.onote)}):'-';
 
 // this device's data in the shape the sheet stores
 function toModel(){
   const tabs=[...sheetTabs()];
   S.orders.forEach(o=>{ if(o.tab&&!tabs.some(t=>t.toUpperCase()===o.tab.toUpperCase())) tabs.push(o.tab); });
   const orders=S.orders.filter(o=>str(o.item)&&o.party).map(o=>({id:o.id,tab:o.tab||'',date:str(o.date),party:o.party,
-    item:str(o.item),qty:str(o.qty),unit:str(o.unit),weight:str(o.weight),remark:str(o.remark)}));
+    item:str(o.item),qty:str(o.qty),unit:str(o.unit),weight:str(o.weight),remark:str(o.remark),...(str(o.onote)?{onote:str(o.onote)}:{})}));
   const parties={}, partyExtra={};
   Object.entries(S.parties).forEach(([n,p])=>{
     parties[n]={routes:[...(p.routes||[])],place:str(p.place),pincode:str(p.pincode),loc:str(p.loc),pin:str(p.pin)};
@@ -6599,7 +6700,7 @@ function toModel(){
     combos:(S.combos||[]).map(c=>({name:c.name||'',routes:[...(c.routes||[])],xroutes:[...(c.xroutes||[])]})),
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
-  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},sheetCap:S.sheetCap||{},delNote:S.delNote||{},
+  const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},sheetCap:S.sheetCap||{},dupNot:S.dupNot||{},delNote:S.delNote||{},
     finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
@@ -6655,7 +6756,7 @@ function m3ids(b,l,r,keyFn,name){ b=b||[]; l=l||[]; r=r||[]; keyFn=keyFn||stable
     if(v) out.push(v); });
   return out; }
 // readable names for the clash list
-const FIELD_NAMES={qty:'qty',unit:'unit wt',weight:'total wt',remark:'remark',date:'date',tab:'sheet tab',item:'item',party:'party',
+const FIELD_NAMES={onote:'order note',qty:'qty',unit:'unit wt',weight:'total wt',remark:'remark',date:'date',tab:'sheet tab',item:'item',party:'party',
   driver:'driver',vehicleNo:'vehicle no',vehicle:'vehicle',title:'title',qtyGone:'qty gone',notes:'line note',stops:'parties / lines on the vehicle',
   resolved:'applied / reopened',snapshot:'applied lines',stockDelta:'stock taken off',appliedAt:'applied time',incKeep:'extra-qty choice',laneSnap:'Build Plan copy',
   routes:'routes',place:'place',pincode:'pincode',loc:'location link',pin:'map spot',homeTab:'tab',holdInfo:'hold',due:'due date',reason:'reason'};
@@ -6687,7 +6788,7 @@ function mergeModels(b,l,r){
     combos:m3(bm.combos,lm.combos,rm.combos,'Route combinations')||[], settings:m3map(bm.settings,lm.settings,rm.settings,'Setting')};
   const bd=b.data||{}, ld=l.data||{}, rd=r.data||{};
   const data={};
-  const MAPS={delNote:'Deleted in the tool',dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date',districts:'District of route',sheetCap:'Max sheets per vehicle'};
+  const MAPS={delNote:'Deleted in the tool',dupOk:'Duplicate OK',finalNotes:'Final plan note',stock:'Current stock',stockOut:'Stock delivered',stockMeta:'Stock date',districts:'District of route',sheetCap:'Max sheets per vehicle',dupNot:'Not the same party'};
   new Set([...Object.keys(ld),...Object.keys(rd)]).forEach(k=>{
     if(k==='cancels'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||[]; // older versions leave it out - never a wipe
     else if(k==='delNote'&&(rd[k]===undefined||ld[k]===undefined)) data[k]={...(bd[k]||{}),...(rd[k]||{}),...(ld[k]||{})}; // 3.1+: never wiped by a copy that lacks it
@@ -6720,7 +6821,7 @@ function applyModel(m,fromSheet){
   const blanks=S.orders.filter(o=>!str(o.item)); // half-typed lines in Orders edit mode stay put
   const d=m.data||{}, meta=d.orderMeta||{}, t=today10();
   S.orders=(m.orders||[]).map(o=>({id:o.id,party:o.party,item:o.item,qty:o.qty,unit:o.unit,weight:o.weight,
-    date:o.date,tab:o.tab||'',addedOn:meta[o.id]||t,...(str(o.remark)?{remark:str(o.remark)}:{})})).concat(blanks);
+    date:o.date,tab:o.tab||'',addedOn:meta[o.id]||t,...(str(o.remark)?{remark:str(o.remark)}:{}),...(str(o.onote)?{onote:str(o.onote)}:{})})).concat(blanks);
   const px=d.partyExtra||{}, P={};
   Object.entries(m.parties||{}).forEach(([n,p])=>{ P[n]={...(px[n]||{}),routes:[...(p.routes||[])],place:p.place||'',pincode:p.pincode||'',loc:p.loc||'',pin:p.pin||''}; });
   Object.keys(px).forEach(n=>{ if(!P[n]) P[n]={routes:[],place:'',pincode:'',loc:'',pin:'',...px[n]}; });
@@ -6743,6 +6844,7 @@ function applyModel(m,fromSheet){
   if(Array.isArray(d.cancels)) S.cancels=d.cancels; else if(!S.cancels) S.cancels=[]; // older versions don't send it
   if(d.districts&&typeof d.districts==='object') S.districts=d.districts; else if(!S.districts) S.districts={};
   if(d.sheetCap&&typeof d.sheetCap==='object') S.sheetCap=d.sheetCap; else if(!S.sheetCap) S.sheetCap={};
+  if(d.dupNot&&typeof d.dupNot==='object') S.dupNot=d.dupNot; else if(!S.dupNot) S.dupNot={};
   if(d.delNote&&typeof d.delNote==='object') S.delNote=d.delNote; else if(!S.delNote) S.delNote={};
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
