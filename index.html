@@ -1326,7 +1326,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.8', APP_BUILD='20-11-2026';
+const APP_VERSION='3.8.1', APP_BUILD='20-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1918,10 +1918,10 @@ function paintPartyFilters(all,shown){
 /* v3.8 order note: a party name typed in the sheet as "ABC TRADERS (tomorrow need)" is read as
    ABC TRADERS with the order note "tomorrow need" (the script cleans the sheet cell and puts the note
    in column G of the party row). It belongs to that order only, on every line of it (o.onote),
-   so it goes when the order goes. A known party's own name (XYZ (KOLLAM)) is never split. */
+   so it goes when the order goes. Any bracket at the end is split, even if the party was saved with it. */
 function splitPartyNote(text){
   const t=String(text||'').trim(); const m=t.match(/^(.*?\S)\s*[(\[]([^()\[\]]+)[)\]]\s*$/);
-  if(!m||S.parties[t.toUpperCase()]) return null;
+  if(!m) return null;
   const inner=splitPartyNote(m[1]);
   return inner?{name:inner.name,note:inner.note+'; '+m[2].trim()}:{name:m[1].trim(),note:m[2].trim()};
 }
