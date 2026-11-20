@@ -596,6 +596,31 @@ body.selpad main{padding-bottom:90px}
 .pubrow .pst{flex:1 1 220px}
 .pubnote{margin-top:6px;padding:8px 10px;border-radius:10px;border:1px solid var(--alert,#b3261e);background:#fdecea;font-size:13px}
 .tag.from{background:#e8f0fe;color:#1a4b9c;border-color:#9bb5e8}
+/* v4.0 company switch + login */
+.userbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff;border-radius:99px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;line-height:1.2}
+.userbtn .cotag{background:#ffe9a8;color:#5a4300;border-radius:4px;padding:0 6px;font-size:10.5px;font-weight:800;letter-spacing:.04em}
+.userbtn.c2 .cotag{background:#cfe3ff;color:#123e7c}
+#userMenu{position:fixed;top:50px;right:10px;z-index:260;background:#fff;color:#1a2b22;border:1px solid var(--edge);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.22);min-width:240px;padding:8px;display:none}
+#userMenu.open{display:block}
+#userMenu .umh{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#6a766f;padding:4px 8px 2px}
+#userMenu button{display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:8px;font-size:14px;color:#1a2b22;cursor:pointer}
+#userMenu button:hover{background:#eef4f0}
+#userMenu button.cur{font-weight:800;background:#e6f2ea}
+#userMenu hr{border:0;border-top:1px solid var(--edge);margin:6px 0}
+#userMenu .umnote{font-size:11.5px;color:#6a766f;padding:2px 8px 4px}
+#loginGate{position:fixed;inset:0;z-index:400;background:#143d2a;display:none;align-items:center;justify-content:center;padding:16px}
+#loginGate.on{display:flex}
+.lgbox{background:#fff;border-radius:16px;padding:22px;width:min(380px,100%);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.lgbox h2{margin:0 0 2px;font-size:20px} .lgbox label{display:block;margin-top:12px}
+.lgbox input{width:100%;box-sizing:border-box;font-size:16px;padding:9px 10px}
+.lgbox .primary{width:100%;margin-top:16px;padding:10px}
+#greyNote{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:80;background:#3a3f3c;color:#fff;font-size:12.5px;padding:6px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.3);display:none}
+body.syncgrey #greyNote{display:block}
+body.syncgrey main{filter:grayscale(1);opacity:.62;transition:filter .3s,opacity .3s}
+main{transition:filter .3s,opacity .3s}
+.pplrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--edge)}
+.pplrow b{flex:1}
+.recentchg{font-size:12.5px;margin:6px 0 0;padding-left:16px}
 /* phone rules last so they win over the desktop ones above */
 @media (max-width:640px){
   .logibtn{padding:4px 7px} .logibtn .lbl{display:none}
@@ -606,10 +631,25 @@ body.selpad main{padding-bottom:90px}
   .manrow [data-mf="remark"]{grid-column:1 / 5}
 }
 @media (max-width:640px){ .misstab{display:block;overflow-x:auto;white-space:nowrap} .outform{padding:8px} }
+@media (max-width:640px){ .userbtn{padding:4px 7px;gap:4px} .userbtn .uname{max-width:60px;overflow:hidden;text-overflow:ellipsis} .userbtn .uw{display:none} #userMenu{top:46px;right:6px} }
+@media (max-width:520px){ .userbtn .uname,.userbtn .ar{display:none} .userbtn{padding:4px 6px} }
 </style>
 </head>
 <body>
 
+<div id="loginGate" role="dialog" aria-modal="true" aria-labelledby="lgTitle">
+  <div class="lgbox">
+    <h2 id="lgTitle">Logistics Desk</h2>
+    <p class="hint" id="lgCo" style="margin:0"></p>
+    <label for="lgName">Your name</label><input id="lgName" autocomplete="username" maxlength="24">
+    <label for="lgPin">PIN</label><input id="lgPin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="12">
+    <button class="primary" id="lgGo">Log in</button>
+    <p class="hint" id="lgMsg" style="color:var(--alert);font-weight:700;min-height:1.2em"></p>
+    <button class="tiny ghost" id="lgSkip" hidden>Continue without login</button>
+  </div>
+</div>
+<div id="userMenu" role="menu"></div>
+<div id="greyNote">Syncing with the sheet… what you see is the copy saved on this device</div>
 <header>
   <div class="hwrap">
     <button id="menuBtn" class="menubtn" aria-expanded="false" aria-controls="mainMenu" title="Menu">☰</button>
@@ -618,6 +658,7 @@ body.selpad main{padding-bottom:90px}
     <div class="brand"><span class="co">JAIN WIRE NETTING CORPORATION</span><small class="loc">EKM</small><span class="tool">Logistics Desk</span></div>
     <div id="curView" class="curview"></div>
     <div class="hbadges">
+      <button id="userBtn" class="userbtn" title="Company and login" aria-haspopup="true"></button>
       <span class="undobar">
         <button id="undoBtn" class="ubtn" disabled aria-label="Undo"><svg viewBox="0 0 16 16"><path d="M5.5 3.5L2.5 6.5l3 3"/><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7"/></svg></button>
         <button id="redoBtn" class="ubtn" disabled aria-label="Redo"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3"/><path d="M13.2 6.5H6.5a4 4 0 0 0 0 8H9"/></svg></button>
@@ -760,7 +801,8 @@ body.selpad main{padding-bottom:90px}
       <div style="flex:0 0 auto"><button class="primary" id="syncConnect">Connect</button></div>
       <div style="flex:0 0 auto"><button class="ghost" id="syncReport" title="Copies what the last sheet calls did, to paste to Claude when sync goes wrong">Copy sync report</button></div>
     </div>
-    <div id="syncStatus" class="hint" style="margin-top:8px"></div>
+    <div id="recentChg"></div>
+      <div id="syncStatus" class="hint" style="margin-top:8px"></div>
     <div id="syncChoice"></div>
     <div id="syncHold"></div>
     <div class="row" style="margin-top:8px" id="syncBtns">
@@ -960,6 +1002,20 @@ body.selpad main{padding-bottom:90px}
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><button class="primary" id="dupFind">Check for duplicates</button><span class="hint" id="dupSum" style="margin:0"></span>
       <button class="tiny ghost" id="dupShowHidden" hidden></button></div>
     <div id="dupList"></div>
+  </div>
+
+  <div class="card">
+    <h2>People (logins)</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:8px">Everyone who may open the tool gets a name and PIN. One login works for both companies; people added here are saved in both sheets
+      (the other company must be connected on this device). Every save in the sheet's ACCESS LOG shows who made it. Once the first person is added,
+      every device asks for a name and PIN. Adding a person again with the same name changes that person's PIN.</p>
+    <div id="peopleList"></div>
+    <div class="row">
+      <div><label>Name</label><input id="pplName" maxlength="24" autocomplete="off"></div>
+      <div style="flex:0 0 160px"><label>PIN (4-8 digits)</label><input id="pplPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
+      <div style="flex:0 0 auto"><button class="primary" id="pplSet">Add / change PIN</button></div>
+    </div>
+    <p class="hint" id="pplMsg"></p>
   </div>
 
   <div class="card">
@@ -1292,10 +1348,21 @@ async function idbSet(k,v){
     tx.oncomplete=()=>res(true); tx.onerror=()=>res(false); tx.onabort=()=>res(false);
   }catch(e){ res(false); } });
 }
+/* v4.0: two companies, two sheets. Company 1 (EKM) keeps the storage keys it always had, so nothing
+   moves; company 2 (CLT&KNR) gets the same keys with ":c2" added. Switching reloads the page,
+   which then opens the other company's own saved copy. */
+const COMPANIES=[{id:'1',name:'EKM',url:'https://script.google.com/macros/s/AKfycbyvwF9v2Y3ZOIU5HvYB5ha8Cwc-GQKC_nYxBmXRQO0Oa2Y69t1eId20-dnuzkFRJJG_LQ/exec'},
+                 {id:'2',name:'CLT&KNR',url:''}];
+let CO='1'; try{ CO=localStorage.getItem('ld:company')||'1'; }catch(e){}
+if(!COMPANIES.some(c=>c.id===CO)) CO='1';
+const coInfo=id=>COMPANIES.find(c=>c.id===(id||CO))||COMPANIES[0];
+const PERCO=new Set(['lpb:v3','lpb:synccfg','lpb:syncbase','lpb:clashes','lpb:restore','lpb:setupmeta','lpb:recent']);
+const ckFor=(k,co)=>PERCO.has(k)&&co!=='1'?k+':c'+co:k;
+const ck=k=>ckFor(k,CO);
 const store={
-  async get(k){
-    const db=await getDb();
-    if(db && k==='lpb:v3'){
+  async get(k0){
+    const k=ck(k0), db=await getDb();
+    if(db && k0==='lpb:v3' && CO==='1'){
       try{ const remote=await dbRead(db); if(remote) return remote; }catch(e){}
     }
     // db unavailable, or reachable-but-empty (first run) - fall back to this browser's own copy
@@ -1306,12 +1373,12 @@ const store={
     if(local==null) local = (k in mem?mem[k]:null);
     // db is reachable but had nothing yet - seed it once from whatever this browser already has,
     // so other browsers see it immediately rather than waiting on this browser's next edit
-    if(db && local){ try{ await dbWrite(db,local); }catch(e){} }
+    if(db && local && CO==='1'){ try{ await dbWrite(db,local); }catch(e){} }
     return local;
   },
-  async set(k,v){
-    const db=await getDb();
-    if(db && k==='lpb:v3'){ try{ await dbWrite(db,v); }catch(e){} }
+  async set(k0,v){
+    const k=ck(k0), db=await getDb();
+    if(db && k0==='lpb:v3' && CO==='1'){ try{ await dbWrite(db,v); }catch(e){} }
     if(hasClaudeStorage){ try{ const r=await window.storage.set(k,JSON.stringify(v)); if(r)return; }catch(e){} }
     if(!hasClaudeStorage && await idbSet(k,v)){
       // older standalone copies saved to localStorage; once IndexedDB holds it, free that space
@@ -1326,7 +1393,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='3.8.1', APP_BUILD='20-11-2026';
+const APP_VERSION='4.0', APP_BUILD='21-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -1446,7 +1513,7 @@ function updateSaveBadge(){
 }
 async function load(){
   let d=await store.get('lpb:v3');
-  if(!d){
+  if(!d&&CO==='1'){
     const old=await store.get('lpb:v2');
     if(old){ d=old; }
   }
@@ -4096,7 +4163,7 @@ function addPartyToLog(g,party,pick,pos){
 function godownCollect(party,pick){
   const g={id:uid('g'),title:`Godown collection — ${party} ${today10()}`,vehicle:'Godown collection',godown:true,
     createdAt:today10(),vehicleNo:'',driver:'',stops:[{party,orderIds:[...pick.ids],loadQty:{...pick.loadQty}}],
-    qtyGone:{},notes:{},resolved:false,open:false,snapshot:null,stockDelta:null};
+    qtyGone:{},notes:{},resolved:false,open:false,snapshot:null,stockDelta:null,by:curUser||''};
   S.log.push(g); applyLogEntry(g); return g;
 }
 /* Apply delivery: every line of the entry shrinks by what went (or leaves Orders), with a
@@ -4278,7 +4345,7 @@ function paintLog(){
     return `<div class="logent ${g.open?'open':''}" data-ent="${g.id}">
       <div class="loghead" data-toggle="${g.id}">
         <b>${esc(g.title)}</b>${g.godown?' <span class="tag godown">GODOWN</span>':''}
-        <span class="hint" style="margin:0">${g.godown?'Collected from the godown':esc(g.vehicle)+(g.vehicleNo?' · '+esc(g.vehicleNo):'')+(g.driver?' · '+esc(g.driver):'')+' · '+g.stops.length+' stops'} · logged ${esc(g.createdAt)}</span>
+        <span class="hint" style="margin:0">${g.godown?'Collected from the godown':esc(g.vehicle)+(g.vehicleNo?' · '+esc(g.vehicleNo):'')+(g.driver?' · '+esc(g.driver):'')+' · '+g.stops.length+' stops'} · logged ${esc(g.createdAt)}${g.by?' by '+esc(g.by):''}</span>
         ${(!g.godown&&(!g.vehicleNo||!g.driver))?'<span class="badge open" style="background:var(--edge2);color:#fff">vehicle / driver not set</span>':''}
         <span class="lkg" data-lkg="${g.id}">loaded <b>${kgT(kw.loaded)}</b> · gone <b>${kgT(kw.gone)}</b></span>
         <span class="badge ${g.resolved?'done':'open'}">${g.resolved?'cleared':(changing.length+' line(s) to update')}</span>
@@ -5217,7 +5284,7 @@ function dropOrders(pred){
 }
 function recordUpload(tab,pasted,added,skipped,src,extra){
   const d=new Date();
-  S.uploads.push({id:uid('u'), no:++S.upSeq, day:today10(),
+  S.uploads.push({id:uid('u'), no:++S.upSeq, day:today10(), by:curUser||'',
     time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),
     tab, pasted, lines:added.map(upLine),
     skipped:skipped.map(r=>({party:r.party,item:r.item,qty:r.qty,date:r.date,why:r.why||''})),...(src?{src}:{}),...(extra||{})});
@@ -5536,7 +5603,7 @@ function recordOutside(v,picks){
   const g={id:uid('g'),title:`${v.vehicle} — ${v.date} (outside the tool)`,vehicle:v.vehicle,outside:true,
     createdAt:v.date,vehicleNo:v.vehicleNo||'',driver:v.driver||'',
     stops:[...picks].reverse().map(p=>({party:p.party,orderIds:[...p.ids],loadQty:{...(p.loadQty||{})}})),
-    qtyGone:{},notes:{},resolved:false,open:false,snapshot:null,stockDelta:null};
+    qtyGone:{},notes:{},resolved:false,open:false,snapshot:null,stockDelta:null,by:curUser||''};
   S.log.push(g); applyLogEntry(g);
   S.plan.lanes.forEach(l=>l.stops=l.stops.filter(s=>stopItems(s).length));
   return g;
@@ -5774,7 +5841,7 @@ function paintAdmin(){
   paintRestorePoints(); paintClashes();
   const ok=adminUnlocked();
   $('#adminLock').hidden=ok; $('#adminBody').hidden=!ok;
-  if(ok) paintClear(); else { $('#adminPin').value=''; }
+  if(ok){ paintClear(); paintPeople(); } else { $('#adminPin').value=''; }
 }
 $('#adminGo').onclick=()=>{
   const v=$('#adminPin').value.trim();
@@ -5998,7 +6065,7 @@ const lsJSON=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catc
 function trayBatches(){ const t=lsJSON(TRAY_KEY); return t&&Array.isArray(t.batches)?t.batches.filter(b=>b&&b.id&&Array.isArray(b.tabs)):[]; }
 function trayReceipts(){ const r=lsJSON(RECEIPT_KEY); return r&&r.receipts&&typeof r.receipts==='object'?r.receipts:{}; }
 function batchTaken(id){ return !!trayReceipts()[id]||(S.uploads||[]).some(u=>u.batch===id); }
-function trayWaiting(){ return trayBatches().filter(b=>!batchTaken(b.id)); }
+function trayWaiting(){ return trayBatches().filter(b=>!batchTaken(b.id)&&trayCoMatch(b)); }
 function writeReceipt(id,rec){
   const r=lsJSON(RECEIPT_KEY)||{}; r.receipts=r.receipts&&typeof r.receipts==='object'?r.receipts:{};
   r.receipts[id]={...rec,at:Date.now(),by:deviceName(),app:APP_VERSION};
@@ -6532,6 +6599,7 @@ function doAddLog(lanes){
     S.log.push({
       id:uid('g'),
       title:laneTitle(l),
+      by:curUser||'',
       vehicle:l.name,
       createdAt:today10(),
       vehicleNo:'', driver:'',
@@ -6664,10 +6732,12 @@ let syncState={s:'off',at:0,msg:''};
 document.addEventListener('keydown',()=>{ lastKeyAt=Date.now(); },true);
 
 async function kvGet(k){
+  k=ck(k);
   try{ const v=await idbGet(k); if(v!=null) return v; }catch(e){}
   try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; }
 }
 async function kvSet(k,v){
+  k=ck(k);
   if(await idbSet(k,v)) return;
   try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(e){}
 }
@@ -6885,7 +6955,7 @@ async function syncCall(action,payload){
   const tm=setTimeout(()=>{ timedOut=true; ac.abort(); },limit);
   const t0=Date.now(); if(main){ syncCallAt=t0; syncCallLimit=limit; } let res, txt;
   // dev / app / ua go into the sheet's ACCESS LOG (script 2.2+): who opened, saved, or used a wrong key
-  try{ res=await fetch(syncCfg.url,{method:'POST',redirect:'follow',signal:ac.signal,body:JSON.stringify({key:syncCfg.key,action,dev:deviceName(),app:APP_VERSION,ua:shortUA(),...(payload||{})})}); txt=await res.text(); }
+  try{ res=await fetch(syncCfg.url,{method:'POST',redirect:'follow',signal:ac.signal,body:JSON.stringify({key:syncCfg.key,action,dev:myDev(),app:APP_VERSION,ua:shortUA(),usr:curUser,uh:curUH,...(payload||{})})}); txt=await res.text(); }
   catch(e){
     const why=timedOut?`no answer in ${limit/1000} s`:ac.signal.aborted?'cancelled (page left or went offline)':'network error: '+(e&&e.message||e);
     logSync({action,full:syncFull,ms:Date.now()-t0,err:why});
@@ -6900,6 +6970,8 @@ async function syncCall(action,payload){
     // is overloaded for a moment - not a wrong URL
     if(syncBase&&action!=='ping'){ const er=new Error('Google is busy — trying again in a few seconds.'); er.busy=true; throw er; }
     throw new Error('That URL did not answer like the Logistics Desk script. Check it ends in /exec and is deployed for "Anyone".'); }
+  if(j.last) lastFromSheet=j.last;
+  if(j.login){ saveUser('',''); needLogin(true); showGate('Please log in.'); }
   if(j.sv) syncSV=String(j.sv); if(action==='ping'&&'trigger' in j) syncTrig=!!j.trigger;
   if(action==='ping'&&j.url&&syncCfg&&syncCfg.sheetUrl!==j.url){ syncCfg.sheetUrl=String(j.url); kvSet(SYNC_CFG_KEY,syncCfg); }
   logSync({action,full:syncFull,ms:Date.now()-t0,kb:Math.round(txt.length/1024),ok:!!j.ok,...(j.conflict?{conflict:true}:{}),...(j.same?{same:true}:{}),...(j.partial?{part:true}:{}),...(j.empty?{empty:true}:{}),...(j.ok||j.conflict?{}:{err:j.error||'failed'}),...(j.version&&action==='ping'?{script:j.version}:{})});
@@ -6929,7 +7001,7 @@ function syncReport(){
 }
 function setSyncState(s,msg){ syncState={s,at:s==='ok'?Date.now():syncState.at,msg:msg||''};
   // v3.3.1: after a good sync, is anything of this device's still not in the sheet's copy?
-  if(s==='ok'){ try{ syncUnsent=!!(syncBase&&!syncFirst&&!same(toModel(),syncBase.model)); }catch(_){} }
+  if(s==='ok'){ try{ syncUnsent=!!(syncBase&&!syncFirst&&!same(toModel(),syncBase.model)); }catch(_){} if(lastFromSheet) noteOthers(); setTimeout(()=>setupTick(null),600); }
   updateSyncBadge(); paintSync(); }
 function hhmm(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 function paintSyncBadge(el){
@@ -7179,7 +7251,7 @@ async function adopt(version,remote,hashes){
   syncBase={version,model:bare(remote),hashes:hashes||null};
   await kvSet(SYNC_BASE_KEY,syncBase);
   undoMute=true; try{ await save(); } finally{ undoMute=false; }
-  flushSave(); renderAll(); showPlanNotice();
+  flushSave(); renderAll(); showPlanNotice(); noteOthers();
   focusBack(mark,true);
 }
 function localHasData(){ return S.orders.length||Object.keys(S.parties).length||S.log.length||S.routes.length||(S.vehTypes||[]).length; }
@@ -7211,13 +7283,14 @@ function paintSync(){
   paintSheetLinkNote();
   $('#syncBtns').style.display=syncCfg?'':'none';
   if(syncCfg){ $('#syncUrl').value=syncCfg.url; $('#syncKey').value=syncCfg.key; }
-  else if(!$('#syncUrl').value) $('#syncUrl').value=DEFAULT_SYNC_URL;
+  else if(!$('#syncUrl').value) $('#syncUrl').value=coInfo().url;
   $('#syncConnect').textContent=syncCfg?'Save & reconnect':'Connect';
   st.innerHTML=!syncCfg?'Not connected. Data stays on this device only.'
     :syncState.s==='busy'?(syncFull?'First sync — fetching everything from the sheet. This can take up to 2 minutes; keep this page open.':'Syncing…')
     :syncState.s==='err'?`<span style="color:var(--alert);font-weight:700">${esc(syncState.msg)}</span>`
     :syncState.at?`Connected${syncCfg.name?' to <b>'+esc(syncCfg.name)+'</b>':''} — last synced ${hhmm(syncState.at)}.`
     :`Connected${syncCfg.name?' to <b>'+esc(syncCfg.name)+'</b>':''}.`;
+  if(syncCfg&&lastSheetInfo&&lastSheetInfo.at) st.innerHTML+=` <span class="hint">Last saved in the sheet by <b>${esc(lastSheetInfo.by||lastSheetInfo.dev||'?')}</b> at ${hhmm(lastSheetInfo.at)}${lastSheetInfo.what?' ('+esc(lastSheetInfo.what)+')':''}.</span>`;
   if(syncCfg&&syncSV&&!svAtLeast('2.1')) st.innerHTML+=` <span class="hint" style="color:#a5670a">Sheet script ${esc(syncSV)} — paste the new Code.gs and deploy a new version for faster sync.</span>`;
   else if(syncCfg&&syncTrig===false) st.innerHTML+=` <span class="hint" style="color:#a5670a">Faster sync: in Apps Script run <b>installTriggers</b> once.</span>`;
   paintHold();
@@ -7289,7 +7362,9 @@ $('#syncConnect').onclick=async()=>{
     const changed=!prev||prev.url!==url;
     await kvSet(SYNC_CFG_KEY,syncCfg);
     if(changed){ syncBase=null; await kvSet(SYNC_BASE_KEY,null); }
-    paintSync(); syncNow('manual');
+    paintSync();
+    if(typeof r.users==='number'){ needLogin(r.users>0); if(r.users>0&&!curUser) showGate(); }
+    Promise.resolve(syncNow('manual')).then(()=>setTimeout(()=>setupTick(r.setup||null,true),400));
   }catch(e){ syncCfg=prev; $('#syncStatus').innerHTML=`<span style="color:var(--alert);font-weight:700">${esc(e.message)}</span>`; }
 };
 $('#syncNowBtn').onclick=()=>syncNow('manual');
@@ -7308,7 +7383,7 @@ $('#forcePush').onclick=()=>{
   });
 };
 $('#syncOff').onclick=()=>armConfirm($('#syncOff'),'Yes, disconnect',async()=>{
-  syncCfg=null; syncBase=null; syncFirst=null; await kvSet(SYNC_CFG_KEY,null); await kvSet(SYNC_BASE_KEY,null);
+  syncCfg=null; syncBase=null; syncFirst=null; needLogin(false); await kvSet(SYNC_CFG_KEY,null); await kvSet(SYNC_BASE_KEY,null);
   setSyncState('off'); updateSyncBadge(); flash('Disconnected — the data stays on this device and in the sheet');
 });
 $('#syncBadge').onclick=()=>{ if(syncCfg){ if(syncFirst||syncHold) gotoView('routes'); else syncNow('manual'); } };
@@ -7321,6 +7396,161 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 window.addEventListener('online',()=>{ if(syncCfg){ if(syncBusy&&syncAbort) syncAbort.abort(); syncNow('online'); } });
 // the background check every 25-35 s (random, so two devices don't keep hitting the sheet together)
 (function pollLoop(){ setTimeout(()=>{ if(syncCfg&&document.visibilityState==='visible'&&!syncBusy) syncNow('poll'); pollLoop(); },25000+jitter(10000)); })();
+/* ---------- v4.0: people (login) and companies ----------
+   One login for the person, two sheets for the business. The name and PIN are checked by the sheet's
+   script (PIN stored only as a hash). After a login this device stays logged in until Log out; the
+   saved data stays on the device. Companies: the top-right button switches between them - each has its
+   own saved copy, sheet link, key and sync state on this device (see COMPANIES near the top). */
+let curUser='', curUH='';
+try{ curUser=localStorage.getItem('ld:user')||''; curUH=localStorage.getItem('ld:uh')||''; }catch(e){}
+const myDev=()=>(curUser?curUser+' · ':'')+deviceName();
+async function sha256hex(t){ const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)); return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+const hashPin=(name,pin)=>sha256hex(String(name).trim().toLowerCase()+'|'+String(pin).trim());
+function needLogin(set){ try{ const k='ld:needlogin:'+CO; if(set===undefined) return localStorage.getItem(k)==='1'; if(set) localStorage.setItem(k,'1'); else localStorage.removeItem(k); }catch(e){} return false; }
+function saveUser(n,h){ curUser=n; curUH=h; try{ if(n){ localStorage.setItem('ld:user',n); localStorage.setItem('ld:uh',h); } else { localStorage.removeItem('ld:user'); localStorage.removeItem('ld:uh'); } }catch(e){} paintUserBtn(); }
+function showGate(msg){
+  $('#loginGate').classList.add('on'); $('#lgCo').textContent='Company: '+coInfo().name;
+  $('#lgMsg').textContent=msg||''; if(!$('#lgName').value) $('#lgName').value=curUser;
+  setTimeout(()=>{ try{ ($('#lgName').value?$('#lgPin'):$('#lgName')).focus(); }catch(_){} },50);
+}
+function hideGate(){ $('#loginGate').classList.remove('on'); $('#lgPin').value=''; $('#lgMsg').textContent=''; $('#lgSkip').hidden=true; }
+$('#lgGo').onclick=async()=>{
+  const name=$('#lgName').value.trim(), pin=$('#lgPin').value.trim();
+  if(!name||!pin){ $('#lgMsg').textContent='Type your name and PIN.'; return; }
+  if(!syncCfg){ $('#lgMsg').textContent='This device is not connected to a sheet yet - open Setup.'; $('#lgSkip').hidden=false; return; }
+  if(!(window.crypto&&crypto.subtle)){ $('#lgMsg').textContent='This browser cannot check a PIN here (needs https).'; return; }
+  $('#lgGo').disabled=true; $('#lgMsg').textContent='Checking…';
+  try{
+    const h=await hashPin(name,pin), r=await syncCall('login',{user:name,uh:h});
+    saveUser(r.name||name,h); needLogin(true); hideGate(); flash('Welcome, '+curUser);
+    syncNow('open');
+  }catch(e){
+    const m=String(e.message||e); $('#lgMsg').textContent=/unknown action/i.test(m)?'The sheet script is older - paste Code.gs 4.0 and deploy a new version.':m;
+    if(/unknown action/i.test(m)) $('#lgSkip').hidden=false;
+  }finally{ $('#lgGo').disabled=false; }
+};
+$('#lgPin').onkeydown=e=>{ if(e.key==='Enter') $('#lgGo').click(); };
+$('#lgName').onkeydown=e=>{ if(e.key==='Enter') $('#lgPin').focus(); };
+$('#lgSkip').onclick=()=>{ needLogin(false); hideGate(); };
+function paintUserBtn(){
+  const b=$('#userBtn'), co=coInfo();
+  b.className='userbtn'+(CO==='2'?' c2':'');
+  b.innerHTML=(curUser?`<span class="uw">Welcome,</span> <span class="uname">${esc(curUser)}</span>`:'')+`<span class="cotag">${esc(co.name)}</span><span class="ar" aria-hidden="true">▾</span>`;
+  const l=document.querySelector('.brand .loc'); if(l) l.textContent=co.name;
+  document.title=`Logistics Desk · ${co.name} — Jain Wire Netting Corporation`;
+}
+function paintUserMenu(){
+  const m=$('#userMenu');
+  m.innerHTML=`<div class="umh">Company</div>`+COMPANIES.map(c=>`<button data-co="${c.id}" class="${c.id===CO?'cur':''}" role="menuitem"><span>${c.id}. ${esc(c.name)}</span><span>${c.id===CO?'✓':''}</span></button>`).join('')
+    +`<div class="umnote">Each company has its own parties, orders and plans. Switching opens its saved copy at once, then syncs.</div>`
+    +(curUser?`<hr><div class="umnote">Signed in as <b>${esc(curUser)}</b></div><button id="umOut" role="menuitem">Log out</button>`:'');
+  m.querySelectorAll('[data-co]').forEach(x=>x.onclick=()=>{ $('#userMenu').classList.remove('open'); switchCompany(x.dataset.co); });
+  const o=m.querySelector('#umOut'); if(o) o.onclick=()=>{ $('#userMenu').classList.remove('open'); saveUser('',''); needLogin(true); showGate('Logged out.'); };
+}
+$('#userBtn').onclick=e=>{ e.stopPropagation(); paintUserMenu(); $('#userMenu').classList.toggle('open'); };
+document.addEventListener('click',e=>{ if(!e.target.closest('#userMenu')&&!e.target.closest('#userBtn')) $('#userMenu').classList.remove('open'); });
+async function switchCompany(id){
+  if(id===CO||!COMPANIES.some(c=>c.id===id)) return;
+  try{ await flushSave(); }catch(_){}
+  // a quick try to send anything still unsent, but never hold the switch up for long
+  if(syncCfg&&!syncFirst&&(syncUnsent||dirty)){ try{ await Promise.race([syncNow('manual'),new Promise(r=>setTimeout(r,4000))]); }catch(_){} }
+  try{ localStorage.setItem('ld:company',id); }catch(_){}
+  location.reload();
+}
+// raw call to a company's script (any company, not only the open one)
+async function kvGetFor(co,k){ k=ckFor(k,co);
+  try{ const v=await idbGet(k); if(v!=null) return v; }catch(e){}
+  try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+async function callCfg(cfg,action,payload){
+  const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),20000);
+  try{ const res=await fetch(cfg.url,{method:'POST',redirect:'follow',signal:ac.signal,body:JSON.stringify({key:cfg.key,action,dev:myDev(),app:APP_VERSION,ua:shortUA(),usr:curUser,uh:curUH,...(payload||{})})});
+    return JSON.parse(await res.text()); }
+  catch(e){ return {ok:false,error:'Can\'t reach the sheet'}; } finally{ clearTimeout(tm); }
+}
+async function cfgOfCompany(co){ return co===CO?syncCfg:await kvGetFor(co,'lpb:synccfg'); }
+
+/* People (Admin) */
+async function paintPeople(){
+  const box=$('#peopleList'); if(!box) return;
+  if(!syncCfg){ box.innerHTML='<p class="hint">Connect this device to the sheet first (Setup).</p>'; return; }
+  try{
+    const r=await syncCall('userlist',{});
+    box.innerHTML=(r.users||[]).length?r.users.map(u=>`<div class="pplrow"><b>${esc(u.name)}</b>${u.name.toLowerCase()===curUser.toLowerCase()?'<span class="hint" style="margin:0">you</span>':`<button class="tiny ghost" data-pdel="${esc(u.name)}">Remove</button>`}</div>`).join('')
+      :'<p class="hint">No one yet - devices open without a login. Add the first person below.</p>';
+    box.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=()=>armConfirm(b,'Yes, remove',()=>peopleChange('userdel',b.dataset.pdel)));
+  }catch(e){ box.innerHTML=`<p class="hint" style="color:var(--alert)">${esc(e.message)}</p>`; }
+}
+async function peopleChange(action,name,pin){
+  const msg=$('#pplMsg'); msg.textContent='Saving…';
+  let hash; if(action==='userset'){ if(!(window.crypto&&crypto.subtle)){ msg.textContent='This browser cannot store a PIN here (needs https).'; return; } hash=await hashPin(name,pin); }
+  const out=[];
+  for(const c of COMPANIES){
+    const cfg=await cfgOfCompany(c.id);
+    if(!cfg){ out.push(`${c.name}: not connected on this device`); continue; }
+    const r=await callCfg(cfg,action,{name,...(hash?{hash}:{})});
+    out.push(`${c.name}: ${r.ok?'saved':(r.error||'not saved')}`);
+  }
+  msg.textContent=out.join(' · ');
+  if(action==='userset'&&curUser===''){ // the first person added on this device is logged in straight away
+    const cfg=await cfgOfCompany(CO); const r=cfg&&await callCfg(cfg,'login',{user:name,uh:hash});
+    if(r&&r.ok){ saveUser(r.name||name,hash); needLogin(true); } }
+  $('#pplName').value=''; $('#pplPin').value=''; paintPeople();
+}
+$('#pplSet').onclick=()=>{
+  const n=$('#pplName').value.trim(), pin=$('#pplPin').value.trim();
+  if(!n){ $('#pplMsg').textContent='Type a name.'; return; }
+  if(!/^\d{4,8}$/.test(pin)){ $('#pplMsg').textContent='The PIN must be 4 to 8 digits.'; return; }
+  peopleChange('userset',n,pin);
+};
+
+/* Setup shared by both companies: vehicle types, 12 ft sheet limits, vehicles, drivers, phones.
+   Each device compares its copy with the sheet's (by time of the last edit) after a sync. */
+const setupBundle=()=>JSON.parse(JSON.stringify({vehTypes:S.vehTypes||[],vehicles:(S.fleet&&S.fleet.vehicles)||[],drivers:(S.fleet&&S.fleet.drivers)||[],phones:(S.fleet&&S.fleet.phones)||{},sheetCap:S.sheetCap||{}}));
+function applySetupBundle(b){ S.vehTypes=b.vehTypes||[]; S.fleet.vehicles=b.vehicles||[]; S.fleet.drivers=b.drivers||[]; S.fleet.phones=b.phones||{}; S.sheetCap=b.sheetCap||{}; }
+let setupBusy=false;
+async function setupTick(own,init){
+  if(!syncCfg||syncFirst||!syncBase||setupBusy) return; setupBusy=true;
+  try{
+    const b=setupBundle(), sig=stable(b); let meta=await kvGet('lpb:setupmeta');
+    if(!meta&&!own&&!init) return; // first-time sharing starts when the tool opens or a sheet is connected, not on every sync
+    const otherId=(COMPANIES.find(c=>c.id!==CO)||{}).id, otherCfg=otherId?await kvGetFor(otherId,'lpb:synccfg'):null;
+    const take=async src=>{ applySetupBundle(src.b); meta={sig:stable(setupBundle()),at:src.at,pend:[]}; await kvSet('lpb:setupmeta',meta); await save(); renderAll(); };
+    if(!meta||meta.sig!==sig){
+      const empty=!b.vehTypes.length&&!b.vehicles.length&&!b.drivers.length;
+      if(empty){
+        let src=own&&own.b?own:null;
+        if(!src&&otherCfg){ const r=await callCfg(otherCfg,'ping',{quiet:1}); if(r&&r.ok&&r.setup&&r.setup.b) src=r.setup; }
+        if(src&&((src.b.vehTypes||[]).length||(src.b.vehicles||[]).length||(src.b.drivers||[]).length)){ await take(src); return; }
+        meta={sig,at:(meta&&meta.at)||0,pend:[]}; await kvSet('lpb:setupmeta',meta); return;
+      }
+      meta={sig,at:Date.now(),pend:['own',...(otherCfg?['other']:[])]}; await kvSet('lpb:setupmeta',meta);
+    }else if(own&&own.at>(meta.at||0)&&own.b&&stable(own.b)!==sig){ await take(own); return; }
+    if(meta.pend&&meta.pend.length){
+      const left=[];
+      for(const w of meta.pend){
+        let r; if(w==='own') r=await syncCall('setupSet',{at:meta.at,b}).catch(e=>({ok:false}));
+        else if(otherCfg) r=await callCfg(otherCfg,'setupSet',{at:meta.at,b}); else continue;
+        if(!(r&&r.ok)) left.push(w);
+      }
+      meta.pend=left; await kvSet('lpb:setupmeta',meta);
+    }
+  }catch(e){} finally{ setupBusy=false; }
+}
+
+/* Who saved last, and what changed - from the sheet, so it also covers other people's devices */
+let lastFromSheet=null, lastSheetInfo=null, noticeAt=0, recentChg=[];
+function paintRecent(){
+  const el=$('#recentChg'); if(!el) return;
+  el.innerHTML=recentChg.length?`<p class="hint" style="margin:8px 0 0"><b>Recent changes by others</b></p><ul class="recentchg">${recentChg.slice(0,8).map(r=>`<li>${hhmm(r.at)} · <b>${esc(r.by||r.dev)}</b> saved ${esc(r.what||'changes')}</li>`).join('')}</ul>`:'';
+}
+function noteOthers(){
+  const l=lastFromSheet; lastFromSheet=null; if(!l||!l.at) return;
+  lastSheetInfo=l;
+  if((l.dev||'')===myDev()||l.at<=noticeAt) return;
+  noticeAt=l.at; recentChg.unshift(l); recentChg=recentChg.slice(0,20); kvSet('lpb:recent',recentChg);
+  flash(`${l.by||l.dev} saved ${l.what||'changes'} · ${hhmm(l.at)}`); paintRecent(); paintSync();
+}
+function trayCoMatch(b){ if(!b||!b.co) return true; const n=x=>String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,''); return n(b.co)===n(coInfo().name); }
 async function initSync(){
   syncCfg=await kvGet(SYNC_CFG_KEY); syncBase=await kvGet(SYNC_BASE_KEY);
   // v2.3: this device opened with no data at all, but it had synced before - its saved data could
@@ -7331,7 +7561,16 @@ async function initSync(){
   paintSync(); updateSyncBadge();
   // after the opening sync, a quick lock-free ping tells which script version and whether the
   // change trigger is installed (shown in Setup and in the sync report)
-  if(syncCfg){ syncNow('open').then(()=>syncCfg&&syncCall('ping')).then(r=>{ if(r&&r.name&&syncCfg) syncCfg.name=r.name; paintSync(); stale.add('orders'); stale.add('routes'); refresh(); }).catch(()=>{}); }
+  try{ recentChg=(await kvGet('lpb:recent'))||[]; if(!Array.isArray(recentChg)) recentChg=[]; paintRecent(); }catch(_){}
+  // v4.0: the screen stays grey until the first sync of this visit has answered, so nobody trusts old data
+  if(syncCfg){ document.body.classList.add('syncgrey'); setTimeout(()=>document.body.classList.remove('syncgrey'),25000); }
+  else if(CO!=='1'){ gotoView('routes'); flash('Connect '+coInfo().name+': paste its web app URL and key'); }
+  if(syncCfg){ syncNow('open').finally(()=>document.body.classList.remove('syncgrey')).then(()=>syncCfg&&syncCall('ping')).then(r=>{
+      if(r&&r.name&&syncCfg) syncCfg.name=r.name;
+      if(r&&typeof r.users==='number'){ needLogin(r.users>0); if(r.users>0&&!curUser) showGate(); }
+      paintSync(); stale.add('orders'); stale.add('routes'); refresh();
+      setTimeout(()=>setupTick(r&&r.setup),400);
+    }).catch(()=>{}); }
 }
 
 $('#appVer').textContent=`Logistics Desk v${APP_VERSION} · ${APP_BUILD}`;
@@ -7339,6 +7578,7 @@ gotoView(currentView); // header label before the saved data arrives
 // home-screen app: the small helper file sw.js lets the phone install this as an app and open
 // it without a connection (it always tries the live site first, so a new version shows at once)
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+paintUserBtn(); if(needLogin()&&!curUser) showGate();
 load().then(()=>{ ldSeen(); const slim=slimOldLog(); renderAll(); undoReset(); if(slim) save(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit

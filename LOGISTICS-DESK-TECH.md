@@ -1,4 +1,4 @@
-# Logistics Desk — technical reference (sync, data model, all versions up to v3.8)
+# Logistics Desk — technical reference (sync, data model, all versions up to v4.0)
 
 The standalone tool `logistics-desk.html` is served as `index.html` from GitHub Pages (jainwireindia.github.io/logistics-desk/). It syncs with a Google Sheet through the Apps Script `Code.gs`, which is bound to that sheet. The old Claude artifact version was retired at v1.1. The web app URL is pre-filled in the tool (`DEFAULT_SYNC_URL`). The key is never stored in the file.
 
@@ -318,3 +318,15 @@ Evidence: Paul's sync report 07-10 (polls "same" 4–11 s, pushes 10–27 s, 4 o
 - `mergeParty` keeps phone/note (joined with " / " when both differ).
 - Parties & map: `.pfbox` is `<details id="pfDetails">` with `#pfOn` in the summary.
 - Tests `t_v38.js`; t_fast / t_gs31 push as app 3.8; t_v30 / t_v37 open the filters first.
+
+## v3.8.1 (21-11-2026) — bracket always split
+- `splitPartyNote` (tool) and Code.gs `splitPartyNote` no longer check for a known party name (`KNOWN_PARTIES` removed). Any trailing `(…)` / `[…]` is the order note.
+
+## v4.0 + Code.gs 4.0 (21-11-2026) — companies, login, shared setup, who saved last
+- **Storage per company:** `COMPANIES` (id, name, url), `CO` (localStorage `ld:company`), `PERCO` = keys that get ":c2" for company 2 (`lpb:v3`, `lpb:synccfg`, `lpb:syncbase`, `lpb:clashes`, `lpb:restore`, `lpb:setupmeta`, `lpb:recent`); `ck(k)` / `ckFor(k,co)` used by `store.get/set`, `kvGet/kvSet`, `kvGetFor(co,k)`. The v2 backup fallback and the Claude db only apply to company 1. `switchCompany(id)`: flushSave, quick sync (max 4 s), set `ld:company`, reload. `cfgOfCompany(co)`, `callCfg(cfg,action,payload)` talk to any company's script.
+- **Login:** localStorage `ld:user`, `ld:uh` (sha256(name lower|PIN)), `ld:needlogin:<co>` (set when ping says `users>0`, so the gate shows before anything renders). `showGate/hideGate`, `#loginGate`, `#userBtn` + `#userMenu`, `paintUserBtn`. `syncCall` sends `usr`,`uh` and `dev` = "Name · Device"; a `login:true` answer clears the login and shows the gate. Script: `loginAction`, `userAction` (userset/userdel/userlist; first user needs no login), `readUsers/writeUsers/checkUser`, auth check before every action except ping/login; Document Property `USERS`; `resetUsers()` in the editor. Admin → People: `paintPeople`, `peopleChange` (calls every connected company).
+- **Who saved last:** `logSave` writes Document Property `LASTSAVE`; `withLast` adds `last` to pull / changed-parts / conflict answers; tool `lastFromSheet` → `noteOthers()` (flash, `recentChg`, Setup line `lastSheetInfo`).
+- **Shared setup:** script Property `SETUP` {at,by,b}; `setupSet` keeps the newer `at`; ping returns `setup` (and takes `quiet:1` so a call to the other company is not logged). Tool `setupBundle/applySetupBundle/setupTick(own,init)`, meta `lpb:setupmeta` {sig,at,pend}; runs after opening, connecting and each good sync; an empty company takes the bundle from its own script or the other company's.
+- **Grey first sync:** `body.syncgrey` (+ `#greyNote`), removed when the opening sync ends or after 25 s.
+- **Tray:** `trayCoMatch(b)`; `trayWaiting()` filters by company.
+- Plan log entries and Upload log entries get `by`. Tests `t_v40.js`; version strings 4.0; t_v17 waits 1.5 s after connecting (the first setup share is one extra call).
