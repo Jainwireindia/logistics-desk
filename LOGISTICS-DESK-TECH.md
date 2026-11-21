@@ -1,4 +1,4 @@
-# Logistics Desk — technical reference (sync, data model, all versions up to v4.0)
+# Logistics Desk — technical reference (sync, data model, all versions up to v4.1)
 
 The standalone tool `logistics-desk.html` is served as `index.html` from GitHub Pages (jainwireindia.github.io/logistics-desk/). It syncs with a Google Sheet through the Apps Script `Code.gs`, which is bound to that sheet. The old Claude artifact version was retired at v1.1. The web app URL is pre-filled in the tool (`DEFAULT_SYNC_URL`). The key is never stored in the file.
 
@@ -330,3 +330,11 @@ Evidence: Paul's sync report 07-10 (polls "same" 4–11 s, pushes 10–27 s, 4 o
 - **Grey first sync:** `body.syncgrey` (+ `#greyNote`), removed when the opening sync ends or after 25 s.
 - **Tray:** `trayCoMatch(b)`; `trayWaiting()` filters by company.
 - Plan log entries and Upload log entries get `by`. Tests `t_v40.js`; version strings 4.0; t_v17 waits 1.5 s after connecting (the first setup share is one extra call).
+
+## v4.1 + Code.gs 4.1 (21-11-2026) — login without the key, themes, Item history
+- **Code.gs 4.1:** `keyOk = req.key === KEY`; without it a call is allowed only when people exist and it is ping, login, or carries a valid `usr`+`uh` (`checkUser`); `req.keyOk` set. Ping without key/login returns `{ok, version, users, needLogin}` only. `loginAction` also counts `ld_fail_all` (cache, 1 h): 40 → "Logins are paused". No people + no key → `{ok:false, nokey:true}`.
+- **Tool:** `autoConnect()` (called from `initSync` when not connected): `callCfg({url:coInfo().url,key:''},'ping',{quiet:1})` → if users>0, `syncCfg={url,key:''}` and the login gate. `cfgOfCompany(co)` falls back to the built-in URL when logged in. Connect allows an empty key.
+- **Dashboard:** `newestKey/byNewest/newestDate` in `paintDash`; `dashRoutePick` Map + `routePickHtml(p)`; `[data-r]` picks, `[data-rsave]` saves.
+- **Themes:** `THEMES`, `applyTheme(id)` (top of the script, before drawing; `meta theme-color`), `curTheme` (localStorage `ld:theme`), `paintThemes()` + `#themeBtn` / `#themeList` (Setup card `#themeCard`). CSS: `html[data-theme=blue|red|brown]` vars; night vars inside `@media screen`; `/* v4.1 night (generated) */` block from `tools/gen_night.py` (light backgrounds → dark tint of the same hue, dark text → light, light borders → dark, `color:var(--green-dk)` → `var(--head-ink)`; print rules skipped) + a hand-written night block after it.
+- **Item history:** `REPORT_VIEWS.ritem='item'`, nav `data-v="ritem"`, `paintItemHistory()` (groups `reportLines()` by `stockKey`, `itemSort`), `repFiltered('item')` (Find = item, second box = party). Period `custom` + `#repFrom/#repTo` (`normDateTyped`).
+- **CLT-Setup.gs** + `t_clt.js`. Tests `t_v41.js`; version strings 4.1.

@@ -18,8 +18,16 @@
   --ink:#141a22; --mute:#57687c;
   --green:#1c7a44; --green-dk:#125532; --yellow:#ffcc33;
   --amber:#f0a020; --alert:#c62828; --ok:#1f9d55; --hold:#6b4fb3; --info:#2563eb;
-  --r:4px;
+  --r:4px; --tint:#e3f3e8; --head-ink:var(--green-dk);
 }
+/* v4.1 themes (per device, Setup → Theme). Green is the default above. */
+html[data-theme="blue"]{ --green:#1f5fa8; --green-dk:#163f73; --tint:#e1ecf8; --bg:#e9f0f9; }
+html[data-theme="red"]{ --green:#a3262a; --green-dk:#6b1719; --tint:#f7e3e3; --bg:#f6eded; --panel2:#fbf4f4; --edge:#e2c9c9; --edge2:#c9a3a3; }
+html[data-theme="brown"]{ --green:#6d4a2f; --green-dk:#4a311f; --tint:#efe5da; --bg:#f2ece5; --panel2:#f9f5f0; --edge:#dccdbd; --edge2:#bea68d; }
+@media screen{ html[data-theme="night"]{ color-scheme:dark;
+  --bg:#0f1418; --panel:#182027; --panel2:#1f2830; --edge:#2f3c48; --edge2:#4a5d70;
+  --ink:#e3e9ef; --mute:#9aa9b7; --green:#1d4f35; --green-dk:#12271c; --tint:#1c3326;
+  --amber:#e69a1e; --alert:#ef5350; --ok:#3fbf75; --hold:#a68be6; --info:#6ea8ff; --head-ink:#86d6a6; } }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
   font:14px/1.45 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;}
@@ -498,12 +506,12 @@ nav .mi[data-n]::after{content:attr(data-n);position:absolute;right:-6px;bottom:
 nav button.on .mi[data-n]::after{border-color:#fff}
 /* v3.6.2: the Logistics steps sit on a light panel with dark green icons; their 1-2-3 badges are
    dark green (amber stays only for the Orders tray badge, so a notification never looks like a step) */
-nav .mgroup.mlogi{background:#e3f3e8;border-radius:10px;border-top-color:transparent;padding:4px 4px 5px;margin-top:8px}
+nav .mgroup.mlogi{background:var(--tint);border-radius:10px;border-top-color:transparent;padding:4px 4px 5px;margin-top:8px}
 nav .mlogi .mglabel{color:var(--green-dk)}
 nav .mlogi button{color:var(--green-dk)}
 nav .mlogi button:hover{background:#fff;border-color:#fff;color:var(--green-dk)}
 nav .mlogi button.on{background:var(--green-dk);border-color:var(--green-dk);color:#fff}
-nav .mlogi .mi[data-n]::after{background:var(--green-dk);color:#fff;border-color:#e3f3e8}
+nav .mlogi .mi[data-n]::after{background:var(--green-dk);color:#fff;border-color:var(--tint)}
 nav .mlogi button:hover .mi[data-n]::after{border-color:#fff}
 nav .mlogi button.on .mi[data-n]::after{background:#fff;color:var(--green-dk);border-color:var(--green-dk)}
 nav .ml{overflow:hidden;text-overflow:ellipsis}
@@ -621,6 +629,137 @@ main{transition:filter .3s,opacity .3s}
 .pplrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--edge)}
 .pplrow b{flex:1}
 .recentchg{font-size:12.5px;margin:6px 0 0;padding-left:16px}
+/* v4.1 Item history */
+.ihsub{margin:8px 0 4px;font-size:12.5px}
+.ihtab{border-collapse:collapse;width:100%;font-size:12.5px;margin-bottom:6px}
+.ihtab th,.ihtab td{border-bottom:1px solid var(--edge);padding:4px 8px;text-align:left;vertical-align:top}
+.ihtab th{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.ihtab .n{text-align:right}
+/* v4.1 theme picker */
+.themebtn{display:inline-flex;align-items:center;gap:8px;font-weight:700}
+.themelist{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.themelist button{display:flex;flex-direction:column;align-items:stretch;gap:6px;width:120px;padding:8px;border-radius:10px;font-weight:700;font-size:13px}
+.themelist button.on{border:2px solid var(--amber);padding:7px}
+.tsw{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid rgba(0,0,0,.15)}
+.tsw i{flex:1}
+.tdot{width:14px;height:14px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.2)}
+@media screen{
+/* v4.1 night (generated) */
+@media screen{
+html[data-theme="night"] input,html[data-theme="night"] select,html[data-theme="night"] textarea{background:var(--panel)}
+html[data-theme="night"] .ubtn:hover:not(:disabled){background:var(--panel);color:var(--head-ink)}
+html[data-theme="night"] .logibtn:hover{background:var(--panel)}
+html[data-theme="night"] .hwrap .stepnav button:hover{background:var(--panel);color:var(--head-ink)}
+html[data-theme="night"] .hwrap .stepnav button.nx:hover{background:var(--panel)}
+html[data-theme="night"] .menubtn:hover,html[data-theme="night"] .menubtn[aria-expanded="true"]{background:var(--panel);color:var(--head-ink)}
+html[data-theme="night"] nav button.on{background:var(--panel);color:var(--head-ink)}
+html[data-theme="night"] .mreport button:hover{border-color:#295d7a}
+html[data-theme="night"] .mreport button.on{background:#142f3d;color:#9ed4ef;border-color:#295d7a}
+html[data-theme="night"] .rtable tr.rg:hover td{background:#262c28}
+html[data-theme="night"] .rdet td{background:#262c28}
+html[data-theme="night"] .rtrip .ri{color:#c7c7c7}
+html[data-theme="night"] .tag.unconf{background:#3d2f14;color:#f7d597;border:1px solid #715f32}
+html[data-theme="night"] .mmaster button:hover{border-color:#7a6629}
+html[data-theme="night"] .mmaster button.on{background:#3d3314;color:#f7de97;border-color:#7a6629}
+html[data-theme="night"] .remark{background:#3d3214;color:#f7d597;border:1px solid #715f32}
+html[data-theme="night"] .upno{color:var(--head-ink)}
+html[data-theme="night"] .st.hand{background:#17273a;color:#a3b6eb}
+html[data-theme="night"] .st.veh{background:#3d3014;color:#f1cf9d}
+html[data-theme="night"] .st.disp{background:#3d3014;color:#f1cf9d}
+html[data-theme="night"] .st.part{background:#23143d}
+html[data-theme="night"] .st.done{background:#1f3227}
+html[data-theme="night"] .st.del{background:#24292d}
+html[data-theme="night"] .st.skip{background:#391919}
+html[data-theme="night"] .ofsel{background:#203125}
+html[data-theme="night"] .ofp.on{background:#203125}
+html[data-theme="night"] /* clear data */
+.clrrow{border-bottom:1px solid #435060}
+html[data-theme="night"] .gcell.warn b{color:#f1cf9d}
+html[data-theme="night"] .card h2{color:var(--head-ink)}
+html[data-theme="night"] .odate{background:var(--panel);color:var(--head-ink)}
+html[data-theme="night"] .oitems>div{border-bottom:1px solid #435060}
+html[data-theme="night"] .dstat.warn b{color:#f1cf9d}
+html[data-theme="night"] .dstat b .pw{color:#f1cf9d}
+html[data-theme="night"] .drow{border-bottom:1px solid #435060}
+html[data-theme="night"] .dlab.warn{color:#f1cf9d}
+html[data-theme="night"] .asec h4.warn{color:#f1cf9d}
+html[data-theme="night"] .arow{border-bottom:1px solid #405063}
+html[data-theme="night"] .warnrow{background:#3d3114;color:#f1cf9d}
+html[data-theme="night"] .duprow{background:#391919}
+html[data-theme="night"] .duppanel{background:#3d1414}
+html[data-theme="night"] .mantoggle{color:var(--head-ink)}
+html[data-theme="night"] .tag.added{background:#16243c;color:#a5bfe9}
+html[data-theme="night"] .tag.godown{background:#291d34;color:#c3b3db}
+html[data-theme="night"] .laddbox,html[data-theme="night"] .gdform{background:#3d3014}
+html[data-theme="night"] .cxform{background:#381d1a}
+html[data-theme="night"] .manrow input.auto{background:#262b29}
+html[data-theme="night"] .duppanel table{background:var(--panel)}
+html[data-theme="night"] .duppanel tr.duppick.on td{background:#213126}
+html[data-theme="night"] .cap{background:#212831}
+html[data-theme="night"] .pill.xon{background:#391919}
+html[data-theme="night"] .lwarn{color:#f1cf9d}
+html[data-theme="night"] .drop.over{background:#14243d}
+html[data-theme="night"] .pc{background:var(--panel)}
+html[data-theme="night"] .pc .drag:hover{color:var(--head-ink)}
+html[data-theme="night"] .seqin{color:var(--head-ink)}
+html[data-theme="night"] .items{color:#bdc6d1}
+html[data-theme="night"] .multibatch,html[data-theme="night"] .items span.multibatch{color:#a3b6eb}
+html[data-theme="night"] .items span.qed{color:#f2c19c}
+html[data-theme="night"] td{border-bottom:1px solid #45515e}
+html[data-theme="night"] /* a route this vehicle hasn't picked,html[data-theme="night"] but a saved combination pairs with what's already picked -
+   a soft hint,html[data-theme="night"] never a selection,html[data-theme="night"] so it stays visually lighter than the solid amber "on" pill */
+.pill.suggest{background:#3d3014;color:#f1cf9d}
+html[data-theme="night"] .remedit input{background:#3d3014;color:#f7d397;border-color:#715f32}
+html[data-theme="night"] .holdform{background:#3d2f14;border-top:1px solid #715f32}
+html[data-theme="night"] .holdnote{background:#3d3014;color:#f7d397;border-top:1px solid #6f5e34}
+html[data-theme="night"] .sheet td{border:1px solid #46515e}
+html[data-theme="night"] .sheet tr.gap td{background:#1b2936}
+html[data-theme="night"] .litem{background:#1f2933}
+html[data-theme="night"] .lnotewrap{color:#f1cf9d}
+html[data-theme="night"] .lnotewrap .lnote{background:#3d3014;color:#f7d397;border-color:#6d5b36}
+html[data-theme="night"] .incq{background:#3d2b14;color:#eab5a3;border:1px solid #79522a}
+html[data-theme="night"] .traycard h2{color:#a6c5e8}
+html[data-theme="night"] .rlcard{background:var(--panel)}
+html[data-theme="night"] .rltbl tr.rlchg td{background:#3d3414}
+html[data-theme="night"] .rlnote{color:#f7d597}
+html[data-theme="night"] nav .mlogi .mglabel{color:var(--head-ink)}
+html[data-theme="night"] nav .mlogi button{color:var(--head-ink)}
+html[data-theme="night"] nav .mlogi button:hover{background:var(--panel);color:var(--head-ink)}
+html[data-theme="night"] nav .mlogi button.on .mi[data-n]::after{background:var(--panel);color:var(--head-ink)}
+html[data-theme="night"] /* v3.6 party note + Parties & map name/contact/note */
+.pnote{background:#3d3114;color:#f7d197;border:1px solid #715e32}
+html[data-theme="night"] /* v3.8 order note */
+.onote{background:#182839;color:#9ecaf0;border:1px solid #36506d}
+html[data-theme="night"] input.onotein{background:#14273d;border-color:#36506d}
+html[data-theme="night"] .pc .selbox{background:var(--panel)}
+html[data-theme="night"] .pc.picked{background:#203125}
+html[data-theme="night"] .pfchip{background:var(--panel)}
+@media (max-width:640px){html[data-theme="night"] /* Build Plan on a phone: each column is one screen wide and snaps into place; chips on top jump between them */
+  .lanejump{background:#1f2733}}
+html[data-theme="night"] .pubrow{background:var(--panel)}
+html[data-theme="night"] .pubrow.draft{background:#3d3214}
+html[data-theme="night"] .pubnote{background:#3a1b18}
+html[data-theme="night"] .tag.from{background:#16243c;color:#a5bfe9}
+html[data-theme="night"] .userbtn .cotag{background:#3d3314;color:#f7de97}
+html[data-theme="night"] .userbtn.c2 .cotag{background:#14253d;color:#a3c1ea}
+html[data-theme="night"] #userMenu{background:var(--panel);color:#bbd3c6}
+html[data-theme="night"] #userMenu .umh{color:#c4c9c6}
+html[data-theme="night"] #userMenu button:hover{background:#242d27}
+html[data-theme="night"] #userMenu button.cur{background:#222f27}
+html[data-theme="night"] #userMenu .umnote{color:#c4c9c6}
+html[data-theme="night"] .lgbox{background:var(--panel)}
+}
+/* end night (generated) */
+/* v4.1 night theme: parts drawn in fixed light colours */
+html[data-theme="night"] input,html[data-theme="night"] select,html[data-theme="night"] textarea{background:#11181e;color:var(--ink);border-color:var(--edge)}
+html[data-theme="night"] .card h2,html[data-theme="night"] .upno,html[data-theme="night"] .odate,html[data-theme="night"] .mantoggle,
+html[data-theme="night"] nav .mlogi .mglabel,html[data-theme="night"] nav .mlogi button,html[data-theme="night"] .pc .drag:hover{color:var(--head-ink)}
+html[data-theme="night"] nav button.on,html[data-theme="night"] .menubtn:hover,html[data-theme="night"] .menubtn[aria-expanded="true"]{background:#2c4a3a;color:#fff;border-color:#2c4a3a}
+html[data-theme="night"] nav .mlogi button:hover{background:#26402f;border-color:#26402f}
+html[data-theme="night"] nav .mlogi button.on{background:#2f6b4a;border-color:#2f6b4a;color:#fff}
+html[data-theme="night"] #userMenu,html[data-theme="night"] .lgbox{background:var(--panel);color:var(--ink)}
+html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="night"] #userMenu button:hover,html[data-theme="night"] #userMenu button.cur{background:var(--panel2)}
+}
 /* phone rules last so they win over the desktop ones above */
 @media (max-width:640px){
   .logibtn{padding:4px 7px} .logibtn .lbl{display:none}
@@ -680,6 +819,7 @@ main{transition:filter .3s,opacity .3s}
     <div class="mgroup mreport">
       <div class="mglabel">Reports</div>
       <button data-v="rparty" title="Party history"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 11-4.7"/><circle cx="17.5" cy="16.5" r="4"/><path d="M17.5 14.5v2l1.3 1"/></svg></span><span class="ml">Party history</span></button>
+      <button data-v="ritem" title="Item history"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8.5L10 5l6.5 3.5v6.5L10 18.5 3.5 15z"/><path d="M3.5 8.5L10 12l6.5-3.5M10 12v6.5"/><circle cx="17.5" cy="16.5" r="4"/><path d="M17.5 14.5v2l1.3 1"/></svg></span><span class="ml">Item history</span></button>
       <button data-v="rveh" title="Vehicle & driver trips"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M3.8 10.5h6M14.2 10.5h6M12 14.2v6.3"/></svg></span><span class="ml">Vehicle &amp; driver trips</span></button>
       <button data-v="rday" title="Day-wise"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M7.5 13h2M11 13h2M14.5 13h2M7.5 16.5h2M11 16.5h2"/></svg></span><span class="ml">Day-wise</span></button>
       <button data-v="stock" title="Stock required"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5h7.5v7H3.5zM13 13.5h7.5v7H13zM8.2 6h7.5v7.5H8.2z"/><path d="M6 13.5v2M16 13.5v2M11 6v2"/></svg></span><span class="ml">Stock required</span></button>
@@ -797,7 +937,7 @@ main{transition:filter .3s,opacity .3s}
     </p>
     <div class="row">
       <div><label>Web app URL</label><input id="syncUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
-      <div style="flex:0 0 240px"><label>Secret key</label><input id="syncKey" type="password" autocomplete="off"></div>
+      <div style="flex:0 0 240px"><label>Secret key <span style="text-transform:none;letter-spacing:0">(only before people are added)</span></label><input id="syncKey" type="password" autocomplete="off" placeholder="not needed once logins exist"></div>
       <div style="flex:0 0 auto"><button class="primary" id="syncConnect">Connect</button></div>
       <div style="flex:0 0 auto"><button class="ghost" id="syncReport" title="Copies what the last sheet calls did, to paste to Claude when sync goes wrong">Copy sync report</button></div>
     </div>
@@ -910,6 +1050,12 @@ main{transition:filter .3s,opacity .3s}
   </div>
 
 
+  <div class="card" id="themeCard">
+    <h2>Theme</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:8px">Colours of the tool on this device only (each phone / PC keeps its own).</p>
+    <button id="themeBtn" class="themebtn" aria-expanded="false"></button>
+    <div id="themeList" class="themelist" hidden></div>
+  </div>
 </section>
 
 <!-- PARTIES & MAP (master) -->
@@ -1185,7 +1331,10 @@ main{transition:filter .3s,opacity .3s}
           <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option>
           <option value="month">This month</option><option value="lastmonth">Last month</option>
           <option value="90">Last 90 days</option><option value="all">Everything in the log</option>
+          <option value="custom">Custom dates…</option>
         </select></div>
+      <div id="repCustom" style="flex:0 0 auto" hidden><label>From – to</label>
+        <span style="display:flex;gap:6px"><input id="repFrom" placeholder="dd-mm-yyyy" style="width:110px" inputmode="numeric"><input id="repTo" placeholder="dd-mm-yyyy" style="width:110px" inputmode="numeric"></span></div>
       <div><label id="repFindLbl">Find</label><input id="repFind" placeholder="Type to filter"></div>
       <div><label>Item contains</label><input id="repItem" placeholder="e.g. 1x1x8x5"></div>
       <div style="flex:0 0 auto"><label>&nbsp;</label><button id="repCopy">Copy lines</button></div>
@@ -1356,6 +1505,18 @@ const COMPANIES=[{id:'1',name:'EKM',url:'https://script.google.com/macros/s/AKfy
 let CO='1'; try{ CO=localStorage.getItem('ld:company')||'1'; }catch(e){}
 if(!COMPANIES.some(c=>c.id===CO)) CO='1';
 const coInfo=id=>COMPANIES.find(c=>c.id===(id||CO))||COMPANIES[0];
+/* v4.1 themes - applied before anything is drawn */
+const THEMES=[{id:'green',name:'Green',head:'#1c7a44',bg:'#eaf1fa',ink:'#141a22'},{id:'blue',name:'Blue',head:'#1f5fa8',bg:'#e9f0f9',ink:'#141a22'},
+  {id:'red',name:'Red',head:'#a3262a',bg:'#f6eded',ink:'#141a22'},{id:'brown',name:'Brown',head:'#6d4a2f',bg:'#f2ece5',ink:'#141a22'},
+  {id:'night',name:'Night (dark)',head:'#1d4f35',bg:'#0f1418',ink:'#e3e9ef'}];
+function applyTheme(id){
+  const t=THEMES.find(x=>x.id===id)||THEMES[0];
+  if(t.id==='green') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme',t.id);
+  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content',t.head);
+  return t;
+}
+let curTheme='green'; try{ curTheme=localStorage.getItem('ld:theme')||'green'; }catch(e){}
+applyTheme(curTheme);
 const PERCO=new Set(['lpb:v3','lpb:synccfg','lpb:syncbase','lpb:clashes','lpb:restore','lpb:setupmeta','lpb:recent']);
 const ckFor=(k,co)=>PERCO.has(k)&&co!=='1'?k+':c'+co:k;
 const ck=k=>ckFor(k,CO);
@@ -1393,7 +1554,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.0', APP_BUILD='21-11-2026';
+const APP_VERSION='4.1', APP_BUILD='21-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -2545,6 +2706,10 @@ function clipDash(box){
     if(el.matches('table')) el.after(btn); else el.appendChild(btn);
   });
 }
+const dashRoutePick=new Map(); // party -> routes picked on the Dashboard, saved on Confirm
+function routePickHtml(p){ const set=dashRoutePick.get(p)||new Set();
+  return `<span class="arpills">${S.routes.map(r=>`<span class="pill click${set.has(r)?' on':''}" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>
+    <button class="tiny primary" data-rsave="${esc(p)}"${set.size?'':' disabled'}>Confirm</button>`; }
 function paintDash(){
   const box=$('#dashStats'); if(!box) return;
   const parties=partiesToday();
@@ -2558,9 +2723,13 @@ function paintDash(){
   const held=parties.filter(p=>anyHeld(p)).length;
   const aging2=parties.filter(p=>{const g=partyAge(p);return g!=null&&g>=2;});
   const aging5=parties.filter(p=>{const g=partyAge(p);return g!=null&&g>=5;});
-  const noRoute=parties.filter(p=>!siteOf(p).site&&!(S.parties[p]?.routes||[]).length);
-  const noSiteRoute=parties.filter(p=>siteOf(p).site&&!(S.parties[p]?.routes||[]).length); // v3.0
-  const noPlace=parties.filter(p=>!placeLine(p)&&!pinOf(p));
+  // v4.1: newest order first (Paul), with the order date shown
+  const newestKey=p=>itemsOf(p).reduce((m,o)=>{ const k=repDayKey(o.date)||''; return k>m?k:m; },'');
+  const byNewest=list=>list.map(p=>[p,newestKey(p)]).sort((a,b)=>b[1].localeCompare(a[1])||a[0].localeCompare(b[0])).map(x=>x[0]);
+  const noRoute=byNewest(parties.filter(p=>!siteOf(p).site&&!(S.parties[p]?.routes||[]).length));
+  const noSiteRoute=byNewest(parties.filter(p=>siteOf(p).site&&!(S.parties[p]?.routes||[]).length)); // v3.0
+  const noPlace=byNewest(parties.filter(p=>!placeLine(p)&&!pinOf(p)));
+  const newestDate=p=>{ const k=newestKey(p); return k?k.slice(6,8)+'-'+k.slice(4,6)+'-'+k.slice(0,4):''; };
   const overdue=overdueBatches();
   const openLogs=S.log.filter(g=>!g.resolved);
   const dupPs=dupParties();
@@ -2705,13 +2874,11 @@ function paintDash(){
     }).join('')}</div>`:'';
   // v3.0: a delivery location's routes are its own (not the party's) - asked for on their own, first
   const siteSection=noSiteRoute.length?`<div class="asec" data-clip="nositeroute"><h4 class="bad">Delivery location with no route — set its routes so the order isn't missed</h4>
-    ${noSiteRoute.map(p=>arow(p,`<span class="g">${esc(itemsOf(p)[0]&&itemsOf(p)[0].tab||'')}</span><span class="arpills">${S.routes.map(r=>
-      `<span class="pill click" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>`)).join('')}</div>`:'';
+    ${noSiteRoute.map(p=>arow(p,`<span class="g">${esc(newestDate(p))}${itemsOf(p)[0]&&itemsOf(p)[0].tab?' · '+esc(itemsOf(p)[0].tab):''}</span>${routePickHtml(p)}`)).join('')}</div>`:'';
   const routeSection=noRoute.length?`<div class="asec" data-clip="noroute"><h4 class="bad">No route tagged — cannot be planned</h4>
-    ${noRoute.map(p=>arow(p,`<span class="arpills">${S.routes.map(r=>
-      `<span class="pill click" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>`)).join('')}</div>`:'';
+    ${noRoute.map(p=>arow(p,`<span class="g">${esc(newestDate(p))}</span>${routePickHtml(p)}`)).join('')}</div>`:'';
   const placeSection=noPlace.length?`<div class="asec" data-clip="noplace"><h4 class="warn">No place / pincode saved</h4>
-    ${noPlace.map(p=>arow(p,`<input data-aplace="${esc(p)}" value="${esc(S.parties[p]?.place||'')}" placeholder="place" style="width:140px">
+    ${noPlace.map(p=>arow(p,`<span class="g">${esc(newestDate(p))}</span><input data-aplace="${esc(p)}" value="${esc(S.parties[p]?.place||'')}" placeholder="place" style="width:140px">
       <input data-apin="${esc(p)}" value="${esc(S.parties[p]?.pincode||'')}" placeholder="pincode" style="width:95px" inputmode="numeric">
       <button class="tiny primary" data-aplacesave="${esc(p)}">Confirm</button>`)).join('')}</div>`:'';
 
@@ -2825,10 +2992,18 @@ function paintDash(){
     if(pn)S.parties[p].pincode=pn.value.trim();
     await save();renderDash();renderOrders();renderPlan();
     flash(`Saved for ${p}`);});
-  box.querySelectorAll('[data-r]').forEach(el=>el.onclick=async()=>{
-    const p=el.dataset.p,r=el.dataset.r; S.parties[p]=S.parties[p]||{routes:[],place:'',pincode:''};
-    const arr=S.parties[p].routes||=[]; const i=arr.indexOf(r); i<0?arr.push(r):arr.splice(i,1);
-    await save();renderDash();renderRoutes();renderPlan();});
+  // v4.1: tapping a route only picks it; Confirm saves (one tap no longer makes the party vanish)
+  box.querySelectorAll('[data-r]').forEach(el=>el.onclick=()=>{
+    const p=el.dataset.p,r=el.dataset.r, set=dashRoutePick.get(p)||new Set();
+    set.has(r)?set.delete(r):set.add(r); dashRoutePick.set(p,set);
+    el.classList.toggle('on',set.has(r));
+    const b=box.querySelector(`[data-rsave="${CSS.escape(p)}"]`); if(b) b.disabled=!set.size; });
+  box.querySelectorAll('[data-rsave]').forEach(el=>el.onclick=async()=>{
+    const p=el.dataset.rsave, set=dashRoutePick.get(p); if(!set||!set.size) return;
+    S.parties[p]=S.parties[p]||{routes:[],place:'',pincode:''};
+    S.parties[p].routes=S.routes.filter(r=>set.has(r)); dashRoutePick.delete(p);
+    await save();renderDash();renderRoutes();renderPlan();
+    flash(`Routes saved for ${p}: ${S.parties[p].routes.join(', ')}`);});
   box.querySelectorAll('[data-combotog]').forEach(el=>el.onclick=()=>{
     const id=el.dataset.combotog;
     comboOpen.has(id)?comboOpen.delete(id):comboOpen.add(id);
@@ -4961,7 +5136,7 @@ $('#stockRead').onclick=()=>{ stockPending=parseStockPaste($('#stockPaste').valu
    Built from the Plan log: every logged vehicle is a trip. A confirmed entry counts what was
    marked as gone when it was applied (from its saved snapshot); an open entry counts what was
    loaded and is flagged NOT CONFIRMED. Clearing the Plan log clears this history too. */
-const REPORT_VIEWS={rparty:'party',rveh:'vehicle',rdrv:'driver',rday:'day'};
+const REPORT_VIEWS={rparty:'party',ritem:'item',rveh:'vehicle',rdrv:'driver',rday:'day'};
 const repOpen=new Set();
 function repDayKey(d){ const m=String(d||'').match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/); return m?m[3]+m[2].padStart(2,'0')+m[1].padStart(2,'0'):''; }
 function lineQtyOut(g,id,o){
@@ -4999,6 +5174,9 @@ function repPeriodRange(v){
   const t=new Date(); t.setHours(0,0,0,0);
   const k=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
   if(v==='all') return ['','99999999'];
+  if(v==='custom'){ // v4.1: typed dates, either end may be left empty
+    const f=repDayKey(normDateTyped($('#repFrom').value)), to=repDayKey(normDateTyped($('#repTo').value));
+    return [f||'', to||'99999999']; }
   if(v==='month') return [k(new Date(t.getFullYear(),t.getMonth(),1)),'99999999'];
   if(v==='lastmonth') return [k(new Date(t.getFullYear(),t.getMonth()-1,1)),k(new Date(t.getFullYear(),t.getMonth(),0))];
   const from=new Date(t); from.setDate(from.getDate()-(+v-1)); return [k(from),'99999999'];
@@ -5007,6 +5185,16 @@ function repFiltered(mode){
   const [a,b]=repPeriodRange($('#repPeriod').value);
   const f=nameSearch($('#repFind').value), it=itemSearch($('#repItem').value);
   const unconf=$('#repUnconf').checked;
+  if(mode==='item'){ // v4.1 Item history: Find = item, the second box = party
+    const fi=itemSearch($('#repFind').value), fp=nameSearch($('#repItem').value);
+    return reportLines().filter(l=>{
+      if(!unconf&&!l.conf) return false;
+      if(l.dk&&(l.dk<a||l.dk>b)) return false;
+      if(!l.dk&&$('#repPeriod').value!=='all') return false;
+      if(fi&&!fi(l.item)) return false;
+      if(fp&&!fp(l.party)) return false;
+      return true; });
+  }
   return reportLines().filter(l=>{
     if(!unconf&&!l.conf) return false;
     if(l.dk&&(l.dk<a||l.dk>b)) return false;
@@ -5044,6 +5232,10 @@ function paintReports(){
   const tg=$('#repToggle');
   tg.innerHTML=currentView==='rveh'?`<div class="segtoggle"><button data-rsub="vehicle" class="${repSub==='vehicle'?'on':''}">By vehicle</button><button data-rsub="driver" class="${repSub==='driver'?'on':''}">By driver</button></div>`:'';
   tg.querySelectorAll('[data-rsub]').forEach(b=>b.onclick=()=>{ repSub=b.dataset.rsub; $('#repFind').value=''; paintReports(); });
+  $('#repItem').parentElement.querySelector('label').textContent=mode==='item'?'Party contains':'Item contains';
+  $('#repItem').placeholder=mode==='item'?'e.g. Sunrise':'e.g. 1x1x8x5';
+  $('#repFind').placeholder=mode==='item'?'e.g. 40x40 or MS wire':'Type to filter';
+  if(mode==='item') return paintItemHistory();
   const T={party:['Party history','Every delivery to each party from the Plan log. Use "Item contains" to find when a party last got an item.','Find party'],
     vehicle:['Vehicle & driver trips','Trips per vehicle number, with load against capacity.','Find vehicle'],
     driver:['Vehicle & driver trips','Trips per driver, with the vehicles they took.','Find driver'],
@@ -5082,6 +5274,47 @@ function paintReports(){
     window.open('https://wa.me/'+waNumber(S.summaryPhone)+'?text='+encodeURIComponent(daySummaryText(b.dataset.dsum)),'_blank','noopener'); });
   body.querySelectorAll('[data-rk]').forEach(tr=>tr.onclick=()=>{ const k=tr.dataset.rk; repOpen.has(k)?repOpen.delete(k):repOpen.add(k); paintReports(); });
 }
+/* v4.1 Item history: every item that went out (Plan log), how much in the period, to which parties and when */
+let itemSort='kg';
+function paintItemHistory(){
+  const tg=$('#repToggle');
+  tg.innerHTML=`<div class="segtoggle"><button data-isort="kg" class="${itemSort==='kg'?'on':''}">Most kg</button><button data-isort="times" class="${itemSort==='times'?'on':''}">Most deliveries</button><button data-isort="last" class="${itemSort==='last'?'on':''}">Latest gone</button><button data-isort="az" class="${itemSort==='az'?'on':''}">A–Z</button></div>`;
+  tg.querySelectorAll('[data-isort]').forEach(b=>b.onclick=()=>{ itemSort=b.dataset.isort; paintReports(); });
+  $('#repTitle').textContent='Item history';
+  $('#repHint').textContent='Every item that went out: how much in the period, to which parties and on which dates. Same spellings are added together (bracket notes like "already billed" are ignored). Built from the Plan log — clearing the log clears this history.';
+  $('#repFindLbl').textContent='Find item';
+  const lines=repFiltered('item'); repLast=lines; repLastCx=[];
+  const groups=new Map();
+  lines.forEach(l=>{ const k=stockKey(l.item)||String(l.item||'').toLowerCase(); let g=groups.get(k);
+    if(!g){ g={k,labels:new Map(),ls:[],qty:new Map(),kg:0,parties:new Map(),trips:new Set(),last:'',lastDate:''}; groups.set(k,g); }
+    const lb=stripTags(l.item)||l.item; g.labels.set(lb,(g.labels.get(lb)||0)+1);
+    g.ls.push(l); addQty(g.qty,l.qty); g.kg+=l.weight; g.trips.add(l.g.id);
+    let p=g.parties.get(l.party); if(!p){ p={party:l.party,qty:new Map(),kg:0,n:0,last:'',lastDate:''}; g.parties.set(l.party,p); }
+    addQty(p.qty,l.qty); p.kg+=l.weight; p.n++; if(l.dk>p.last){ p.last=l.dk; p.lastDate=l.date; }
+    if(l.dk>g.last){ g.last=l.dk; g.lastDate=l.date; } });
+  let list=[...groups.values()].map(g=>({...g,label:[...g.labels.entries()].sort((a,b)=>b[1]-a[1])[0][0]}));
+  const cmp={kg:(a,b)=>b.kg-a.kg,times:(a,b)=>b.ls.length-a.ls.length,last:(a,b)=>b.last.localeCompare(a.last),az:(a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true,sensitivity:'base'})}[itemSort];
+  list.sort((a,b)=>cmp(a,b)||a.label.localeCompare(b.label));
+  const kg=lines.reduce((a,l)=>a+l.weight,0), stat=(v,l)=>`<div class="dstat"><b>${v}</b><small>${l}</small></div>`;
+  $('#repSum').innerHTML=lines.length?`<div class="dstats" style="width:100%">${stat(list.length,'items')}${stat(lines.length,'deliveries')}${stat(new Set(lines.map(l=>l.party)).size,'parties')}${stat(num(Math.round(kg)),'kg gone')}</div>`:'';
+  const body=$('#repBody');
+  if(!lines.length){ body.innerHTML=`<div class="card"><p class="hint">${S.log.length?'Nothing in the Plan log matches this period and filter.':'No deliveries yet — this fills in as vehicles are added to the Plan log.'}</p></div>`; return; }
+  const rk=k=>'item|'+k;
+  body.innerHTML=`<div class="card"><div style="overflow-x:auto"><table class="rtable ihist"><tr><th style="width:22px"></th><th>Item</th><th>Qty gone</th><th class="n">Kg</th><th class="n">Parties</th><th class="n">Deliveries</th><th>Last gone</th></tr>${list.map(g=>{
+    const open=repOpen.has(rk(g.k));
+    const ps=[...g.parties.values()].sort((a,b)=>b.kg-a.kg||a.party.localeCompare(b.party));
+    const det=open?`<tr class="rdet"><td colspan="7">
+      <div class="ihsub"><b>By party</b></div>
+      <table class="ihtab"><tr><th>Party</th><th>Qty</th><th class="n">Kg</th><th class="n">Times</th><th>Last</th></tr>
+        ${ps.map(p=>`<tr><td>${pnameHtml(p.party)}</td><td>${esc(qtyText(p.qty))}</td><td class="n">${num(Math.round(p.kg))}</td><td class="n">${p.n}</td><td class="mono">${esc(p.lastDate)}</td></tr>`).join('')}</table>
+      <div class="ihsub"><b>Every delivery</b> (newest first)</div>
+      <table class="ihtab"><tr><th>Date</th><th>Party</th><th>Qty</th><th class="n">Kg</th><th>Vehicle</th><th>Driver</th></tr>
+        ${[...g.ls].sort((a,b)=>b.dk.localeCompare(a.dk)||a.party.localeCompare(b.party)).map(l=>`<tr><td class="mono">${esc(l.date)}</td><td>${pnameHtml(l.party)}${l.conf?'':' <span class="tag unconf">NOT CONFIRMED</span>'}</td><td>${esc(l.qty)}${itemTags(l.item).length?' <span class="hint">('+esc(itemTags(l.item).join(', '))+')</span>':''}</td><td class="n">${num(Math.round(l.weight))}</td><td>${esc(vehLabel(l))}</td><td>${esc(l.driver||'')}</td></tr>`).join('')}</table>
+    </td></tr>`:'';
+    return `<tr class="rg" data-rk="${esc(rk(g.k))}"><td><span style="display:inline-block;${open?'transform:rotate(90deg)':''}">►</span></td><td><b>${esc(g.label)}</b></td><td>${esc(qtyText(g.qty))}</td><td class="n">${num(Math.round(g.kg))}</td><td class="n">${g.parties.size}</td><td class="n">${g.ls.length}</td><td class="mono">${esc(g.lastDate)}</td></tr>`+det;
+  }).join('')}</table></div></div>`;
+  body.querySelectorAll('[data-rk]').forEach(tr=>tr.onclick=()=>{ const k=tr.dataset.rk; repOpen.has(k)?repOpen.delete(k):repOpen.add(k); paintReports(); });
+}
 // cancellations for Party history, filtered like the trips (period, find party, item contains)
 let repLastCx=[];
 function repCancels(){
@@ -5098,7 +5331,10 @@ function cancelHtml(cs){
   return [...byDay].map(([day,ls])=>`<div class="rtrip cx"><div class="rh">${esc(day)} · <b class="cxw">CANCELLED</b> · ${num(Math.round(ls.reduce((a,c)=>a+(+c.kg||0),0)))} kg</div>
     ${ls.map(c=>`<div class="ri">${esc(c.item)} ×${esc(c.qty)}${c.full?'':` <span class="hint">(of ${esc(c.origQty)} — rest kept)</span>`}${c.reason?` — <i>${esc(c.reason)}</i>`:''} <span class="hint">· order of ${esc(c.date||'no date')}</span></div>`).join('')}</div>`).join('');
 }
-['repPeriod','repUnconf'].forEach(id=>$('#'+id).onchange=paintReports);
+['repPeriod','repUnconf'].forEach(id=>$('#'+id).onchange=()=>{ $('#repCustom').hidden=$('#repPeriod').value!=='custom'; paintReports(); });
+['repFrom','repTo'].forEach(id=>$('#'+id).oninput=()=>{ const v=$('#'+id).value; if(!v||repDayKey(normDateTyped(v))) paintReports(); });
+function normDateTyped(v){ const m=String(v||'').trim().match(/^(\d{1,2})[-/. ](\d{1,2})(?:[-/. ](\d{2,4}))?$/); if(!m) return '';
+  const y=m[3]?(m[3].length===2?'20'+m[3]:m[3]):String(new Date().getFullYear()); return m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0')+'-'+y; }
 ['repFind','repItem'].forEach(id=>$('#'+id).oninput=paintReports);
 $('#repCopy').onclick=()=>{
   const ls=[...repLast].sort((a,b)=>a.dk.localeCompare(b.dk)||a.party.localeCompare(b.party));
@@ -5122,7 +5358,7 @@ function stockText(){
 const PAINT={
   dash:()=>{ paintDash(); paintOrders(); },
   orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); const os=$('#otsSeen'); if(os) os.innerHTML=otsSeenText(); }, parties:()=>{ paintRoutes(); paintMasters(); }, admin:paintAdmin, plan:paintPlan, out:paintOut, log:()=>{ paintLog(); paintOutsideForm(); }, stock:paintStock,
-  uploads:paintUploads, rparty:paintReports, rveh:paintReports, rdrv:paintReports, rday:paintReports
+  uploads:paintUploads, rparty:paintReports, ritem:paintReports, rveh:paintReports, rdrv:paintReports, rday:paintReports
 };
 let currentView='dash';
 const stale=new Set(Object.keys(PAINT));
@@ -6710,6 +6946,18 @@ $('#sheetLink').onchange=async()=>{
   if(v&&!/^https:\/\/docs\.google\.com\/spreadsheets\//.test(v)){ flash('That is not a Google Sheets link — copy it from the sheet\'s address bar'); return; }
   S.sheetLink=v; await save(); renderAll(); flash(v?'Google Sheet link saved':'Google Sheet link removed');
 };
+// v4.1 theme picker (Setup → Theme): the button shows the current theme; pressing it opens the list
+function paintThemes(){
+  const t=THEMES.find(x=>x.id===curTheme)||THEMES[0], open=!$('#themeList').hidden;
+  $('#themeBtn').innerHTML=`<span class="tdot" style="background:${t.head}"></span>Current theme: ${esc(t.name)} <span aria-hidden="true">${open?'▴':'▾'}</span>`;
+  $('#themeBtn').setAttribute('aria-expanded',open?'true':'false');
+  $('#themeList').innerHTML=THEMES.map(x=>`<button data-theme-id="${x.id}" class="${x.id===curTheme?'on':''}"><span class="tsw"><i style="background:${x.head}"></i><i style="background:${x.bg}"></i><i style="background:${x.ink}"></i></span>${esc(x.name)}${x.id==='green'?' <span class="hint" style="margin:0;font-weight:400">(default)</span>':''}</button>`).join('');
+  $('#themeList').querySelectorAll('[data-theme-id]').forEach(b=>b.onclick=()=>{
+    curTheme=b.dataset.themeId; try{ curTheme==='green'?localStorage.removeItem('ld:theme'):localStorage.setItem('ld:theme',curTheme); }catch(_){}
+    const th=applyTheme(curTheme); paintThemes(); flash('Theme: '+th.name); });
+}
+$('#themeBtn').onclick=()=>{ $('#themeList').hidden=!$('#themeList').hidden; paintThemes(); };
+paintThemes();
 $('#devName').onchange=()=>{ const v=$('#devName').value.trim().slice(0,24); try{ v?localStorage.setItem('ld:device',v):localStorage.removeItem('ld:device'); }catch(e){} flash('Device name saved'); };
 
 /* ======================= Google Sheet sync (v1.1) =======================
@@ -7345,7 +7593,6 @@ function paintHold(){
 $('#syncConnect').onclick=async()=>{
   const url=$('#syncUrl').value.trim(), key=$('#syncKey').value.trim();
   if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)){ flash('Paste the web app URL from Apps Script (ends in /exec)'); return; }
-  if(!key){ flash('Enter the secret key from the script'); return; }
   const prev=syncCfg; syncCfg={url,key};
   try{
     $('#syncStatus').textContent='Checking…';
@@ -7467,7 +7714,7 @@ async function callCfg(cfg,action,payload){
     return JSON.parse(await res.text()); }
   catch(e){ return {ok:false,error:'Can\'t reach the sheet'}; } finally{ clearTimeout(tm); }
 }
-async function cfgOfCompany(co){ return co===CO?syncCfg:await kvGetFor(co,'lpb:synccfg'); }
+async function cfgOfCompany(co){ if(co===CO) return syncCfg; const c=await kvGetFor(co,'lpb:synccfg'); if(c) return c; const u=coInfo(co).url; return u&&curUser?{url:u,key:''}:null; }
 
 /* People (Admin) */
 async function paintPeople(){
@@ -7513,7 +7760,7 @@ async function setupTick(own,init){
   try{
     const b=setupBundle(), sig=stable(b); let meta=await kvGet('lpb:setupmeta');
     if(!meta&&!own&&!init) return; // first-time sharing starts when the tool opens or a sheet is connected, not on every sync
-    const otherId=(COMPANIES.find(c=>c.id!==CO)||{}).id, otherCfg=otherId?await kvGetFor(otherId,'lpb:synccfg'):null;
+    const otherId=(COMPANIES.find(c=>c.id!==CO)||{}).id, otherCfg=otherId?await cfgOfCompany(otherId):null;
     const take=async src=>{ applySetupBundle(src.b); meta={sig:stable(setupBundle()),at:src.at,pend:[]}; await kvSet('lpb:setupmeta',meta); await save(); renderAll(); };
     if(!meta||meta.sig!==sig){
       const empty=!b.vehTypes.length&&!b.vehicles.length&&!b.drivers.length;
@@ -7551,6 +7798,22 @@ function noteOthers(){
   flash(`${l.by||l.dev} saved ${l.what||'changes'} · ${hhmm(l.at)}`); paintRecent(); paintSync();
 }
 function trayCoMatch(b){ if(!b||!b.co) return true; const n=x=>String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,''); return n(b.co)===n(coInfo().name); }
+/* v4.1: a device that is not connected yet tries the company's built-in web app URL without a key.
+   When that sheet already has people, it connects and asks for name + PIN - nothing else to type. */
+async function autoConnect(){
+  const u=coInfo().url;
+  // only on the real site (https); a local copy / test page never calls the live script on its own
+  let live=location.protocol==='https:'; try{ if(localStorage.getItem('ld:autoconnect')==='1') live=true; }catch(_){}
+  if(!syncCfg&&u&&live){
+    const r=await callCfg({url:u,key:''},'ping',{quiet:1}).catch(()=>null);
+    if(!syncCfg&&r&&r.ok&&r.users>0){
+      syncCfg={url:u,key:'',name:r.name||''}; await kvSet(SYNC_CFG_KEY,syncCfg); needLogin(true); paintSync(); updateSyncBadge();
+      if(!curUser) showGate(); else syncNow('open');
+      return;
+    }
+  }
+  if(!syncCfg&&CO!=='1'){ gotoView('routes'); flash('Connect '+coInfo().name+': paste its web app URL'+(u?'':' and key')); }
+}
 async function initSync(){
   syncCfg=await kvGet(SYNC_CFG_KEY); syncBase=await kvGet(SYNC_BASE_KEY);
   // v2.3: this device opened with no data at all, but it had synced before - its saved data could
@@ -7564,7 +7827,7 @@ async function initSync(){
   try{ recentChg=(await kvGet('lpb:recent'))||[]; if(!Array.isArray(recentChg)) recentChg=[]; paintRecent(); }catch(_){}
   // v4.0: the screen stays grey until the first sync of this visit has answered, so nobody trusts old data
   if(syncCfg){ document.body.classList.add('syncgrey'); setTimeout(()=>document.body.classList.remove('syncgrey'),25000); }
-  else if(CO!=='1'){ gotoView('routes'); flash('Connect '+coInfo().name+': paste its web app URL and key'); }
+  else autoConnect();
   if(syncCfg){ syncNow('open').finally(()=>document.body.classList.remove('syncgrey')).then(()=>syncCfg&&syncCall('ping')).then(r=>{
       if(r&&r.name&&syncCfg) syncCfg.name=r.name;
       if(r&&typeof r.users==='number'){ needLogin(r.users>0); if(r.users>0&&!curUser) showGate(); }
