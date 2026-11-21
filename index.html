@@ -1501,7 +1501,7 @@ async function idbSet(k,v){
    moves; company 2 (CLT&KNR) gets the same keys with ":c2" added. Switching reloads the page,
    which then opens the other company's own saved copy. */
 const COMPANIES=[{id:'1',name:'EKM',url:'https://script.google.com/macros/s/AKfycbyvwF9v2Y3ZOIU5HvYB5ha8Cwc-GQKC_nYxBmXRQO0Oa2Y69t1eId20-dnuzkFRJJG_LQ/exec'},
-                 {id:'2',name:'CLT&KNR',url:''}];
+                 {id:'2',name:'CLT&KNR',url:'https://script.google.com/macros/s/AKfycbxE1HpvypMggyz03nU0cZgNdxyyyhzHc8oh9iXgoOzxCn-WEcsddWQhDaCxsgQNbfcUQg/exec'}];
 let CO='1'; try{ CO=localStorage.getItem('ld:company')||'1'; }catch(e){}
 if(!COMPANIES.some(c=>c.id===CO)) CO='1';
 const coInfo=id=>COMPANIES.find(c=>c.id===(id||CO))||COMPANIES[0];
@@ -1554,7 +1554,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.1', APP_BUILD='21-11-2026';
+const APP_VERSION='4.1.1', APP_BUILD='21-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
