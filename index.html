@@ -789,6 +789,9 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
 @media (max-width:640px){ .misstab{display:block;overflow-x:auto;white-space:nowrap} .outform{padding:8px} }
 @media (max-width:640px){ .userbtn{padding:4px 7px;gap:4px} .userbtn .uname{max-width:60px;overflow:hidden;text-overflow:ellipsis} .userbtn .uw{display:none} #userMenu{top:46px;right:6px} }
 @media (max-width:520px){ .userbtn .uname,.userbtn .ar{display:none} .userbtn{padding:4px 6px} }
+/* v4.2.1 phone: the Orders batch buttons wrap onto lines instead of running off the card */
+@media (max-width:640px){ .oact{flex:1 1 100%;flex-wrap:wrap;row-gap:6px} .oact input[data-due]{width:118px!important} .ohead .osum{flex:1 1 auto}
+  .oitems{grid-template-columns:minmax(0,1fr) minmax(34px,auto) minmax(34px,auto) minmax(44px,auto) minmax(20px,auto)} .oitems>div{padding:4px 6px} }
 </style>
 </head>
 <body>
@@ -1572,7 +1575,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.2', APP_BUILD='21-11-2026';
+const APP_VERSION='4.2.1', APP_BUILD='21-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
