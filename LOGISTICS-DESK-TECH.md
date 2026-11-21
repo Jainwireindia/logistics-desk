@@ -1,4 +1,4 @@
-# Logistics Desk — technical reference (sync, data model, all versions up to v4.1)
+# Logistics Desk — technical reference (sync, data model, all versions up to v4.2)
 
 The standalone tool `logistics-desk.html` is served as `index.html` from GitHub Pages (jainwireindia.github.io/logistics-desk/). It syncs with a Google Sheet through the Apps Script `Code.gs`, which is bound to that sheet. The old Claude artifact version was retired at v1.1. The web app URL is pre-filled in the tool (`DEFAULT_SYNC_URL`). The key is never stored in the file.
 
@@ -338,3 +338,10 @@ Evidence: Paul's sync report 07-10 (polls "same" 4–11 s, pushes 10–27 s, 4 o
 - **Themes:** `THEMES`, `applyTheme(id)` (top of the script, before drawing; `meta theme-color`), `curTheme` (localStorage `ld:theme`), `paintThemes()` + `#themeBtn` / `#themeList` (Setup card `#themeCard`). CSS: `html[data-theme=blue|red|brown]` vars; night vars inside `@media screen`; `/* v4.1 night (generated) */` block from `tools/gen_night.py` (light backgrounds → dark tint of the same hue, dark text → light, light borders → dark, `color:var(--green-dk)` → `var(--head-ink)`; print rules skipped) + a hand-written night block after it.
 - **Item history:** `REPORT_VIEWS.ritem='item'`, nav `data-v="ritem"`, `paintItemHistory()` (groups `reportLines()` by `stockKey`, `itemSort`), `repFiltered('item')` (Find = item, second box = party). Period `custom` + `#repFrom/#repTo` (`normDateTyped`).
 - **CLT-Setup.gs** + `t_clt.js`. Tests `t_v41.js`; version strings 4.1.
+
+## v4.1.1 — CLT&KNR web app URL in `COMPANIES[1].url`.
+
+## v4.2 + Code.gs 4.2 (21-11-2026) — requests between the companies
+- **Code.gs:** `requestAction(req, ss)` for `reqInfo` ({routes, tabs} from MASTERS), `reqList` (all `REQ_*` Document Properties; non-pending older than `REQ_KEEP_DAYS`=30 deleted), `reqAdd` {req} (key `REQ_<dir>_<id>`, max 8800 chars, duplicate id ignored), `reqSet` {id, dir, patch: status/reply/applied/told/dismissed}. Same login/key rules as other calls. ACCESS LOG rows "REQUEST".
+- **Request:** {id, from, fromName, to, toName, by, at, note, party, info{place,pincode,phone,note,loc,pin}, routes (suggested), lines[{id,item,qty,unit,weight,date,tab,onote,remark}], status pending|accepted|delayed|rejected, reply{by,at,routes,tab,delay,reason}, applied (asker), told (receiver), dismissed}.
+- **Tool:** `otherCo()`, `reqTick(force)` (after a good sync, 45 s throttle; Dashboard paint), `reqProcess()` (asker: drop lines with `dropOrders`, lift holds whose reason starts "Asked ", `applied`; receiver: tell the asker via `callCfg(cfgOfCompany(from),'reqSet')`, `told`), `paintReqs()` (`#reqBox` at the top of Dashboard), `reqAnswer(q,status,row,text)` (re-reads reqList first so two devices can't answer twice; `commitPasteRows` + `recordUpload(...,'Request from X',{req})`), `openReqForm(parties)` (`#reqForm`, button `#selAsk` in the selection bar), `REQ_HOLD(name)`. Test `t_v42.js` (two sheets, two browser contexts).

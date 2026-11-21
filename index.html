@@ -635,6 +635,21 @@ main{transition:filter .3s,opacity .3s}
 .ihtab th,.ihtab td{border-bottom:1px solid var(--edge);padding:4px 8px;text-align:left;vertical-align:top}
 .ihtab th{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
 .ihtab .n{text-align:right}
+/* v4.2 requests between companies */
+.reqcard h2 .mono{background:var(--amber);color:#211500;border-radius:99px;padding:0 8px;font-size:12px}
+.reqrow{border-top:1px solid var(--edge);padding:10px 0}
+.reqrow:first-of-type{border-top:0}
+.reqhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.reqhead .tag{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:4px;background:var(--panel2);border:1px solid var(--edge)}
+.reqhead .tag.ok{background:#e4f5ea;border-color:#9fd4b0;color:#14532d}
+.reqhead .tag.rej{background:#fde8e8;border-color:#f3b4b4;color:#8a1c1c}
+.reqnote{font-style:italic;margin:3px 0}
+.reqlines{margin:4px 0;padding-left:18px;font-size:13px}
+.reqsug{font-size:12.5px;margin:4px 0}
+.reqact{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.reqact .inl{display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0}
+.reqform{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
+.reqfbox{background:var(--panel);color:var(--ink);border-radius:14px;padding:16px;width:min(720px,100%);max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
 /* v4.1 theme picker */
 .themebtn{display:inline-flex;align-items:center;gap:8px;font-weight:700}
 .themelist{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
@@ -748,6 +763,8 @@ html[data-theme="night"] #userMenu button:hover{background:#242d27}
 html[data-theme="night"] #userMenu button.cur{background:#222f27}
 html[data-theme="night"] #userMenu .umnote{color:#c4c9c6}
 html[data-theme="night"] .lgbox{background:var(--panel)}
+html[data-theme="night"] .reqhead .tag.ok{background:#1f3226;color:#aae4c1;border-color:#42614c}
+html[data-theme="night"] .reqhead .tag.rej{background:#3a1818;color:#e6a7a7;border-color:#6f3434}
 }
 /* end night (generated) */
 /* v4.1 night theme: parts drawn in fixed light colours */
@@ -842,6 +859,7 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
 
 <!-- 1 DASHBOARD -->
 <section class="view on" id="v-dash">
+  <div id="reqBox"></div>
   <div id="trayDash"></div>
   <div id="dashStats"></div>
   <div class="card">
@@ -1554,7 +1572,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.1.1', APP_BUILD='21-11-2026';
+const APP_VERSION='4.2', APP_BUILD='21-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -2710,7 +2728,7 @@ const dashRoutePick=new Map(); // party -> routes picked on the Dashboard, saved
 function routePickHtml(p){ const set=dashRoutePick.get(p)||new Set();
   return `<span class="arpills">${S.routes.map(r=>`<span class="pill click${set.has(r)?' on':''}" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>
     <button class="tiny primary" data-rsave="${esc(p)}"${set.size?'':' disabled'}>Confirm</button>`; }
-function paintDash(){
+function paintDash(){ paintReqs(); if(currentView==='dash') reqTick(); 
   const box=$('#dashStats'); if(!box) return;
   const parties=partiesToday();
   const todayStr=today10();
@@ -3695,6 +3713,7 @@ function paintSelBar(){
   bar.innerHTML=`<div class="selsum"><b>${n}</b> part${n===1?'y':'ies'} selected · <b>${num(Math.round(kg))} kg</b>${kg>=1000?` (${fmtN(Math.round(kg/10)/100)} t)`:''}</div>
     <select id="selTo" title="Where the selected parties go">${opts.map(([v,t])=>`<option value="${esc(v)}"${v===val?' selected':''}>${esc(t)}</option>`).join('')}</select>
     <button class="primary" id="selAdd" ${n&&opts.length?'':'disabled'}>Add ${n||''} to vehicle</button>
+    ${otherCo()?`<button class="ghost" id="selAsk" ${n?'':'disabled'} title="Ask the other company to deliver these parties">Ask ${esc(otherCo().name)}…</button>`:''}
     <button class="ghost" id="selAll" title="Pick every party now shown in Not placed yet">Select all shown</button>
     <button class="ghost" id="selNone" ${n?'':'disabled'}>Clear</button>
     <button class="ghost" id="selDone">Done</button>`;
@@ -3702,6 +3721,7 @@ function paintSelBar(){
   $('#selAll').onclick=()=>{ poolParties().inR.forEach(p=>selSet.add(p)); renderPlan(); };
   $('#selNone').onclick=()=>{ selSet.clear(); renderPlan(); };
   $('#selDone').onclick=()=>{ selMode=false; selSet.clear(); selTarget=''; renderPlan(); };
+  const ask=$('#selAsk'); if(ask) ask.onclick=()=>openReqForm(poolParties().inR.concat(poolParties().outR).filter(p=>selSet.has(p)));
   $('#selAdd').onclick=async()=>{
     const to=$('#selTo').value, picked=poolParties().inR.concat(poolParties().outR).filter(p=>selSet.has(p)); // keep the on-screen order
     if(!picked.length) return;
@@ -7249,7 +7269,7 @@ function syncReport(){
 }
 function setSyncState(s,msg){ syncState={s,at:s==='ok'?Date.now():syncState.at,msg:msg||''};
   // v3.3.1: after a good sync, is anything of this device's still not in the sheet's copy?
-  if(s==='ok'){ try{ syncUnsent=!!(syncBase&&!syncFirst&&!same(toModel(),syncBase.model)); }catch(_){} if(lastFromSheet) noteOthers(); setTimeout(()=>setupTick(null),600); }
+  if(s==='ok'){ try{ syncUnsent=!!(syncBase&&!syncFirst&&!same(toModel(),syncBase.model)); }catch(_){} if(lastFromSheet) noteOthers(); setTimeout(()=>setupTick(null),600); setTimeout(()=>reqTick(),900); }
   updateSyncBadge(); paintSync(); }
 function hhmm(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 function paintSyncBadge(el){
@@ -7814,6 +7834,163 @@ async function autoConnect(){
   }
   if(!syncCfg&&CO!=='1'){ gotoView('routes'); flash('Connect '+coInfo().name+': paste its web app URL'+(u?'':' and key')); }
 }
+/* ---------- v4.2: requests between the companies ----------
+   EKM asks CLT&KNR to deliver some parties (Build plan → Select parties → Ask CLT&KNR…), or the
+   other way round. The asker suggests the other company's routes; the receiver picks the final
+   routes and tab, then Accept / Delay (note such as "tomorrow") / Reject (reason). While waiting the
+   asker's lines are on hold ("Asked CLT&KNR to deliver"); on accept they leave the asker's Orders,
+   on reject the hold is lifted. Each sheet keeps its own copy (Code.gs 4.2, REQ_in_ / REQ_out_). */
+const otherCo=()=>COMPANIES.find(c=>c.id!==CO)||null;
+let reqs=[], reqAt=0, reqBusy=false, reqOff=false, reqSeen=new Set(), reqForm=null;
+const REQ_HOLD=n=>'Asked '+n+' to deliver';
+async function reqTick(force){
+  if(!syncCfg||syncFirst||reqBusy||reqOff) return;
+  if(!force&&Date.now()-reqAt<45000) return;
+  reqBusy=true; reqAt=Date.now();
+  try{
+    const r=await syncCall('reqList',{});
+    reqs=Array.isArray(r.list)?r.list:[];
+    const fresh=reqs.filter(q=>q.dir==='in'&&q.status==='pending'&&!reqSeen.has(q.id));
+    if(reqSeen.size&&fresh.length) flash(`${fresh.length} new request${fresh.length===1?'':'s'} from ${fresh[0].fromName||'the other company'} — see Dashboard`);
+    reqs.forEach(q=>reqSeen.add(q.id));
+    await reqProcess();
+  }catch(e){ if(/unknown action/i.test(String(e.message||e))) reqOff=true; }
+  finally{ reqBusy=false; paintReqs(); }
+}
+// asker side: apply answers once; receiver side: make sure the asker was told
+async function reqProcess(){
+  let changed=false;
+  for(const q of reqs){
+    if(q.dir==='out'&&q.status!=='pending'&&!q.applied){
+      const ids=new Set(q.lines.map(l=>l.id));
+      if(q.status==='accepted'||q.status==='delayed'){
+        const n=S.orders.filter(o=>ids.has(o.id)).length;
+        dropOrders(o=>ids.has(o.id));
+        flash(`${q.toName}: ${q.party} ${q.status==='delayed'?'accepted with delay ('+((q.reply||{}).delay||'')+')':'accepted'}${n?' — '+n+' line'+(n===1?'':'s')+' moved out of Orders':''}`);
+      } else flash(`${q.toName} could not take ${q.party}: ${(q.reply||{}).reason||'no reason given'}`);
+      // lift the hold this request put on (only our own hold)
+      [...new Set(q.lines.map(l=>batchKey(l.tab,l.date)))].forEach(k=>{ const [tab,date]=k.split('|'); const i=holdInfo(q.party,tab,date);
+        if(i&&String(i.reason||'').startsWith('Asked ')) setHold(q.party,tab,date,false); });
+      changed=true;
+      try{ await syncCall('reqSet',{id:q.id,dir:'out',patch:{applied:true}}); q.applied=true; }catch(_){}
+    }
+    if(q.dir==='in'&&q.status!=='pending'&&!q.told){
+      const cfg=await cfgOfCompany(q.from); if(!cfg) continue;
+      const r=await callCfg(cfg,'reqSet',{id:q.id,dir:'out',patch:{status:q.status,reply:q.reply}});
+      if(r&&(r.ok||r.gone)){ try{ await syncCall('reqSet',{id:q.id,dir:'in',patch:{told:true}}); q.told=true; }catch(_){} }
+    }
+  }
+  if(changed){ await save(); renderAll(); syncNow('manual'); }
+}
+const reqPick=new Map(); // request id -> {routes:Set, tab}
+function reqKg(q){ return q.lines.reduce((a,l)=>a+(wtNum(l.weight)||0),0); }
+function paintReqs(){
+  const box=$('#reqBox'); if(!box) return;
+  const inc=reqs.filter(q=>q.dir==='in'&&q.status==='pending'), out=reqs.filter(q=>q.dir==='out'&&!q.dismissed);
+  if(!inc.length&&!out.length){ box.innerHTML=''; return; }
+  const lineList=q=>q.lines.map(l=>`<li>${esc(l.item)} <b>×${esc(l.qty)}</b>${l.onote?` <span class="onote">🕒 ${esc(l.onote)}</span>`:''} <span class="hint" style="margin:0">${esc(l.date)}</span></li>`).join('');
+  let h='';
+  if(inc.length) h+=`<div class="card reqcard"><h2>Requests from ${esc(inc[0].fromName||'the other company')} <span class="mono">${inc.length}</span></h2>
+    <p class="hint" style="margin-top:0">They ask you to deliver these parties. Pick the routes and the tab, then Accept. Delay adds the note to the order (e.g. "tomorrow").</p>
+    ${inc.map(q=>{ const pk=reqPick.get(q.id)||{routes:new Set((q.routes||[]).filter(r=>S.routes.includes(r))),tab:''}; reqPick.set(q.id,pk);
+      const here=S.parties[q.party], tabGuess=pk.tab||(itemsOf(q.party)[0]||{}).tab||S.tabs[0]||'';
+      return `<div class="reqrow" data-req="${esc(q.id)}">
+        <div class="reqhead"><b>${pnameHtml(q.party)}</b> <span class="mono">${num(Math.round(reqKg(q)))} kg</span>
+          <span class="hint" style="margin:0">· from ${esc(q.by||'?')} · ${esc(fmtTs(q.at))}</span></div>
+        ${q.info&&(q.info.place||q.info.pincode)?`<div class="hint" style="margin:2px 0">${esc([q.info.place,q.info.pincode].filter(Boolean).join(' · '))}</div>`:''}
+        ${q.note?`<div class="reqnote">“${esc(q.note)}”</div>`:''}
+        <ul class="reqlines">${lineList(q)}</ul>
+        <div class="reqsug">Suggested routes: <b>${esc((q.routes||[]).join(', ')||'none')}</b>${here&&(here.routes||[]).length?` · saved here: <b>${esc(here.routes.join(', '))}</b>`:''}</div>
+        <div class="arpills">${S.routes.map(r=>`<span class="pill click${pk.routes.has(r)?' on':''}" data-qr="${esc(r)}">${esc(r)}</span>`).join('')}</div>
+        <div class="reqact">
+          <label class="inl">Tab <select data-qtab>${S.tabs.map(t=>`<option${t===tabGuess?' selected':''}>${esc(t)}</option>`).join('')}</select></label>
+          <button class="primary" data-qacc>Accept</button>
+          <input data-qdelay placeholder="delay note, e.g. tomorrow" style="width:170px"><button data-qdel>Delay</button>
+          <input data-qwhy placeholder="reason to reject" style="width:170px"><button class="danger" data-qrej>Reject</button>
+        </div></div>`; }).join('')}</div>`;
+  if(out.length) h+=`<div class="card reqcard"><h2>Your requests to ${esc(out[0].toName||'the other company')}</h2>
+    ${out.map(q=>{ const rp=q.reply||{}, st=q.status;
+      const tag=st==='pending'?'<span class="tag">WAITING</span>':st==='rejected'?'<span class="tag rej">REJECTED</span>':st==='delayed'?'<span class="tag ok">ACCEPTED · DELAY</span>':'<span class="tag ok">ACCEPTED</span>';
+      const info=st==='pending'?`sent by ${esc(q.by||'?')} · ${esc(fmtTs(q.at))}`:`${esc(rp.by||'?')} · ${esc(fmtTs(rp.at))}${rp.routes&&rp.routes.length?' · routes '+esc(rp.routes.join(', ')):''}${rp.tab?' · '+esc(rp.tab):''}${rp.delay?' · “'+esc(rp.delay)+'”':''}${rp.reason?' · reason: '+esc(rp.reason):''}`;
+      return `<div class="reqrow"><div class="reqhead"><b>${pnameHtml(q.party)}</b> ${tag} <span class="mono">${num(Math.round(reqKg(q)))} kg</span> <span class="hint" style="margin:0">${info}</span>
+        ${st!=='pending'?`<button class="tiny ghost" data-qok="${esc(q.id)}">OK</button>`:''}</div></div>`; }).join('')}</div>`;
+  box.innerHTML=h;
+  box.querySelectorAll('.reqrow[data-req]').forEach(row=>{
+    const q=reqs.find(x=>x.id===row.dataset.req), pk=reqPick.get(q.id);
+    row.querySelectorAll('[data-qr]').forEach(el=>el.onclick=()=>{ const r=el.dataset.qr; pk.routes.has(r)?pk.routes.delete(r):pk.routes.add(r); el.classList.toggle('on',pk.routes.has(r)); });
+    row.querySelector('[data-qtab]').onchange=e=>{ pk.tab=e.target.value; };
+    row.querySelector('[data-qacc]').onclick=()=>reqAnswer(q,'accepted',row);
+    row.querySelector('[data-qdel]').onclick=()=>{ const v=row.querySelector('[data-qdelay]').value.trim(); if(!v){ flash('Type the delay, e.g. tomorrow'); return; } reqAnswer(q,'delayed',row,v); };
+    row.querySelector('[data-qrej]').onclick=()=>{ const v=row.querySelector('[data-qwhy]').value.trim(); if(!v){ flash('Type the reason first'); return; } reqAnswer(q,'rejected',row,v); };
+  });
+  box.querySelectorAll('[data-qok]').forEach(b=>b.onclick=async()=>{ const q=reqs.find(x=>x.id===b.dataset.qok); if(!q) return;
+    q.dismissed=true; paintReqs(); try{ await syncCall('reqSet',{id:q.id,dir:'out',patch:{dismissed:true}}); }catch(_){} });
+}
+function fmtTs(t){ if(!t) return ''; const d=new Date(t); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+async function reqAnswer(q,status,row,text){
+  const pk=reqPick.get(q.id)||{routes:new Set(),tab:''}, routes=S.routes.filter(r=>pk.routes.has(r));
+  const tab=row.querySelector('[data-qtab]').value;
+  if(status!=='rejected'&&!routes.length){ flash('Pick at least one route'); return; }
+  row.querySelectorAll('button').forEach(b=>b.disabled=true);
+  // someone else may have answered on another device
+  try{ const r=await syncCall('reqList',{}); const cur=(r.list||[]).find(x=>x.id===q.id&&x.dir==='in');
+    if(cur&&cur.status!=='pending'){ reqs=r.list; paintReqs(); flash('Already answered on another device'); return; } }catch(e){ flash('Could not reach the sheet: '+e.message); row.querySelectorAll('button').forEach(b=>b.disabled=false); return; }
+  const reply={by:curUser||deviceName(),at:Date.now(),...(status==='rejected'?{reason:text}:{routes,tab}),...(status==='delayed'?{delay:text}:{})};
+  if(status!=='rejected'){
+    const added=commitPasteRows(q.lines.map(l=>({party:q.party,item:l.item,qty:l.qty,unit:l.unit,weight:l.weight,date:l.date,tab,
+      remark:l.remark||'',onote:status==='delayed'?[text,l.onote].filter(Boolean).join('; '):(l.onote||'')})));
+    const rec=S.parties[q.party]; rec.routes=routes.slice();
+    const inf=q.info||{}; ['place','pincode','phone','note','loc','pin'].forEach(f=>{ if(inf[f]&&!rec[f]) rec[f]=inf[f]; });
+    recordUpload(tab,added.length,added,[],'Request from '+(q.fromName||'other company'),{req:q.id});
+    await save(); renderAll();
+  }
+  try{ await syncCall('reqSet',{id:q.id,dir:'in',patch:{status,reply}}); q.status=status; q.reply=reply; }catch(e){ flash('Saved here, but the answer did not reach the sheet: '+e.message); }
+  const cfg=await cfgOfCompany(q.from);
+  if(cfg){ const r=await callCfg(cfg,'reqSet',{id:q.id,dir:'out',patch:{status,reply}}); if(r&&(r.ok||r.gone)){ try{ await syncCall('reqSet',{id:q.id,dir:'in',patch:{told:true}}); q.told=true; }catch(_){} } }
+  flash(status==='rejected'?`Rejected — ${q.fromName} will see the reason`:`${q.party} added to ${tab} (${routes.join(', ')})`);
+  paintReqs(); syncNow('manual');
+}
+// asker side: the form over the selection bar
+async function openReqForm(parties){
+  const oc=otherCo(); if(!oc||!parties.length) return;
+  const cfg=await cfgOfCompany(oc.id);
+  if(!cfg){ flash(`Log in or connect ${oc.name} on this device first`); return; }
+  closeReqForm();
+  const el=document.createElement('div'); el.id='reqForm'; el.className='reqform'; document.body.appendChild(el);
+  el.innerHTML=`<div class="reqfbox"><h2>Ask ${esc(oc.name)} to deliver</h2><p class="hint" id="rqLoad">Getting ${esc(oc.name)}'s routes…</p></div>`;
+  const info=await callCfg(cfg,'reqInfo',{});
+  if(!document.getElementById('reqForm')) return;
+  if(!info||!info.ok){ el.querySelector('#rqLoad').textContent=`Could not reach ${oc.name}: ${(info&&info.error)||'no answer'}${info&&info.login?' (log in there once)':''}`; el.querySelector('.reqfbox').insertAdjacentHTML('beforeend','<button class="ghost" id="rqClose">Close</button>'); $('#rqClose').onclick=closeReqForm; return; }
+  const their=info.routes||[], pick=new Map(parties.map(p=>[p,new Set()]));
+  const rows=parties.map(p=>{ const ls=unplacedItems(p).filter(o=>!lineHeld(o)), kg=ls.reduce((a,o)=>a+(wtNum(o.weight)||0),0);
+    return `<div class="reqrow" data-rqp="${esc(p)}"><div class="reqhead"><b>${pnameHtml(p)}</b> <span class="mono">${num(Math.round(kg))} kg · ${ls.length} line${ls.length===1?'':'s'}</span></div>
+      <div class="arpills"><span class="hint" style="margin:0 6px 0 0">Suggest ${esc(oc.name)} routes:</span>${their.map(r=>`<span class="pill click" data-rqr="${esc(r)}">${esc(r)}</span>`).join('')||'<span class="hint">no routes</span>'}</div></div>`; }).join('');
+  el.querySelector('.reqfbox').innerHTML=`<h2>Ask ${esc(oc.name)} to deliver ${parties.length} part${parties.length===1?'y':'ies'}</h2>
+    <p class="hint" style="margin-top:0">Your suggestion only — ${esc(oc.name)} picks the final routes. Until they answer, these lines are on hold here.</p>
+    ${rows}<label style="margin-top:8px">Note for ${esc(oc.name)} (optional)</label><input id="rqNote" placeholder="e.g. party is on your Kozhikode route" style="width:100%">
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="rqSend">Send request</button><button class="ghost" id="rqClose">Cancel</button></div>`;
+  el.querySelectorAll('[data-rqp]').forEach(row=>row.querySelectorAll('[data-rqr]').forEach(c=>c.onclick=()=>{ const set=pick.get(row.dataset.rqp), r=c.dataset.rqr; set.has(r)?set.delete(r):set.add(r); c.classList.toggle('on',set.has(r)); }));
+  $('#rqClose').onclick=closeReqForm;
+  $('#rqSend').onclick=async()=>{
+    $('#rqSend').disabled=true; const note=$('#rqNote').value.trim(); const done=[], bad=[];
+    for(const p of parties){
+      const ls=unplacedItems(p).filter(o=>!lineHeld(o)); if(!ls.length){ bad.push(p+' (nothing waiting)'); continue; }
+      const rec=S.parties[p]||{};
+      const q={id:uid('q'),from:CO,fromName:coInfo().name,to:oc.id,toName:oc.name,by:curUser||deviceName(),at:Date.now(),note,party:p,
+        info:{place:rec.place||'',pincode:rec.pincode||'',phone:rec.phone||'',note:rec.note||'',loc:rec.loc||'',pin:rec.pin||''},
+        routes:their.filter(r=>pick.get(p).has(r)),
+        lines:ls.map(o=>({id:o.id,item:o.item,qty:o.qty,unit:o.unit,weight:o.weight,date:o.date,tab:o.tab,onote:o.onote||'',remark:o.remark||''}))};
+      const r1=await callCfg(cfg,'reqAdd',{req:{...q,dir:'in'}});
+      if(!r1||!r1.ok){ bad.push(p+': '+((r1&&r1.error)||'not sent')); continue; }
+      try{ await syncCall('reqAdd',{req:{...q,dir:'out'}}); }catch(_){}
+      [...new Set(ls.map(o=>batchKey(o.tab,o.date)))].forEach(k=>{ const [tab,date]=k.split('|'); setHold(p,tab,date,true,{reason:REQ_HOLD(oc.name)}); });
+      done.push(p); selSet.delete(p);
+    }
+    await save(); closeReqForm(); renderAll(); reqTick(true);
+    flash(done.length?`Asked ${oc.name} to deliver ${done.length} part${done.length===1?'y':'ies'}${bad.length?' — not sent: '+bad.join('; '):''}`:'Not sent: '+bad.join('; '));
+  };
+}
+function closeReqForm(){ const el=document.getElementById('reqForm'); if(el) el.remove(); }
 async function initSync(){
   syncCfg=await kvGet(SYNC_CFG_KEY); syncBase=await kvGet(SYNC_BASE_KEY);
   // v2.3: this device opened with no data at all, but it had synced before - its saved data could
