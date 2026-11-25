@@ -1575,7 +1575,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.2.1', APP_BUILD='21-11-2026';
+const APP_VERSION='4.2.2', APP_BUILD='25-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -4852,8 +4852,9 @@ function stockGroups(lines){
     const pk=o._lane?o.party+'\u0001'+o._lane:o.party;
     let p=e.parties.get(pk);
     if(!p){ p={party:o.party,lane:o._lane||'',qty:new Map(),weight:0,tab:o.tab||'',date:o.date||'',
-               routes:(S.parties[o.party]?.routes)||[],tags:new Set()}; e.parties.set(pk,p); }
+               routes:(S.parties[o.party]?.routes)||[],tags:new Set(),dates:new Map()}; e.parties.set(pk,p); }
     addQty(p.qty,o.qty); p.weight+=w;
+    { const dk=String(o.date||'').trim(); if(!p.dates.has(dk)) p.dates.set(dk,new Map()); addQty(p.dates.get(dk),o.qty); }  // v4.2.2: qty per order date
     p.held=(p.held!==false)&&lineHeld(o); // HOLD only when every line of this party's item is held
     itemTags(o.item).forEach(t=>p.tags.add(t));
     if(!p.tab&&o.tab) p.tab=o.tab;
@@ -4876,9 +4877,19 @@ function stockGroups(lines){
     return {key:e.key,label,qty:e.qty,qtyText:qtyText(e.qty),weight:e.weight,units:[...e.units],
             domUnit,mixedUnits,neededInDom,stockReady,deliveredOut,currentStock,shortBy,meta,
             parties:[...e.parties.values()]
-              .map(p=>({...p,qtyText:qtyText(p.qty),tags:[...p.tags]}))
+              .map(p=>({...p,qtyText:qtyText(p.qty),tags:[...p.tags],dateText:stockDateText(p.dates)}))
               .sort((a,b)=>b.weight-a.weight||a.party.localeCompare(b.party))};
   });
+}
+/* v4.2.2: order date(s) of a party's line on Stock required, as DD-MM. One date: "21-11".
+   Same item ordered on more than one date: each date with its qty, oldest first: "21-11: 10 · 24-11: 14". */
+function ddmm(str){ const d=parseDate(str); return d?String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0'):String(str||'').trim(); }
+function stockDateText(dates){
+  const ds=[...(dates||new Map()).entries()].filter(([d])=>d)
+    .sort((a,b)=>((parseDate(a[0])||0)-(parseDate(b[0])||0)));
+  if(!ds.length) return '';
+  if(ds.length===1) return ddmm(ds[0][0]);
+  return ds.map(([d,q])=>ddmm(d)+': '+qtyText(q)).join(' · ');
 }
 /* items currently short — always computed off the full unfiltered demand, independent of
    whatever tab/route pills are set on the Stock Required screen */
@@ -5105,6 +5116,7 @@ function paintStock(){
       g.parties.forEach(p=>{
         h+=`<tr><td></td><td style="padding-left:18px">${pnameHtml(p.party)}${
           p.lane?` <span class="tag vehtag">${esc(p.lane)}</span>`:p.tab?` <span class="hint">· ${esc(p.tab)}</span>`:''}${
+          p.dateText?` <span class="hint" title="Order date">· ${esc(p.dateText)}</span>`:''}${
           p.held?' <span class="tag hold">HOLD</span>':''}${
           p.tags.length?` <span class="hint" style="color:#a5670a">(${esc(p.tags.join(', '))})</span>`:''}</td>
           <td class="mono">${esc(p.qtyText)}</td><td></td>
