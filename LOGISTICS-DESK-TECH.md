@@ -1,4 +1,4 @@
-# Logistics Desk — technical reference (sync, data model, all versions up to v4.2)
+# Logistics Desk — technical reference (sync, data model, all versions up to v4.3)
 
 The standalone tool `logistics-desk.html` is served as `index.html` from GitHub Pages (jainwireindia.github.io/logistics-desk/). It syncs with a Google Sheet through the Apps Script `Code.gs`, which is bound to that sheet. The old Claude artifact version was retired at v1.1. The web app URL is pre-filled in the tool (`DEFAULT_SYNC_URL`). The key is never stored in the file.
 
@@ -345,3 +345,10 @@ Evidence: Paul's sync report 07-10 (polls "same" 4–11 s, pushes 10–27 s, 4 o
 - **Code.gs:** `requestAction(req, ss)` for `reqInfo` ({routes, tabs} from MASTERS), `reqList` (all `REQ_*` Document Properties; non-pending older than `REQ_KEEP_DAYS`=30 deleted), `reqAdd` {req} (key `REQ_<dir>_<id>`, max 8800 chars, duplicate id ignored), `reqSet` {id, dir, patch: status/reply/applied/told/dismissed}. Same login/key rules as other calls. ACCESS LOG rows "REQUEST".
 - **Request:** {id, from, fromName, to, toName, by, at, note, party, info{place,pincode,phone,note,loc,pin}, routes (suggested), lines[{id,item,qty,unit,weight,date,tab,onote,remark}], status pending|accepted|delayed|rejected, reply{by,at,routes,tab,delay,reason}, applied (asker), told (receiver), dismissed}.
 - **Tool:** `otherCo()`, `reqTick(force)` (after a good sync, 45 s throttle; Dashboard paint), `reqProcess()` (asker: drop lines with `dropOrders`, lift holds whose reason starts "Asked ", `applied`; receiver: tell the asker via `callCfg(cfgOfCompany(from),'reqSet')`, `told`), `paintReqs()` (`#reqBox` at the top of Dashboard), `reqAnswer(q,status,row,text)` (re-reads reqList first so two devices can't answer twice; `commitPasteRows` + `recordUpload(...,'Request from X',{req})`), `openReqForm(parties)` (`#reqForm`, button `#selAsk` in the selection bar), `REQ_HOLD(name)`. Test `t_v42.js` (two sheets, two browser contexts).
+
+## v4.2.2 — Stock required shows order dates per party line (`stockDateText`, `ddmm`).
+
+## v4.3 + Code.gs 4.3 (27-11-2026) — Confirm orders, order numbers, party messages
+- Data (`_DATA` rest, synced): `ordNo`, `ordSeq`, `confirms` {`party|day`: {at, by, kind confirm|update, msgId, snap[{id,item,qty,onote}], cleared, prev{...}}}, `msgLog`, `msgTpl` {en|ml: {confirm, update}}, `msgCompany`, `cfFrom`. Party `lang` ('ml' or absent) in partyExtra.
+- Functions: `MSG_DEFAULT`, `msgTpl`, `fillMsg`, `partyLang`, `cfKey`, `giveOrdNo`, `ordNoOf`, `ordNosHtml`, `phonesOf` (split on , / ;), `msgItems`, `lineSnap`, `cfCards` (live orders by party|addedOn from cfFrom + confirmed groups whose lines are gone; `changed` = a live line not in snap or with other qty/item), `paintConfirm` (`#v-confirm`, `#cfList`), `cfSend`, `cfUndo` (back to `prev`), `cfClear`, `cfTidy`, `msgHistHtml`, `paintTplCard`/`tplPreview` (Setup `#msgCard`), `paintConfirmBadge` (nav `.mi[data-cnt]`).
+- Code.gs 4.3: MIN_TOOL 4.3. Test `t_v43.js`.

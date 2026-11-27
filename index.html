@@ -504,6 +504,7 @@ nav .mi svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.
 nav .mi[data-n]::after{content:attr(data-n);position:absolute;right:-6px;bottom:-5px;font:800 9.5px/1 system-ui,sans-serif;
   background:var(--amber);color:#211500;border-radius:99px;padding:2px 4px;border:1.5px solid var(--green-dk)}
 nav button.on .mi[data-n]::after{border-color:#fff}
+nav .mi[data-cnt]::after{content:attr(data-cnt);position:absolute;right:-8px;top:-6px;font:800 9.5px/1 system-ui,sans-serif;background:var(--amber);color:#211500;border-radius:99px;padding:2px 4px;border:1.5px solid var(--green-dk)}
 /* v3.6.2: the Logistics steps sit on a light panel with dark green icons; their 1-2-3 badges are
    dark green (amber stays only for the Orders tray badge, so a notification never looks like a step) */
 nav .mgroup.mlogi{background:var(--tint);border-radius:10px;border-top-color:transparent;padding:4px 4px 5px;margin-top:8px}
@@ -650,6 +651,23 @@ main{transition:filter .3s,opacity .3s}
 .reqact .inl{display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0}
 .reqform{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
 .reqfbox{background:var(--panel);color:var(--ink);border-radius:14px;padding:16px;width:min(720px,100%);max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+/* v4.3 confirm orders */
+.cftop{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px;font-size:14px}
+.cftop a{cursor:pointer}
+.cfcard{position:relative;transition:opacity .2s,filter .2s}
+.cfcard.done{opacity:.55;filter:grayscale(.7)}
+.cfcard.done:hover{opacity:.85}
+.cfcard.flash{outline:3px solid var(--amber);outline-offset:2px}
+.cfhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.cfno{font-family:ui-monospace,Menlo,monospace;font-weight:800;background:var(--panel2);border:1px solid var(--edge);border-radius:6px;padding:1px 7px}
+.cfdone{color:var(--ok);font-weight:700;font-size:13px}
+.cfchg{background:#fff4d6;color:#7a5200;border:1px solid #f0c66b;border-radius:4px;font-size:11px;font-weight:800;padding:1px 6px}
+.cflines{margin:6px 0;padding-left:18px;font-size:13.5px}
+.cfact{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cflang{display:inline-flex;border:1px solid var(--edge);border-radius:99px;overflow:hidden}
+.cflang button{border:0;border-radius:0;padding:2px 9px;font-size:11.5px;background:transparent}
+.cflang button.on{background:var(--green);color:#fff}
+.msgtag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:4px;padding:0 5px;background:#e4f5ea;color:#14532d;border:1px solid #9fd4b0;margin-left:4px}
 /* v4.1 theme picker */
 .themebtn{display:inline-flex;align-items:center;gap:8px;font-weight:700}
 .themelist{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
@@ -765,6 +783,8 @@ html[data-theme="night"] #userMenu .umnote{color:#c4c9c6}
 html[data-theme="night"] .lgbox{background:var(--panel)}
 html[data-theme="night"] .reqhead .tag.ok{background:#1f3226;color:#aae4c1;border-color:#42614c}
 html[data-theme="night"] .reqhead .tag.rej{background:#3a1818;color:#e6a7a7;border-color:#6f3434}
+html[data-theme="night"] .cfchg{background:#3d3214;color:#f7d797;border:1px solid #735e30}
+html[data-theme="night"] .msgtag{background:#1f3226;color:#aae4c1;border:1px solid #42614c}
 }
 /* end night (generated) */
 /* v4.1 night theme: parts drawn in fixed light colours */
@@ -830,6 +850,7 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
   <nav id="mainMenu" aria-hidden="true">
     <button data-v="dash" class="on mdash" title="Dashboard"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.5"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/></svg></span><span class="ml">Dashboard</span></button>
     <button data-v="orders" class="mdash" title="Orders"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5H6.5a1.5 1.5 0 0 0-1.5 1.5v14a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-2"/><rect x="8.5" y="3" width="7" height="3.2" rx="1"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg></span><span class="ml">Orders</span></button>
+    <button data-v="confirm" class="mdash" title="Confirm orders"><span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9l-4.5 3.5V16.5H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M8.5 11.2l2.3 2.3 4.7-4.7"/></svg></span><span class="ml">Confirm orders</span></button>
     <div class="mgroup mlogi">
       <div class="mglabel">Logistics</div>
       <button data-v="plan" title="Build plan"><span class="mi" data-n="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M8 4.5v5M5.5 7h5"/></svg></span><span class="ml">1 · Build plan</span></button>
@@ -1071,6 +1092,22 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
   </div>
 
 
+  <div class="card" id="msgCard">
+    <h2>Party messages</h2>
+    <p class="hint" style="margin-top:0;margin-bottom:8px">Wording of the WhatsApp messages to parties, one per language (each party's language is set on its card in Confirm orders, or in Parties &amp; map).
+      Blanks filled in for you: <span class="mono">{party} {orderNo} {date} {items} {company}</span>. Saved in the sheet for every device.</p>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:0 0 auto"><label>Message</label><select id="tplKind" style="width:auto"><option value="confirm">Order confirmed</option><option value="update">Order changed (update)</option></select></div>
+      <div style="flex:0 0 auto"><label>Language</label><select id="tplLang" style="width:auto"><option value="en">English</option><option value="ml">Malayalam</option></select></div>
+      <div style="flex:0 0 auto"><button class="ghost" id="tplReset">Back to the standard text</button></div>
+    </div>
+    <textarea id="tplText" rows="7" style="width:100%;margin-top:8px;font-family:inherit"></textarea>
+    <div class="row" style="align-items:flex-end;margin-top:6px">
+      <div style="flex:0 0 auto"><label>Company name in messages</label><input id="tplCompany" style="width:280px"></div>
+      <div style="flex:0 0 auto"><label>Next order number</label><input id="ordNext" inputmode="numeric" style="width:110px"></div>
+    </div>
+    <p class="hint" id="tplPreview" style="white-space:pre-wrap;background:var(--panel2);border:1px solid var(--edge);border-radius:8px;padding:8px;margin-top:8px"></p>
+  </div>
   <div class="card" id="themeCard">
     <h2>Theme</h2>
     <p class="hint" style="margin-top:0;margin-bottom:8px">Colours of the tool on this device only (each phone / PC keeps its own).</p>
@@ -1234,6 +1271,24 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
   </div>
     <div class="row"><div style="flex:0 0 auto"><button class="ghost" id="adminLockBtn">Lock admin</button></div></div>
   </div>
+</section>
+
+<!-- CONFIRM ORDERS (v4.3) -->
+<section class="view" id="v-confirm">
+  <div class="card">
+    <h2>Confirm orders <span id="cfCount" class="mono"></span></h2>
+    <p class="hint" style="margin-top:0;margin-bottom:8px">Every order added from now on, one card per party per day. <b>Order Confirm</b> opens WhatsApp with the message ready —
+      you press send there. The card then fades with the time and who did it (the tool cannot see whether it was really sent; Undo puts it back).
+      Confirmed cards drop off after 7 days; the messages stay in Reports → Party history.</p>
+    <div id="cfTop" class="cftop"></div>
+    <div class="row" style="align-items:flex-end">
+      <div><label>Find party</label><input id="cfSearch" placeholder="Type to filter"></div>
+      <div style="flex:0 0 auto"><label>Show</label><select id="cfShow" style="width:auto"><option value="all">All cards</option><option value="todo">Only to confirm</option><option value="done">Only confirmed</option></select></div>
+      <div style="flex:0 0 auto"><button class="primary" id="cfNext">Next unconfirmed ↓</button></div>
+      <div style="flex:0 0 auto"><button class="ghost" id="cfClearAll">Clear all confirmed</button></div>
+    </div>
+  </div>
+  <div id="cfList"></div>
 </section>
 
 <!-- UPLOAD LOG (master) -->
@@ -1575,7 +1630,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.2.2', APP_BUILD='25-11-2026';
+const APP_VERSION='4.3', APP_BUILD='27-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -3186,7 +3241,7 @@ function paintOrders(){
             <span class="oparty">${editing
               ?`<input data-erename="${esc(p)}" value="${esc(p)}" style="font-weight:700;min-width:220px;max-width:100%;width:${Math.min(64,p.length+4)}ch">`
               +pnoteHtml(p)+`<input class="onotein" data-onote="${esc(p)}" data-ontab="${esc(blockTab)}" data-ondate="${esc(d)}" value="${esc(onotesOf(its).join('; '))}" placeholder="🕒 order note — e.g. tomorrow need" title="Note for this order only (column G of the party row); goes when the order goes">`
-              :pnameHtml(p)+onoteHtml(its)} ${tags}
+              :pnameHtml(p)+onoteHtml(its)} ${tags}${ordNosHtml(p,its)}
               ${placeLine(p)||partyPhone(p)?`<br><span class="opl">${esc(placeLine(p))}</span>${partyPhone(p)?`${placeLine(p)?' · ':''}<span class="pphone">📞 <a href="tel:${esc(partyPhone(p).split(/[,/]/)[0].replace(/\s/g,''))}">${esc(partyPhone(p))}</a></span>`:''}`:''}</span>
             <span class="osum">${its.length} item${its.length>1?'s':''} · ${num(blockWt)} kg</span>
             <span class="oact">
@@ -3453,7 +3508,8 @@ function paintRoutes(){
         <td>${st.site?`<span class="dsite big">↳ Delivery - ${esc(titleCase(st.site))}</span><div class="hint" style="margin:2px 0 0">${esc(st.base)}${rec.homeTab?' · tab '+esc(rec.homeTab):''}</div>`
           :`<textarea class="pnamein" data-rename="${esc(n)}" rows="2" spellcheck="false" title="Party name — Enter saves">${esc(n)}</textarea>`} ${today.has(n)?'<span class="pill on">on hand</span>':''}
           <div class="pextra"><input class="pph" data-pphone="${esc(n)}" value="${esc(rec.phone||'')}" placeholder="📞 contact no." inputmode="tel" title="Party contact number — goes into the driver's WhatsApp">
-            <input class="pnt" data-pnote="${esc(n)}" value="${esc(rec.note||'')}" placeholder="note — e.g. small vehicle only" title="Shown next to this party on every order, plan and the driver's WhatsApp"></div></td>
+            <input class="pnt" data-pnote="${esc(n)}" value="${esc(rec.note||'')}" placeholder="note — e.g. small vehicle only" title="Shown next to this party on every order, plan and the driver's WhatsApp">
+            <select class="plang" data-plang="${esc(n)}" title="Language of WhatsApp messages to this party" style="width:auto;padding:2px 4px"><option value="en"${rec.lang==='ml'?'':' selected'}>English msg</option><option value="ml"${rec.lang==='ml'?' selected':''}>Malayalam msg</option></select></div></td>
         <td><input data-place="${esc(n)}" value="${esc(rec.place||'')}" style="padding:3px 6px" placeholder="town"></td>
         <td><input data-pin="${esc(n)}" value="${esc(rec.pincode||'')}" style="padding:3px 6px" placeholder="6 digits" inputmode="numeric"></td>
         <td><input data-pmap="${esc(n)}" value="${esc(rec.loc||rec.pin||'')}" style="padding:3px 6px" placeholder="Google Maps link or lat, lng" inputmode="url"
@@ -3471,6 +3527,8 @@ function paintRoutes(){
   t.querySelectorAll('[data-pphone]').forEach(el=>el.onchange=async()=>{
     const rec=S.parties[el.dataset.pphone]; if(!rec) return; const v=el.value.replace(/[^\d+ ,/]/g,'').replace(/\s+/g,' ').trim(); el.value=v;
     if(v) rec.phone=v; else delete rec.phone; await save(); renderLog(); flash(v?'Contact number saved':'Contact number cleared'); });
+  t.querySelectorAll('[data-plang]').forEach(el=>el.onchange=async()=>{
+    const rec=S.parties[el.dataset.plang]; if(!rec) return; if(el.value==='ml') rec.lang='ml'; else delete rec.lang; await save(); invalidate('confirm'); flash('Message language: '+(el.value==='ml'?'Malayalam':'English')); });
   t.querySelectorAll('[data-pnote]').forEach(el=>el.onchange=async()=>{
     const rec=S.parties[el.dataset.pnote]; if(!rec) return; const v=el.value.replace(/\s+/g,' ').trim(); el.value=v;
     if(v) rec.note=v; else delete rec.note; await save(); renderAll(); flash(v?'Note saved — shows on all this party\'s orders':'Note cleared'); });
@@ -5303,7 +5361,7 @@ function paintReports(){
     else if(mode==='driver'){ cells=`<td><b>${esc(r.k)}</b></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="mono">${esc(r.lastDate)}</td>`; }
     else cells=`<td><b>${esc(r.k)}</b> <button class="tiny wabtn" data-dsum="${esc(r.k)}" title="WhatsApp this day's summary">WA</button></td><td class="n">${r.tr.length}</td><td class="n">${ps}</td><td class="n">${num(Math.round(r.kg))}</td><td class="hint">${esc([...new Set(r.ls.map(vehLabel))].join(', '))}</td><td class="hint">${esc([...new Set(r.ls.map(l=>l.driver).filter(Boolean))].join(', ')||'—')}</td>`;
     return `<tr class="rg" data-rk="${esc(rk(r.k))}"><td><span style="display:inline-block;${open?'transform:rotate(90deg)':''}">►</span></td>${cells}</tr>`
-      +(open?`<tr class="rdet"><td colspan="8">${r.tr.map(t=>tripHtml(t,mode!=='party',mode==='day')).join('')}${mode==='party'&&r.cs.length?cancelHtml(r.cs):''}</td></tr>`:'');
+      +(open?`<tr class="rdet"><td colspan="8">${r.tr.map(t=>tripHtml(t,mode!=='party',mode==='day')).join('')}${mode==='party'&&r.cs.length?cancelHtml(r.cs):''}${mode==='party'?msgHistHtml(r.k):''}</td></tr>`:'');
   }).join('')}</table></div></div>`;
   body.querySelectorAll('[data-dsum]').forEach(b=>b.onclick=e=>{ e.stopPropagation();
     window.open('https://wa.me/'+waNumber(S.summaryPhone)+'?text='+encodeURIComponent(daySummaryText(b.dataset.dsum)),'_blank','noopener'); });
@@ -5393,7 +5451,7 @@ function stockText(){
 const PAINT={
   dash:()=>{ paintDash(); paintOrders(); },
   orders:paintOrders, routes:()=>{ paintRoutes(); paintMasters(); const os=$('#otsSeen'); if(os) os.innerHTML=otsSeenText(); }, parties:()=>{ paintRoutes(); paintMasters(); }, admin:paintAdmin, plan:paintPlan, out:paintOut, log:()=>{ paintLog(); paintOutsideForm(); }, stock:paintStock,
-  uploads:paintUploads, rparty:paintReports, ritem:paintReports, rveh:paintReports, rdrv:paintReports, rday:paintReports
+  uploads:paintUploads, confirm:paintConfirm, rparty:paintReports, ritem:paintReports, rveh:paintReports, rdrv:paintReports, rday:paintReports
 };
 let currentView='dash';
 const stale=new Set(Object.keys(PAINT));
@@ -5420,6 +5478,7 @@ function refresh(){
   _shortKeys=null; // shortage flags depend on orders/stock/log, all of which invalidate a repaint
   try{ renderGuard(); }catch(e){ showError('renderGuard: '+(e.stack||e.message)); }
   try{ paintTray(); }catch(e){ showError('paintTray: '+(e.stack||e.message)); }
+  try{ paintConfirmBadge(); }catch(e){ showError('confirm badge: '+(e.stack||e.message)); }
   if(REPORT_VIEWS[currentView]) stale.add(currentView);
   if(stale.has(currentView)){
     try{ PAINT[currentView](); stale.delete(currentView); }
@@ -6181,7 +6240,7 @@ function commitPasteRows(rows){
   rows.forEach(r=>{
     const o={id:uid('o'),party:r.party,item:r.item,qty:r.qty,unit:r.unit,
       weight:r.weight,date:r.date,tab:r.tab,addedOn:today10(),...(r.remark?{remark:r.remark}:{}),...(r.onote?{onote:r.onote}:{})};
-    S.orders.push(o); added.push(o);
+    S.orders.push(o); added.push(o); giveOrdNo(o.party,o.addedOn); // v4.3
     const rec=S.parties[r.party]=S.parties[r.party]||{routes:[],hold:false,dueDate:'',place:'',pincode:''};
     if(siteOf(r.party).site){ if(r.tab) rec.homeTab=r.tab; // a delivery location remembers its tab
       const b=siteOf(r.party).base; if(!S.parties[b]) S.parties[b]={routes:[],hold:false,dueDate:'',place:'',pincode:''}; } // and its party is in the master too
@@ -7054,7 +7113,8 @@ function toModel(){
     settings:{mapStart:str(st.mapStart),mapRegion:str(st.mapRegion),mapReturn:!!st.mapReturn,tsvFormula:!!st.tsvFormula}};
   const orderMeta={}; S.orders.forEach(o=>{ if(o.addedOn) orderMeta[o.id]=o.addedOn; });
   const data={log:noOpen(S.log),plan:S.planPub||normPub(null),uploads:S.uploads||[],upSeq:S.upSeq||0,seq:S.seq||1,stock:S.stock,stockOut:S.stockOut,stockMeta:S.stockMeta,adminPin:S.adminPin||'',summaryPhone:S.summaryPhone||'',sheetLink:S.sheetLink||'',cancels:S.cancels||[],districts:S.districts||{},sheetCap:S.sheetCap||{},dupNot:S.dupNot||{},delNote:S.delNote||{},
-    finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta};
+    finalNotes:S.finalNotes,dupOk:S.dupOk,partyExtra,orderMeta,
+    ordNo:S.ordNo||{},ordSeq:S.ordSeq||0,confirms:S.confirms||{},msgLog:S.msgLog||[],msgTpl:S.msgTpl||{},msgCompany:S.msgCompany||'',cfFrom:S.cfFrom||''};
   return JSON.parse(JSON.stringify({orders,parties,masters,data}));
 }
 // the sheet's copy carries each order's route text (column B) - only needed for brand-new lines
@@ -7156,7 +7216,12 @@ function mergeModels(b,l,r){
     else if(k==='partyExtra') data[k]=m3recs(bd[k],ld[k],rd[k],n=>'Party '+n);
     else if(k==='orderMeta') data[k]=m3map(bd[k],ld[k],rd[k]);
     else if(MAPS[k]) data[k]=m3map(bd[k],ld[k],rd[k],MAPS[k]);
-    else if(k==='seq'||k==='upSeq') data[k]=Math.max(+ld[k]||0,+rd[k]||0);
+    else if(k==='seq'||k==='upSeq'||k==='ordSeq') data[k]=Math.max(+ld[k]||0,+rd[k]||0);
+    else if(k==='ordNo') data[k]=m3map(bd[k],ld[k]||{},rd[k]||{},'Order number');
+    else if(k==='confirms') data[k]=m3recs(bd[k],ld[k]||{},rd[k]||{},n=>'Order confirmation '+n);
+    else if(k==='msgTpl') data[k]=m3recs(bd[k],ld[k]||{},rd[k]||{},n=>'Party message wording ('+n+')');
+    else if(k==='msgLog') data[k]=m3ids(bd[k]||[],ld[k]||[],rd[k]||[],stable);
+    else if(k==='cfFrom'){ const a=[ld[k],rd[k]].filter(x=>repDayKey(x)); data[k]=a.sort((x,y)=>repDayKey(x).localeCompare(repDayKey(y)))[0]||''; }
     // a device on an older version doesn't know the sheet link and leaves the field out
     // altogether (a real removal sends ''), so a missing link never wipes this one - it goes back
     else if(k==='sheetLink'&&rd[k]===undefined) data[k]=ld[k]||bd[k]||'';
@@ -7201,6 +7266,11 @@ function applyModel(m,fromSheet){
   if(d.delNote&&typeof d.delNote==='object') S.delNote=d.delNote; else if(!S.delNote) S.delNote={};
   S.adminPin=d.adminPin||''; // empty = back to the default PIN (e.g. after resetAdminPin in the sheet)
   S.upSeq=Math.max(+S.upSeq||0,+d.upSeq||0); S.seq=Math.max(+S.seq||1,+d.seq||1);
+  // v4.3 party messages
+  if(d.ordNo&&typeof d.ordNo==='object') S.ordNo=d.ordNo; S.ordSeq=Math.max(+S.ordSeq||0,+d.ordSeq||0);
+  if(d.confirms&&typeof d.confirms==='object') S.confirms=d.confirms; if(Array.isArray(d.msgLog)) S.msgLog=d.msgLog;
+  if(d.msgTpl&&typeof d.msgTpl==='object') S.msgTpl=d.msgTpl; if(d.msgCompany!==undefined) S.msgCompany=d.msgCompany||'';
+  if(repDayKey(d.cfFrom)) S.cfFrom=d.cfFrom;
   S.plan=S.plan||{poolFilter:[],lanes:[]}; S.plan.lanes=S.plan.lanes||[]; S.plan.poolFilter=S.plan.poolFilter||[];
   S.log=S.log||[]; S.uploads=S.uploads||[]; S.stock=S.stock||{}; S.stockOut=S.stockOut||{}; S.stockMeta=S.stockMeta||{}; S.finalNotes=S.finalNotes||{}; S.dupOk=S.dupOk||{};
   // every party with orders has a record; new lines typed in the sheet bring their route (column B)
@@ -7849,6 +7919,155 @@ async function autoConnect(){
   }
   if(!syncCfg&&CO!=='1'){ gotoView('routes'); flash('Connect '+coInfo().name+': paste its web app URL'+(u?'':' and key')); }
 }
+/* ---------- v4.3: party messages + Confirm orders ----------
+   Orders are grouped per party per day added (addedOn). Each group gets an order number (one
+   continuous count per company sheet) and a card in Confirm orders. "Order Confirm" opens WhatsApp
+   (wa.me) with the message filled in; staff press send. Synced in _DATA: ordNo {party|day: no},
+   ordSeq, confirms {party|day: {at,by,snap,kind,msgId,cleared,...}}, msgLog [...], msgTpl, msgCompany,
+   cfFrom (the first day cards are made for - older orders never flood the tab). */
+const MSG_DEFAULT={
+  en:{confirm:'Dear {party},\nThank you for your order. Order No. {orderNo} dated {date} is received:\n{items}\nWe will inform you when it is dispatched.\n— {company}',
+      update:'Dear {party},\nYour Order No. {orderNo} dated {date} has been updated. Items now:\n{items}\n— {company}'},
+  ml:{confirm:'പ്രിയ {party},\nനിങ്ങളുടെ ഓർഡർ ലഭിച്ചു. ഓർഡർ നമ്പർ {orderNo}, തീയതി {date}:\n{items}\nസാധനങ്ങൾ അയയ്ക്കുമ്പോൾ അറിയിക്കുന്നതാണ്.\n— {company}',
+      update:'പ്രിയ {party},\nഓർഡർ നമ്പർ {orderNo} ({date}) പുതുക്കിയിരിക്കുന്നു. ഇപ്പോഴത്തെ സാധനങ്ങൾ:\n{items}\n— {company}'}};
+const MSG_KIND_NAME={confirm:'Confirmed',update:'Update sent'};
+const msgCompany=()=>str(S.msgCompany)||'Jain Wire Netting Corporation';
+function msgTpl(kind,lang){ const t=((S.msgTpl||{})[lang]||{})[kind]; return str(t)?t:MSG_DEFAULT[lang==='ml'?'ml':'en'][kind]; }
+function partyLang(p){ const r=S.parties[p]||{}; return r.lang||((S.parties[siteOf(p).base]||{}).lang)||'en'; }
+function fillMsg(kind,lang,v){ return msgTpl(kind,lang).replace(/\{(\w+)\}/g,(m,k)=>v[k]!==undefined?v[k]:m); }
+const cfKey=(p,day)=>p+'|'+day;
+function giveOrdNo(p,day){
+  if(!p||!day) return 0; S.ordNo=S.ordNo||{}; const k=cfKey(p,day);
+  if(!S.ordNo[k]){ const used=Object.values(S.ordNo).map(Number); S.ordSeq=Math.max(+S.ordSeq||0,...used,0)+1; S.ordNo[k]=S.ordSeq; }
+  return S.ordNo[k];
+}
+const ordNoOf=(p,day)=>(S.ordNo||{})[cfKey(p,day)]||0;
+function ordNosHtml(p,its){ const ns=[...new Set(its.map(o=>ordNoOf(o.party,o.addedOn)).filter(Boolean))];
+  const sent=its.some(o=>{ const c=(S.confirms||{})[cfKey(o.party,o.addedOn)]; return c&&c.at; });
+  return ns.length?` <span class="cfno" title="Order number">#${ns.join(', #')}</span>${sent?'<span class="msgtag" title="Order confirmation sent on WhatsApp">✓ confirmed</span>':''}`:''; }
+function phonesOf(p){ return String(partyPhone(p)||'').split(/[,/;]|\s{2,}/).map(x=>x.trim()).filter(x=>x.replace(/\D/g,'').length>=10); }
+function msgItems(lines){ return lines.map((l,i)=>`${i+1}. ${l.item} — ${l.qty}${str(l.onote)?' ('+l.onote+')':''}`).join('\n'); }
+const lineSnap=o=>({id:o.id,item:str(o.item),qty:str(o.qty),...(str(o.onote)?{onote:str(o.onote)}:{})});
+const CF_KEEP_DAYS=7;
+function cfDayOk(day){ const k=repDayKey(day); return k&&(!S.cfFrom||k>=repDayKey(S.cfFrom)); }
+// the cards: live orders grouped by party + day added, plus confirmed groups whose orders are gone
+function cfCards(){
+  const g=new Map();
+  S.orders.forEach(o=>{ if(!str(o.item)||!o.party||!cfDayOk(o.addedOn)) return; const k=cfKey(o.party,o.addedOn);
+    if(!g.has(k)) g.set(k,{k,party:o.party,day:o.addedOn,lines:[]}); g.get(k).lines.push(o); });
+  Object.entries(S.confirms||{}).forEach(([k,c])=>{ if(g.has(k)||!c||!c.at) return; const i=k.lastIndexOf('|');
+    g.set(k,{k,party:k.slice(0,i),day:k.slice(i+1),lines:(c.snap||[]).map(x=>({...x,gone:true})),gone:true}); });
+  const now=Date.now(), out=[];
+  g.forEach(card=>{ const c=(S.confirms||{})[card.k]||null; card.rec=c;
+    const snap=new Map(((c&&c.snap)||[]).map(x=>[x.id,x]));
+    card.changed=!!(c&&(c.at||c.cleared)&&!card.gone&&card.lines.some(o=>{ const x=snap.get(o.id); return !x||x.qty!==str(o.qty)||x.item!==str(o.item); }));
+    card.done=!!(c&&c.at&&!card.changed);
+    if(c&&c.cleared&&!card.changed) return;                                // cleared and nothing new since
+    if(card.done&&now-c.at>CF_KEEP_DAYS*864e5) return;                    // confirmed long ago
+    card.no=ordNoOf(card.party,card.day); out.push(card); });
+  return out.sort((a,b)=>repDayKey(b.day).localeCompare(repDayKey(a.day))||(b.no||0)-(a.no||0)||a.party.localeCompare(b.party));
+}
+function cfToDo(){ return cfCards().filter(c=>!c.done); }
+function paintConfirmBadge(){ const b=document.querySelector('nav [data-v="confirm"] .mi'); if(!b) return; const n=cfToDo().length;
+  if(n){ b.setAttribute('data-cnt',n>99?'99+':n); } else b.removeAttribute('data-cnt'); }
+function paintConfirm(){
+  const cards=cfCards(), todo=cards.filter(c=>!c.done), noNum=new Set(todo.filter(c=>!phonesOf(c.party).length).map(c=>c.party));
+  $('#cfCount').textContent=cards.length?`${todo.length} to confirm`:'';
+  $('#cfTop').innerHTML=`<b>${todo.length} to confirm</b>${noNum.size?` · <a id="cfNoNum">${noNum.size} part${noNum.size===1?'y has':'ies have'} no number</a>`:''}
+    ${S.cfFrom?`<span class="hint" style="margin:0">· cards from orders added on or after ${esc(S.cfFrom)}</span>`:''}`;
+  const nn=$('#cfNoNum'); if(nn) nn.onclick=()=>{ pfState={phone:'not'}; try{ localStorage.setItem('jw-ld-pfilters-v1',JSON.stringify(pfState)); }catch(_){} gotoView('parties'); };
+  const f=nameSearch($('#cfSearch').value), show=$('#cfShow').value;
+  const list=cards.filter(c=>(!f||f(c.party))&&(show==='all'||(show==='todo'?!c.done:c.done)));
+  const box=$('#cfList');
+  if(!list.length){ box.innerHTML=`<div class="card"><p class="hint">${cards.length?'Nothing matches this filter.':'No orders to confirm. New orders added from now on appear here, one card per party per day.'}</p></div>`; paintConfirmBadge(); return; }
+  box.innerHTML=list.map(c=>{ const rec=c.rec||{}, ph=phonesOf(c.party), lang=partyLang(c.party), kind=c.changed?'update':'confirm', kg=c.lines.reduce((a,o)=>a+(wtNum(o.weight)||0),0);
+    const btn=(n)=>`<button class="${c.done?'ghost':'primary'}" data-cfsend="${esc(c.k)}" data-cfph="${esc(n||'')}">${c.changed?'Send update':'Order Confirm'}${n?' · '+esc(n):' (pick chat)'}</button>`;
+    return `<div class="card cfcard${c.done?' done':''}" data-cfk="${esc(c.k)}">
+      <div class="cfhead"><span class="cfno">${c.no?'#'+c.no:'# on confirm'}</span><b>${pnameHtml(c.party)}</b>
+        <span class="mono">${esc(c.day)}</span><span class="hint" style="margin:0">${c.lines.length} line${c.lines.length===1?'':'s'}${kg?' · '+num(Math.round(kg))+' kg':''}</span>
+        ${c.changed?'<span class="cfchg">CHANGED AFTER CONFIRMING</span>':''}${c.gone?'<span class="hint" style="margin:0">(gone from Orders)</span>':''}
+        <span class="cflang" title="Message language for this party"><button data-cflang="en" class="${lang==='ml'?'':'on'}">EN</button><button data-cflang="ml" class="${lang==='ml'?'on':''}">ML</button></span></div>
+      <ul class="cflines">${c.lines.map(o=>`<li>${esc(o.item)} <b>×${esc(o.qty)}</b>${str(o.onote)?` <span class="onote">🕒 ${esc(o.onote)}</span>`:''}</li>`).join('')}</ul>
+      ${rec.at?`<div class="cfdone">✓ ${esc(MSG_KIND_NAME[rec.kind]||'Confirmed')} ${hhmm(rec.at)}${repDayKey(today10())!==dayKeyTs(rec.at)?' on '+esc(dmyTs(rec.at)):''} · ${esc(rec.by||'')}</div>`:''}
+      <div class="cfact">${ph.length?ph.map(btn).join(''):btn('')}
+        ${ph.length?'':`<input data-cfnum placeholder="party's WhatsApp no." inputmode="tel" style="width:170px"><button class="ghost" data-cfsave>Save to party</button>`}
+        ${rec.at?`<button class="ghost" data-cfundo>Undo</button>`:''}
+        <button class="ghost" data-cfclear>Clear</button></div>
+    </div>`; }).join('');
+  box.querySelectorAll('[data-cfk]').forEach(el=>{
+    const k=el.dataset.cfk, card=list.find(c=>c.k===k);
+    el.querySelectorAll('[data-cfsend]').forEach(b=>b.onclick=()=>cfSend(card,b.dataset.cfph));
+    el.querySelectorAll('[data-cflang]').forEach(b=>b.onclick=async()=>{ const rec=S.parties[card.party]=S.parties[card.party]||{routes:[],place:'',pincode:''};
+      if(b.dataset.cflang==='ml') rec.lang='ml'; else delete rec.lang; await save(); paintConfirm(); });
+    const sv=el.querySelector('[data-cfsave]'); if(sv) sv.onclick=async()=>{ const v=el.querySelector('[data-cfnum]').value.replace(/[^\d+ ,/]/g,'').replace(/\s+/g,' ').trim();
+      if(v.replace(/\D/g,'').length<10){ flash('Type a 10-digit number'); return; }
+      const rec=S.parties[card.party]=S.parties[card.party]||{routes:[],place:'',pincode:''}; rec.phone=v; await save(); invalidate('routes','parties','orders'); paintConfirm(); flash('Number saved to '+card.party); };
+    const un=el.querySelector('[data-cfundo]'); if(un) un.onclick=()=>cfUndo(card);
+    el.querySelector('[data-cfclear]').onclick=()=>cfClear([card]);
+  });
+  paintConfirmBadge();
+}
+function dayKeyTs(t){ const d=new Date(t); return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'); }
+function dmyTs(t){ const d=new Date(t); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
+function cfText(card,kind){
+  const no=giveOrdNo(card.party,card.day), lang=partyLang(card.party);
+  return fillMsg(kind,lang,{party:card.party,orderNo:'#'+no,date:card.day,items:msgItems(card.lines),company:msgCompany()});
+}
+async function cfSend(card,phone){
+  const kind=card.changed?'update':'confirm', text=cfText(card,kind), no=ordNoOf(card.party,card.day);
+  window.open('https://wa.me/'+(phone?waNumber(phone):'')+'?text='+encodeURIComponent(text),'_blank','noopener');
+  S.confirms=S.confirms||{}; S.msgLog=S.msgLog||[];
+  const prev=S.confirms[card.k]||null, by=(curUser?curUser+' · ':'')+deviceName(), at=Date.now(), mid=uid('m');
+  S.confirms[card.k]={at,by,kind,msgId:mid,snap:card.lines.filter(o=>!o.gone).map(lineSnap).concat(card.gone?(prev&&prev.snap)||[]:[]),
+    ...(prev&&prev.at?{prev:{at:prev.at,by:prev.by,kind:prev.kind,msgId:prev.msgId,snap:prev.snap}}:{})};
+  S.msgLog.push({id:mid,no,party:card.party,day:card.day,kind,at,by,lang:partyLang(card.party),to:phone?waNumber(phone):'',lines:card.lines.length});
+  if(S.msgLog.length>3000) S.msgLog=S.msgLog.slice(-3000);
+  await save(); invalidate('orders','rparty'); paintConfirm();
+}
+async function cfUndo(card){
+  const rec=(S.confirms||{})[card.k]; if(!rec) return;
+  S.msgLog=(S.msgLog||[]).filter(m=>m.id!==rec.msgId);
+  if(rec.prev) S.confirms[card.k]={...rec.prev}; else delete S.confirms[card.k];
+  await save(); invalidate('orders','rparty'); paintConfirm(); flash('Put back');
+}
+async function cfClear(cards){
+  S.confirms=S.confirms||{}; const at=Date.now();
+  cards.forEach(c=>{ const rec=S.confirms[c.k]||{}; S.confirms[c.k]={...rec,cleared:at,snap:rec.at&&!c.changed?rec.snap:c.lines.filter(o=>!o.gone).map(lineSnap)}; });
+  await save(); paintConfirm(); flash(cards.length===1?'Cleared':`${cards.length} cleared`);
+}
+$('#cfSearch').oninput=()=>paintConfirm();
+$('#cfShow').onchange=()=>paintConfirm();
+$('#cfClearAll').onclick=()=>{ const done=cfCards().filter(c=>c.done); if(!done.length){ flash('No confirmed cards to clear'); return; } armConfirm($('#cfClearAll'),`Yes, clear ${done.length}`,()=>cfClear(done)); };
+$('#cfNext').onclick=()=>{ const els=[...document.querySelectorAll('#cfList .cfcard:not(.done)')]; if(!els.length){ flash('Nothing left to confirm'); return; }
+  const y=window.scrollY+80; const el=els.find(e=>e.getBoundingClientRect().top+window.scrollY>y)||els[0];
+  el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1500); };
+// tidy: card records and numbers of days more than 60 days back go (the messages stay in msgLog)
+function cfTidy(){ const lim=repDayKey(dmyTs(Date.now()-60*864e5));
+  ['confirms','ordNo'].forEach(m=>{ const o=S[m]||{}; Object.keys(o).forEach(k=>{ const d=k.slice(k.lastIndexOf('|')+1); if(repDayKey(d)&&repDayKey(d)<lim) delete o[k]; }); }); }
+function msgHistHtml(p){
+  const ms=(S.msgLog||[]).filter(m=>m.party===p).sort((a,b)=>b.at-a.at); if(!ms.length) return '';
+  return `<div class="rtrip"><div class="rh"><b>Messages to the party</b> · ${ms.length}</div>${ms.slice(0,40).map(m=>`<div class="ri">${esc(dmyTs(m.at))} ${hhmm(m.at)} · <b>${esc(MSG_KIND_NAME[m.kind]||m.kind)}</b> · order #${esc(m.no)} of ${esc(m.day)} · ${esc(m.by||'')}${m.to?' · to '+esc(m.to):''}${m.lang==='ml'?' · Malayalam':''}</div>`).join('')}</div>`;
+}
+// Setup → Party messages
+function paintTplCard(){
+  const k=$('#tplKind').value, l=$('#tplLang').value;
+  $('#tplText').value=msgTpl(k,l); $('#tplCompany').value=str(S.msgCompany); $('#tplCompany').placeholder='Jain Wire Netting Corporation';
+  $('#ordNext').value=Math.max(+S.ordSeq||0,...Object.values(S.ordNo||{}).map(Number),0)+1;
+  tplPreview();
+}
+function tplPreview(){ const k=$('#tplKind').value, l=$('#tplLang').value;
+  $('#tplPreview').textContent='Preview:\n'+$('#tplText').value.replace(/\{(\w+)\}/g,(m,x)=>({party:'ABC TRADERS ALUVA',orderNo:'#'+$('#ordNext').value,date:today10(),items:'1. 40x40x3mmx12x4 — 20\n2. MS Wire — 4',company:msgCompany()})[x]??m); }
+$('#tplKind').onchange=paintTplCard; $('#tplLang').onchange=paintTplCard;
+$('#tplText').oninput=tplPreview;
+$('#tplText').onchange=async()=>{ const k=$('#tplKind').value, l=$('#tplLang').value, v=$('#tplText').value;
+  S.msgTpl=S.msgTpl||{}; S.msgTpl[l]={...(S.msgTpl[l]||{})};
+  if(v.trim()&&v!==MSG_DEFAULT[l][k]) S.msgTpl[l][k]=v; else delete S.msgTpl[l][k];
+  await save(); flash('Message saved'); };
+$('#tplReset').onclick=async()=>{ const k=$('#tplKind').value, l=$('#tplLang').value; if(S.msgTpl&&S.msgTpl[l]) delete S.msgTpl[l][k]; await save(); paintTplCard(); flash('Standard text back'); };
+$('#tplCompany').onchange=async()=>{ S.msgCompany=$('#tplCompany').value.trim(); await save(); tplPreview(); };
+$('#ordNext').onchange=async()=>{ const n=parseInt($('#ordNext').value,10), used=Math.max(0,...Object.values(S.ordNo||{}).map(Number));
+  if(!(n>used)){ flash('Must be more than '+used+' (already used)'); paintTplCard(); return; } S.ordSeq=n-1; await save(); flash('Next order number: '+n); tplPreview(); };
+paintTplCard();
 /* ---------- v4.2: requests between the companies ----------
    EKM asks CLT&KNR to deliver some parties (Build plan → Select parties → Ask CLT&KNR…), or the
    other way round. The asker suggests the other company's routes; the receiver picks the final
@@ -8034,7 +8253,7 @@ gotoView(currentView); // header label before the saved data arrives
 // it without a connection (it always tries the live site first, so a new version shows at once)
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 paintUserBtn(); if(needLogin()&&!curUser) showGate();
-load().then(()=>{ ldSeen(); const slim=slimOldLog(); renderAll(); undoReset(); if(slim) save(); updateSaveBadge(); updateSyncBadge(); initSync(); });
+load().then(()=>{ ldSeen(); const slim=slimOldLog(); const cf=!S.cfFrom; if(cf) S.cfFrom=today10(); cfTidy(); renderAll(); undoReset(); if(slim) save(); paintTplCard(); updateSaveBadge(); updateSyncBadge(); initSync(); });
 
 // nothing is lost if the tab is closed mid-edit
 // v3.3.1: also when the sheet has not got everything yet (a sync running, a change not sent, a sheet not reached)
