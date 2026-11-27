@@ -668,6 +668,19 @@ main{transition:filter .3s,opacity .3s}
 .cflang button{border:0;border-radius:0;padding:2px 9px;font-size:11.5px;background:transparent}
 .cflang button.on{background:var(--green);color:#fff}
 .msgtag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:4px;padding:0 5px;background:#e4f5ea;color:#14532d;border:1px solid #9fd4b0;margin-left:4px}
+/* v4.4 tell party + status */
+.tellbar{position:fixed;right:12px;bottom:12px;z-index:240;width:min(460px,calc(100vw - 24px));max-height:60vh;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--edge);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);padding:10px 12px}
+.tellhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}.tellhead #tellClose{margin-left:auto}
+.tellrow{border-top:1px solid var(--edge);padding:8px 0;display:flex;flex-direction:column;gap:6px}
+.tellrow.done{opacity:.6}
+.tellrow .tag{font-size:10.5px;font-weight:800;padding:0 6px;border-radius:4px;background:var(--panel2);border:1px solid var(--edge)}
+.tellpre{white-space:pre-wrap;font:12.5px/1.45 inherit;background:var(--panel2);border-radius:8px;padding:6px 8px;margin:4px 0 0}
+.stag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:4px;padding:0 5px;margin-left:4px;border:1px solid var(--edge);background:var(--panel2);color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
+.stag.st-confirmed,b.st-confirmed{color:#14532d} .stag.st-confirmed{background:#e4f5ea;border-color:#9fd4b0}
+.stag.st-loaded,b.st-loaded{color:#1f4f99} .stag.st-loaded{background:#e3edfb;border-color:#a9c4ee}
+.stag.st-dispatched,b.st-dispatched{color:#5b2a86} .stag.st-dispatched{background:#efe6f8;border-color:#c9b1e3}
+.stag.st-delayed,b.st-delayed{color:#8a5a00} .stag.st-delayed{background:#fff4d6;border-color:#f0c66b}
+b.st-cancelled{color:var(--alert)} b.st-delivered{color:var(--ok)}
 /* v4.1 theme picker */
 .themebtn{display:inline-flex;align-items:center;gap:8px;font-weight:700}
 .themelist{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
@@ -785,6 +798,14 @@ html[data-theme="night"] .reqhead .tag.ok{background:#1f3226;color:#aae4c1;borde
 html[data-theme="night"] .reqhead .tag.rej{background:#3a1818;color:#e6a7a7;border-color:#6f3434}
 html[data-theme="night"] .cfchg{background:#3d3214;color:#f7d797;border:1px solid #735e30}
 html[data-theme="night"] .msgtag{background:#1f3226;color:#aae4c1;border:1px solid #42614c}
+html[data-theme="night"] .stag.st-confirmed,html[data-theme="night"] b.st-confirmed{color:#aae4c1}
+html[data-theme="night"] .stag.st-confirmed{background:#1f3226;border-color:#42614c}
+html[data-theme="night"] .stag.st-loaded,html[data-theme="night"] b.st-loaded{color:#a7c0e7}
+html[data-theme="night"] .stag.st-loaded{background:#1a2638;border-color:#364c6d}
+html[data-theme="night"] .stag.st-dispatched,html[data-theme="night"] b.st-dispatched{color:#c9aee0}
+html[data-theme="night"] .stag.st-dispatched{background:#291d34}
+html[data-theme="night"] .stag.st-delayed,html[data-theme="night"] b.st-delayed{color:#f7d597}
+html[data-theme="night"] .stag.st-delayed{background:#3d3214;border-color:#735e30}
 }
 /* end night (generated) */
 /* v4.1 night theme: parts drawn in fixed light colours */
@@ -884,6 +905,7 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
 <!-- 1 DASHBOARD -->
 <section class="view on" id="v-dash">
   <div id="reqBox"></div>
+  <div class="card" id="statusCard"></div>
   <div id="trayDash"></div>
   <div id="dashStats"></div>
   <div class="card">
@@ -1095,9 +1117,9 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
   <div class="card" id="msgCard">
     <h2>Party messages</h2>
     <p class="hint" style="margin-top:0;margin-bottom:8px">Wording of the WhatsApp messages to parties, one per language (each party's language is set on its card in Confirm orders, or in Parties &amp; map).
-      Blanks filled in for you: <span class="mono">{party} {orderNo} {date} {items} {company}</span>. Saved in the sheet for every device.</p>
+      Blanks filled in for you: <span class="mono">{party} {orderNo} {date} {items} {company}</span>; Dispatched also {vehicle} {driver} {driverPhone} {pending} (items not on this vehicle); Delayed {reason} {newDate}; Cancelled {reason}. Saved in the sheet for every device.</p>
     <div class="row" style="align-items:flex-end">
-      <div style="flex:0 0 auto"><label>Message</label><select id="tplKind" style="width:auto"><option value="confirm">Order confirmed</option><option value="update">Order changed (update)</option></select></div>
+      <div style="flex:0 0 auto"><label>Message</label><select id="tplKind" style="width:auto"><option value="confirm">Order confirmed</option><option value="update">Order changed (update)</option><option value="dispatch">Dispatched</option><option value="delay">Delayed (hold)</option><option value="cancel">Cancelled</option></select></div>
       <div style="flex:0 0 auto"><label>Language</label><select id="tplLang" style="width:auto"><option value="en">English</option><option value="ml">Malayalam</option></select></div>
       <div style="flex:0 0 auto"><button class="ghost" id="tplReset">Back to the standard text</button></div>
     </div>
@@ -1630,7 +1652,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.3', APP_BUILD='27-11-2026';
+const APP_VERSION='4.4', APP_BUILD='27-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
@@ -2786,7 +2808,7 @@ const dashRoutePick=new Map(); // party -> routes picked on the Dashboard, saved
 function routePickHtml(p){ const set=dashRoutePick.get(p)||new Set();
   return `<span class="arpills">${S.routes.map(r=>`<span class="pill click${set.has(r)?' on':''}" data-p="${esc(p)}" data-r="${esc(r)}">${esc(r)}</span>`).join('')}</span>
     <button class="tiny primary" data-rsave="${esc(p)}"${set.size?'':' disabled'}>Confirm</button>`; }
-function paintDash(){ paintReqs(); if(currentView==='dash') reqTick(); 
+function paintDash(){ paintReqs(); try{ paintStatusCard(); }catch(e){ showError('status: '+(e.stack||e.message)); } if(currentView==='dash') reqTick(); 
   const box=$('#dashStats'); if(!box) return;
   const parties=partiesToday();
   const todayStr=today10();
@@ -3241,7 +3263,7 @@ function paintOrders(){
             <span class="oparty">${editing
               ?`<input data-erename="${esc(p)}" value="${esc(p)}" style="font-weight:700;min-width:220px;max-width:100%;width:${Math.min(64,p.length+4)}ch">`
               +pnoteHtml(p)+`<input class="onotein" data-onote="${esc(p)}" data-ontab="${esc(blockTab)}" data-ondate="${esc(d)}" value="${esc(onotesOf(its).join('; '))}" placeholder="🕒 order note — e.g. tomorrow need" title="Note for this order only (column G of the party row); goes when the order goes">`
-              :pnameHtml(p)+onoteHtml(its)} ${tags}${ordNosHtml(p,its)}
+              :pnameHtml(p)+onoteHtml(its)} ${tags}${ordNosHtml(p,its)}${statusChips(its)}
               ${placeLine(p)||partyPhone(p)?`<br><span class="opl">${esc(placeLine(p))}</span>${partyPhone(p)?`${placeLine(p)?' · ':''}<span class="pphone">📞 <a href="tel:${esc(partyPhone(p).split(/[,/]/)[0].replace(/\s/g,''))}">${esc(partyPhone(p))}</a></span>`:''}`:''}</span>
             <span class="osum">${its.length} item${its.length>1?'s':''} · ${num(blockWt)} kg</span>
             <span class="oact">
@@ -3296,8 +3318,11 @@ function wireOrderBox(box){
     if(pick.err){ flash(pick.err.replace('goes','is cancelled')); return; }
     const reason=form.querySelector('[data-cxreason]').value.trim();
     armConfirm(b,`Yes, cancel ${pick.ids.length} line${pick.ids.length>1?'s':''}`,async()=>{
+      const before=(S.cancels||[]).length, keep=pick.ids.map(id=>({...S.orders.find(o=>o.id===id)}));
       const n=cancelLines(p,pick,reason); cancelForm=null;
       await save(); renderAll(); flash(`Cancelled for ${p} — ${n} line${n>1?'s':''}. See Reports → Party history`);
+      const cx=(S.cancels||[]).slice(before);
+      tellOffer([tellItem('cancel',p,cx.map(c=>{ const o=keep.find(k=>k.item===c.item&&k.date===c.date)||{}; return {party:p,item:c.item,qty:c.qty,date:c.date,addedOn:o.addedOn}; }),{reason},'cancel:'+(cx[0]||{}).id)]);
     });
   });
   box.querySelectorAll('[data-godown]').forEach(b=>b.onclick=()=>{ godownForm=godownForm===b.dataset.gdkey?null:b.dataset.gdkey; renderOrders(); renderDash(); });
@@ -3333,8 +3358,10 @@ function wireOrderBox(box){
       const b=e.currentTarget, raw=u.value.trim(), iso=raw?parseDMY(raw):'';
       if(raw&&!iso){ flash('Enter the until date as dd-mm-yyyy'); return; }
       if(iso&&isPast(iso)){ flash('That date has already passed'); return; }
-      setHold(b.dataset.hsave,b.dataset.holdtab,b.dataset.holddate,true,{reason:f.querySelector('[data-hreason]').value.trim(),until:iso});
+      const hp=b.dataset.hsave, ht=b.dataset.holdtab, hd=b.dataset.holddate, hr=f.querySelector('[data-hreason]').value.trim();
+      setHold(hp,ht,hd,true,{reason:hr,until:iso});
       holdForm=null; await save(); renderOrders(); renderPlan(); renderDash();
+      if(hr||iso) tellOffer([tellItem('delay',hp,itemsOf(hp).filter(o=>(o.tab||'')===ht&&(o.date||'')===hd),{reason:hr,newDate:iso?isoToDMY(iso):''},'hold:'+hp+'|'+ht+'|'+hd+'|'+Date.now())]);
     };
   });
   box.querySelectorAll('[data-due]').forEach(el=>el.onchange=async()=>{
@@ -4633,7 +4660,7 @@ function paintLog(){
         <div class="row" style="margin-top:10px">
           <div style="flex:0 0 auto" id="delwrap-${g.id}">
             ${g.resolved
-              ? `<button class="ghost" data-reopen="${g.id}" ${g.snapshot?'':'disabled'}>Reopen — undo the last apply</button>`
+              ? `<button class="ghost" data-reopen="${g.id}" ${g.snapshot?'':'disabled'}>Reopen — undo the last apply</button>${!g.godown&&!g.cleared?` <button class="ghost" data-telllog="${g.id}">📲 Tell parties${tellSentFor('dispatch','log:'+g.id).length?' ('+new Set(tellSentFor('dispatch','log:'+g.id).map(m=>m.party)).size+' told)':''}</button>`:''}`
               : (incPending(g).length?`<button class="danger" disabled>Choose keep or remove for ${incPending(g).length} increased line${incPending(g).length===1?'':'s'} first</button>`
                 : `<button class="danger" data-cleardel="${g.id}" ${changing.length?'':'disabled'}>Apply delivery — updates ${changing.length} line${changing.length===1?'':'s'}</button>`)}
           </div>
@@ -4742,7 +4769,8 @@ function paintLog(){
     const changing=allIds.filter(id=>lineChanges(g,id));
     armConfirm(el,`Yes, update ${changing.length} lines`,async()=>{
       applyLogEntry(g);
-      await save(); renderAll(); flash(`Updated ${changing.length} line(s)`);});
+      await save(); renderAll(); flash(`Updated ${changing.length} line(s)`);
+      tellOffer(tellDispatchItems(g));});
   });
   // orders already deleted in the sheet: close the entry by hand, nothing in Orders/Stock changes
   box.querySelectorAll('[data-logclear]').forEach(el=>el.onclick=e=>{
@@ -4753,6 +4781,10 @@ function paintLog(){
       g.resolved=true; g.cleared=true; g.snapshot=[]; g.stockDelta=null; g.appliedAt=Date.now();
       await save(); renderAll(); flash(left?`Log cleared — ${left} line${left===1?'':'s'} left in Orders unchanged`:'Log cleared');});
   });
+  box.querySelectorAll('[data-telllog]').forEach(el=>el.onclick=e=>{ e.stopPropagation(); const g=S.log.find(x=>x.id===el.dataset.telllog);
+    const its=tellDispatchItems(g); if(!its.length){ flash('Nothing went on this vehicle'); return; }
+    const told=new Set(tellSentFor('dispatch','log:'+g.id).map(m=>m.party)); its.forEach(t=>{ if(told.has(t.party)) t.sent=(tellSentFor('dispatch','log:'+g.id).find(m=>m.party===t.party)||{}).at; });
+    tellOffer(its); });
   box.querySelectorAll('[data-reopen]').forEach(el=>el.onclick=e=>{
     e.stopPropagation();
     const g=S.log.find(x=>x.id===el.dataset.reopen); if(!g||!g.snapshot)return;
@@ -7927,14 +7959,21 @@ async function autoConnect(){
    cfFrom (the first day cards are made for - older orders never flood the tab). */
 const MSG_DEFAULT={
   en:{confirm:'Dear {party},\nThank you for your order. Order No. {orderNo} dated {date} is received:\n{items}\nWe will inform you when it is dispatched.\n— {company}',
-      update:'Dear {party},\nYour Order No. {orderNo} dated {date} has been updated. Items now:\n{items}\n— {company}'},
+      update:'Dear {party},\nYour Order No. {orderNo} dated {date} has been updated. Items now:\n{items}\n— {company}',
+      dispatch:'Dear {party},\nYour order {orderNo} has been dispatched on {date}.\nVehicle: {vehicle}\nDriver: {driver} {driverPhone}\nItems:\n{items}\n{pending}\n— {company}',
+      delay:'Dear {party},\nYour order {orderNo} will be delayed.\nReason: {reason}\nExpected date: {newDate}\nSorry for the inconvenience.\n— {company}',
+      cancel:'Dear {party},\nThe following items of your order {orderNo} are cancelled:\n{items}\nReason: {reason}\n— {company}'},
   ml:{confirm:'പ്രിയ {party},\nനിങ്ങളുടെ ഓർഡർ ലഭിച്ചു. ഓർഡർ നമ്പർ {orderNo}, തീയതി {date}:\n{items}\nസാധനങ്ങൾ അയയ്ക്കുമ്പോൾ അറിയിക്കുന്നതാണ്.\n— {company}',
-      update:'പ്രിയ {party},\nഓർഡർ നമ്പർ {orderNo} ({date}) പുതുക്കിയിരിക്കുന്നു. ഇപ്പോഴത്തെ സാധനങ്ങൾ:\n{items}\n— {company}'}};
-const MSG_KIND_NAME={confirm:'Confirmed',update:'Update sent'};
+      update:'പ്രിയ {party},\nഓർഡർ നമ്പർ {orderNo} ({date}) പുതുക്കിയിരിക്കുന്നു. ഇപ്പോഴത്തെ സാധനങ്ങൾ:\n{items}\n— {company}',
+      dispatch:'പ്രിയ {party},\nനിങ്ങളുടെ ഓർഡർ {orderNo} {date}-ന് അയച്ചിരിക്കുന്നു.\nവാഹനം: {vehicle}\nഡ്രൈവർ: {driver} {driverPhone}\nസാധനങ്ങൾ:\n{items}\n{pending}\n— {company}',
+      delay:'പ്രിയ {party},\nനിങ്ങളുടെ ഓർഡർ {orderNo} വൈകും.\nകാരണം: {reason}\nപ്രതീക്ഷിക്കുന്ന തീയതി: {newDate}\nബുദ്ധിമുട്ടിന് ഖേദിക്കുന്നു.\n— {company}',
+      cancel:'പ്രിയ {party},\nനിങ്ങളുടെ ഓർഡർ {orderNo}-ലെ താഴെ പറയുന്ന സാധനങ്ങൾ റദ്ദാക്കിയിരിക്കുന്നു:\n{items}\nകാരണം: {reason}\n— {company}'}};
+const MSG_LBL={en:{pending:'To follow later:',none:'—',dated:'dated '},ml:{pending:'പിന്നീട് അയയ്ക്കുന്നവ:',none:'—',dated:'തീയതി '}};
+const MSG_KIND_NAME={confirm:'Confirmed',update:'Update sent',dispatch:'Dispatched',delay:'Delayed',cancel:'Cancelled'};
 const msgCompany=()=>str(S.msgCompany)||'Jain Wire Netting Corporation';
 function msgTpl(kind,lang){ const t=((S.msgTpl||{})[lang]||{})[kind]; return str(t)?t:MSG_DEFAULT[lang==='ml'?'ml':'en'][kind]; }
 function partyLang(p){ const r=S.parties[p]||{}; return r.lang||((S.parties[siteOf(p).base]||{}).lang)||'en'; }
-function fillMsg(kind,lang,v){ return msgTpl(kind,lang).replace(/\{(\w+)\}/g,(m,k)=>v[k]!==undefined?v[k]:m); }
+function fillMsg(kind,lang,v){ return msgTpl(kind,lang).replace(/\{(\w+)\}/g,(m,k)=>v[k]!==undefined?v[k]:m).replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').replace(/\n\n(— )/,'\n$1').trim(); }
 const cfKey=(p,day)=>p+'|'+day;
 function giveOrdNo(p,day){
   if(!p||!day) return 0; S.ordNo=S.ordNo||{}; const k=cfKey(p,day);
@@ -8046,7 +8085,7 @@ function cfTidy(){ const lim=repDayKey(dmyTs(Date.now()-60*864e5));
   ['confirms','ordNo'].forEach(m=>{ const o=S[m]||{}; Object.keys(o).forEach(k=>{ const d=k.slice(k.lastIndexOf('|')+1); if(repDayKey(d)&&repDayKey(d)<lim) delete o[k]; }); }); }
 function msgHistHtml(p){
   const ms=(S.msgLog||[]).filter(m=>m.party===p).sort((a,b)=>b.at-a.at); if(!ms.length) return '';
-  return `<div class="rtrip"><div class="rh"><b>Messages to the party</b> · ${ms.length}</div>${ms.slice(0,40).map(m=>`<div class="ri">${esc(dmyTs(m.at))} ${hhmm(m.at)} · <b>${esc(MSG_KIND_NAME[m.kind]||m.kind)}</b> · order #${esc(m.no)} of ${esc(m.day)} · ${esc(m.by||'')}${m.to?' · to '+esc(m.to):''}${m.lang==='ml'?' · Malayalam':''}</div>`).join('')}</div>`;
+  return `<div class="rtrip"><div class="rh"><b>Messages to the party</b> · ${ms.length}</div>${ms.slice(0,40).map(m=>`<div class="ri">${esc(dmyTs(m.at))} ${hhmm(m.at)} · <b>${esc(MSG_KIND_NAME[m.kind]||m.kind)}</b> · order ${m.no?'#'+esc(m.no):''}${m.day?' of '+esc(m.day):''} · ${esc(m.by||'')}${m.to?' · to '+esc(m.to):''}${m.lang==='ml'?' · Malayalam':''}</div>`).join('')}</div>`;
 }
 // Setup → Party messages
 function paintTplCard(){
@@ -8056,7 +8095,8 @@ function paintTplCard(){
   tplPreview();
 }
 function tplPreview(){ const k=$('#tplKind').value, l=$('#tplLang').value;
-  $('#tplPreview').textContent='Preview:\n'+$('#tplText').value.replace(/\{(\w+)\}/g,(m,x)=>({party:'ABC TRADERS ALUVA',orderNo:'#'+$('#ordNext').value,date:today10(),items:'1. 40x40x3mmx12x4 — 20\n2. MS Wire — 4',company:msgCompany()})[x]??m); }
+  $('#tplPreview').textContent='Preview:\n'+$('#tplText').value.replace(/\{(\w+)\}/g,(m,x)=>({party:'ABC TRADERS ALUVA',orderNo:'#'+$('#ordNext').value,date:today10(),items:'1. 40x40x3mmx12x4 — 20\n2. MS Wire — 4',company:msgCompany(),
+    vehicle:'KL 07 DF 9027',driver:'RAHUL',driverPhone:'+917979064269',pending:MSG_LBL[l].pending+'\n1. Binding wire — 2',reason:'Material arriving late',newDate:today10()})[x]??m); }
 $('#tplKind').onchange=paintTplCard; $('#tplLang').onchange=paintTplCard;
 $('#tplText').oninput=tplPreview;
 $('#tplText').onchange=async()=>{ const k=$('#tplKind').value, l=$('#tplLang').value, v=$('#tplText').value;
@@ -8068,6 +8108,95 @@ $('#tplCompany').onchange=async()=>{ S.msgCompany=$('#tplCompany').value.trim();
 $('#ordNext').onchange=async()=>{ const n=parseInt($('#ordNext').value,10), used=Math.max(0,...Object.values(S.ordNo||{}).map(Number));
   if(!(n>used)){ flash('Must be more than '+used+' (already used)'); paintTplCard(); return; } S.ordSeq=n-1; await save(); flash('Next order number: '+n); tplPreview(); };
 paintTplCard();
+
+/* ---------- v4.4: Tell party (dispatched / delayed / cancelled) + order status ----------
+   Offered right after the action (Apply delivery in the Plan log, Hold with a reason, Cancel order),
+   and again from the Plan log entry. Each tap opens WhatsApp with the text and is recorded in msgLog. */
+let tellList=[];
+function ordRefOf(lines,lang){ const L=MSG_LBL[lang==='ml'?'ml':'en'];
+  const ns=[...new Set(lines.map(l=>ordNoOf(l.party,l.addedOn)).filter(Boolean))];
+  if(ns.length) return '#'+ns.join(', #');
+  const ds=[...new Set(lines.map(l=>l.date).filter(Boolean))]; return ds.length?L.dated+ds.join(', '):''; }
+function tellItem(kind,party,lines,vars,ref){
+  const lang=partyLang(party), L=MSG_LBL[lang==='ml'?'ml':'en'];
+  const v={party,company:msgCompany(),orderNo:ordRefOf(lines,lang),date:today10(),items:msgItems(lines),reason:L.none,newDate:L.none,pending:'',...vars};
+  if(vars.pendingLines&&vars.pendingLines.length) v.pending=L.pending+'\n'+msgItems(vars.pendingLines);
+  ['reason','newDate'].forEach(k=>{ if(!str(v[k])) v[k]=L.none; });
+  return {id:uid('t'),kind,party,lang,text:fillMsg(kind,lang,v),no:v.orderNo,ref:ref||'',sent:null};
+}
+function tellOffer(items){
+  items=items.filter(Boolean); if(!items.length) return;
+  tellList=items.concat(tellList.filter(t=>!t.sent&&!items.some(i=>i.party===t.party&&i.kind===t.kind&&i.ref===t.ref))).slice(0,40);
+  paintTell();
+}
+function paintTell(){
+  let el=document.getElementById('tellBar');
+  if(!tellList.length){ if(el) el.remove(); return; }
+  if(!el){ el=document.createElement('div'); el.id='tellBar'; el.className='tellbar'; document.body.appendChild(el); }
+  el.innerHTML=`<div class="tellhead"><b>📲 Tell the part${tellList.length===1?'y':'ies'}</b> <span class="hint" style="margin:0">opens WhatsApp with the message ready</span>
+      <button class="tiny ghost" id="tellClose">Close</button></div>
+    ${tellList.map(t=>{ const ph=phonesOf(t.party);
+      return `<div class="tellrow${t.sent?' done':''}" data-tell="${t.id}"><div><b>${esc(t.party)}</b> <span class="tag">${esc(MSG_KIND_NAME[t.kind])}</span>${t.lang==='ml'?' <span class="hint" style="margin:0">ML</span>':''}
+          ${t.sent?` <span class="cfdone">✓ ${hhmm(t.sent)}</span>`:''}
+          <details><summary class="hint" style="margin:0;cursor:pointer">see message</summary><pre class="tellpre">${esc(t.text)}</pre></details></div>
+        <div class="cfact">${(ph.length?ph:['']).map(n=>`<button class="tiny ${t.sent?'ghost':'primary'}" data-tsend="${esc(n)}">${n?esc(n):'Pick chat'}</button>`).join('')}
+          ${t.sent?'<button class="tiny ghost" data-tundo>Undo</button>':'<button class="tiny ghost" data-tskip>Skip</button>'}</div></div>`; }).join('')}`;
+  el.querySelector('#tellClose').onclick=()=>{ tellList=[]; paintTell(); };
+  el.querySelectorAll('[data-tell]').forEach(r=>{ const t=tellList.find(x=>x.id===r.dataset.tell);
+    r.querySelectorAll('[data-tsend]').forEach(b=>b.onclick=async()=>{
+      const ph=b.dataset.tsend; window.open('https://wa.me/'+(ph?waNumber(ph):'')+'?text='+encodeURIComponent(t.text),'_blank','noopener');
+      t.sent=Date.now(); t.msgId=uid('m'); S.msgLog=S.msgLog||[];
+      S.msgLog.push({id:t.msgId,no:String(t.no||'').replace(/^#/,''),party:t.party,day:'',kind:t.kind,at:t.sent,by:(curUser?curUser+' · ':'')+deviceName(),lang:t.lang,to:ph?waNumber(ph):'',ref:t.ref});
+      if(S.msgLog.length>3000) S.msgLog=S.msgLog.slice(-3000);
+      await save(); invalidate('rparty','orders','dash','log'); paintTell(); });
+    const u=r.querySelector('[data-tundo]'); if(u) u.onclick=async()=>{ S.msgLog=(S.msgLog||[]).filter(m=>m.id!==t.msgId); t.sent=null; await save(); paintTell(); };
+    const sk=r.querySelector('[data-tskip]'); if(sk) sk.onclick=()=>{ tellList=tellList.filter(x=>x!==t); paintTell(); };
+  });
+}
+const tellSentFor=(kind,ref)=>(S.msgLog||[]).filter(m=>m.kind===kind&&m.ref===ref);
+// dispatched: one message per party on a Plan log entry, from what actually went (qty gone)
+function tellDispatchItems(g){
+  if(!g||g.godown||g.cleared) return [];
+  const snap=new Map((g.snapshot||[]).map(o=>[o.id,o])), date=g.createdAt||today10();
+  const drv=g.driver||'', dph=drv?String((S.fleet.phones||{})[Object.keys(S.fleet.phones||{}).find(k=>k.toLowerCase()===drv.toLowerCase())]||''):'';
+  return g.stops.map(st=>{
+    const lines=st.orderIds.map(id=>snap.get(id)||S.orders.find(o=>o.id===id)).filter(Boolean);
+    const gone=[], left=[];
+    lines.forEach(o=>{ const q=g.qtyGone&&g.qtyGone[o.id]!=null?+g.qtyGone[o.id]:(logLoad(g,o.id)!=null?logLoad(g,o.id):parseNum(o.qty));
+      const orig=parseNum(o.qty), suf=(String(o.qty??'').match(/^[\d.,]+(.*)$/)||['',''])[1];
+      if(isNaN(orig)){ gone.push(o); return; }
+      if(q>0) gone.push({...o,qty:fmtN(q)+suf});
+      if(q<orig) left.push({...o,qty:fmtN(+(orig-q).toFixed(3))+suf}); });
+    if(!gone.length) return null;
+    return tellItem('dispatch',st.party,gone,{date,vehicle:g.vehicleNo||g.vehicle||'',driver:drv||'—',driverPhone:dph,pendingLines:left},'log:'+g.id);
+  }).filter(Boolean);
+}
+// order status: Received → Confirmed → Loaded (Build plan) → Dispatched (Plan log, not applied) · Delayed (hold)
+function orderStatusMap(){
+  const inLog=linesInOpenLogs(), onPlan=new Set();
+  (S.plan.lanes||[]).forEach(l=>l.stops.forEach(st=>{ try{ stopItems(st).forEach(o=>onPlan.add(o.id)); }catch(_){} }));
+  const st=new Map();
+  S.orders.forEach(o=>{ if(!str(o.item)) return;
+    const c=(S.confirms||{})[cfKey(o.party,o.addedOn)];
+    st.set(o.id,inLog.has(o.id)?'dispatched':onPlan.has(o.id)?'loaded':lineHeld(o)?'delayed':c&&c.at?'confirmed':'received'); });
+  return st;
+}
+const STATUS_NAME={received:'Received',confirmed:'Confirmed',loaded:'Loaded',dispatched:'Dispatched',delayed:'Delayed'};
+const STATUS_ORDER=['received','confirmed','delayed','loaded','dispatched'];
+function statusChips(its,map){ map=map||orderStatusMap(); const c={}; its.forEach(o=>{ const s=map.get(o.id); if(s) c[s]=(c[s]||0)+1; });
+  const ks=STATUS_ORDER.filter(k=>c[k]); if(!ks.length) return '';
+  return ' '+ks.map(k=>`<span class="stag st-${k}" title="Order status">${STATUS_NAME[k]}${ks.length>1||its.length>1&&c[k]<its.length?' '+c[k]:''}</span>`).join(''); }
+function paintStatusCard(){
+  const el=$('#statusCard'); if(!el) return; const map=orderStatusMap(), byOrd=new Map();
+  S.orders.forEach(o=>{ if(!str(o.item)) return; const k=cfKey(o.party,o.addedOn), s=map.get(o.id), cur=byOrd.get(k);
+    byOrd.set(k,!cur||STATUS_ORDER.indexOf(s)>STATUS_ORDER.indexOf(cur)?s:cur); });
+  const n={}; byOrd.forEach(s=>n[s]=(n[s]||0)+1);
+  const t=today10(), deliv=new Set(); (S.log||[]).forEach(g=>{ if(g.resolved&&!g.cleared&&g.appliedAt&&dmyTs(g.appliedAt)===t) g.stops.forEach(st=>deliv.add(st.party)); });
+  const cx=new Set((S.cancels||[]).filter(c=>c.at===t).map(c=>c.party));
+  const cell=(k,label,v)=>`<div class="dstat"><b class="st-${k}">${v||0}</b><small>${label}</small></div>`;
+  el.innerHTML=`<h2>Order status <span class="hint" style="margin:0;text-transform:none;letter-spacing:0;font-weight:400">orders on hand (one per party per day) · today</span></h2>
+    <div class="dstats">${STATUS_ORDER.map(k=>cell(k,STATUS_NAME[k],n[k])).join('')}${cell('delivered','Delivered today',deliv.size)}${cell('cancelled','Cancelled today',cx.size)}</div>`;
+}
 /* ---------- v4.2: requests between the companies ----------
    EKM asks CLT&KNR to deliver some parties (Build plan → Select parties → Ask CLT&KNR…), or the
    other way round. The asker suggests the other company's routes; the receiver picks the final

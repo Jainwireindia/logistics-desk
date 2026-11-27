@@ -1,4 +1,4 @@
-# Logistics Desk — technical reference (sync, data model, all versions up to v4.3)
+# Logistics Desk — technical reference (sync, data model, all versions up to v4.4)
 
 The standalone tool `logistics-desk.html` is served as `index.html` from GitHub Pages (jainwireindia.github.io/logistics-desk/). It syncs with a Google Sheet through the Apps Script `Code.gs`, which is bound to that sheet. The old Claude artifact version was retired at v1.1. The web app URL is pre-filled in the tool (`DEFAULT_SYNC_URL`). The key is never stored in the file.
 
@@ -352,3 +352,9 @@ Evidence: Paul's sync report 07-10 (polls "same" 4–11 s, pushes 10–27 s, 4 o
 - Data (`_DATA` rest, synced): `ordNo`, `ordSeq`, `confirms` {`party|day`: {at, by, kind confirm|update, msgId, snap[{id,item,qty,onote}], cleared, prev{...}}}, `msgLog`, `msgTpl` {en|ml: {confirm, update}}, `msgCompany`, `cfFrom`. Party `lang` ('ml' or absent) in partyExtra.
 - Functions: `MSG_DEFAULT`, `msgTpl`, `fillMsg`, `partyLang`, `cfKey`, `giveOrdNo`, `ordNoOf`, `ordNosHtml`, `phonesOf` (split on , / ;), `msgItems`, `lineSnap`, `cfCards` (live orders by party|addedOn from cfFrom + confirmed groups whose lines are gone; `changed` = a live line not in snap or with other qty/item), `paintConfirm` (`#v-confirm`, `#cfList`), `cfSend`, `cfUndo` (back to `prev`), `cfClear`, `cfTidy`, `msgHistHtml`, `paintTplCard`/`tplPreview` (Setup `#msgCard`), `paintConfirmBadge` (nav `.mi[data-cnt]`).
 - Code.gs 4.3: MIN_TOOL 4.3. Test `t_v43.js`.
+
+## v4.4 (27-11-2026) — Tell party + order status
+- `MSG_DEFAULT` en/ml gain dispatch, delay, cancel; `MSG_LBL` (pending / none / dated); `fillMsg` drops empty lines.
+- `tellItem(kind,party,lines,vars,ref)`, `tellOffer(items)`, `paintTell()` (`#tellBar`, `tellList`), `tellSentFor(kind,ref)`, `tellDispatchItems(g)` (snapshot + qtyGone → gone / left), `ordRefOf(lines,lang)`.
+- Hooks: hold save (`data-hsave`), cancel (`data-cxsave` after `cancelLines`), Apply delivery (`data-cleardel` after `applyLogEntry`), `data-telllog` on applied entries.
+- `orderStatusMap()`, `statusChips(its)` (Orders card), `paintStatusCard()` (`#statusCard` on Dashboard), `STATUS_ORDER`. Test `t_v44.js`.
