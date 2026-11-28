@@ -681,6 +681,10 @@ main{transition:filter .3s,opacity .3s}
 .stag.st-dispatched,b.st-dispatched{color:#5b2a86} .stag.st-dispatched{background:#efe6f8;border-color:#c9b1e3}
 .stag.st-delayed,b.st-delayed{color:#8a5a00} .stag.st-delayed{background:#fff4d6;border-color:#f0c66b}
 b.st-cancelled{color:var(--alert)} b.st-delivered{color:var(--ok)}
+/* v4.4.1 Order Reader button */
+.orbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px}
+.orbtn{display:inline-flex;align-items:center;gap:6px;background:#1f5fa8;color:#fff!important;text-decoration:none!important;font-weight:800;border-radius:8px;padding:8px 14px;white-space:nowrap}
+.orbtn:hover{filter:brightness(1.1)}
 /* v4.1 theme picker */
 .themebtn{display:inline-flex;align-items:center;gap:8px;font-weight:700}
 .themelist{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
@@ -920,6 +924,10 @@ html[data-theme="night"] #userMenu button{color:var(--ink)} html[data-theme="nig
 
 <!-- 2 ADD ORDERS -->
 <section class="view" id="v-orders">
+  <div class="card orbar">
+    <a class="orbtn" id="orderReaderBtn" href="https://jainwireindia.github.io/whatsapp-order-reader/" target="jw-order-reader" rel="opener">📥 Order Reader</a>
+    <span class="hint" style="margin:0">Read WhatsApp orders, then <b>Send to Logistics Desk</b> there — they appear here under "From Order to Sheet". Opens in its own tab; pressing it again goes back to that tab.</span>
+  </div>
   <div class="card traycard" id="trayCard" hidden>
     <h2>From Order to Sheet <span id="trayCount" class="mono"></span></h2>
     <div id="trayBody"></div>
@@ -1652,7 +1660,7 @@ const store={
 };
 
 /* ---------- constants ---------- */
-const APP_VERSION='4.4', APP_BUILD='27-11-2026';
+const APP_VERSION='4.4.1', APP_BUILD='28-11-2026';
 /* Nothing is built in: routes, sheet tabs and vehicle types are all entered in Master Data.
    The lists below are used ONLY to carry over data saved by the old Loading Plan Builder, which
    had these built in - a restored old backup keeps working exactly as before. */
